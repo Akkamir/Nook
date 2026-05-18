@@ -55,10 +55,13 @@ final class VillageScene: SKScene {
     }
 
     private func updateHUDPosition() {
+        // Use the actual view bounds — scene.size lags behind during first layout
+        let w = view?.bounds.width  ?? size.width
+        let h = view?.bounds.height ?? size.height
         let margin: CGFloat = 16
         hud?.position = CGPoint(
-            x: -size.width / 2 + margin + HUD.backgroundWidth / 2,
-            y:  size.height / 2 - margin - 16  // 16 = half HUD background height
+            x: -w / 2 + margin + HUD.backgroundWidth / 2,
+            y:  h / 2 - margin - 16
         )
     }
 
@@ -71,6 +74,8 @@ final class VillageScene: SKScene {
     }
 
     override func update(_ currentTime: TimeInterval) {
+        // Keep HUD anchored — view might not be set during didMove
+        updateHUDPosition()
         guard let engine else { return }
         hud?.update(totalBits: engine.totalBits)
         // Counter-scale HUD to cancel camera zoom — HUD should stay fixed size on screen
