@@ -122,6 +122,7 @@
 			buildPhases = (
 				6D094DEC89EA4A79D8DE3D44 /* Sources */,
 				827AA64DA3FA2C35FBF34FBE /* Resources */,
+				A8FF0888E410424E8F3D6ED2 /* Embed NookDaemon */,
 			);
 			buildRules = (
 			);
@@ -204,6 +205,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A8FF0888E410424E8F3D6ED2 /* Embed NookDaemon */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed NookDaemon";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nNOOK_PKG=\"${SRCROOT}\"\nDAEMON_BIN=\"${NOOK_PKG}/.build/arm64-apple-macosx/release/NookDaemon\"\n\nswift build --package-path \"${NOOK_PKG}\" -c release\n\nDEST=\"${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/NookDaemon\"\ncp \"${DAEMON_BIN}\" \"${DEST}\"\nchmod +x \"${DEST}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		2A9E18359FA540556AC2F4DF /* Release */ = {
