@@ -72,7 +72,10 @@ final class DaemonInstaller {
 
         let checkResult = runLaunchctl(["list", launchAgentLabel])
         if checkResult.status == 0 {
-            _ = runLaunchctl(["kickstart", "-k", "\(domain)/\(launchAgentLabel)"])
+            let result = runLaunchctl(["kickstart", "-k", "\(domain)/\(launchAgentLabel)"])
+            if result.status != 0 {
+                throw DaemonError.launchctlFailed(result.output)
+            }
         } else {
             let result = runLaunchctl(["bootstrap", domain, plistURL.path])
             if result.status != 0 {
