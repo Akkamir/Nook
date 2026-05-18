@@ -52,6 +52,9 @@ private extension ClaudeHookInstaller {
         case invalidHooks
         case invalidHookEntries(String)
         case invalidHookEntryHooks(String)
+        case invalidHookCommand(String)
+        case invalidHookType(String)
+        case invalidHookTimeout(String)
     }
 
     func writeHookScript() throws {
@@ -138,9 +141,22 @@ private extension ClaudeHookInstaller {
             throw InstallError.invalidHookEntryHooks(event)
         }
 
-        return hooks.contains { hook in
-            guard let command = hook["command"] as? String else { return false }
+        let commands = try hooks.map { hook in
+            guard let command = hook["command"] as? String else {
+                throw InstallError.invalidHookCommand(event)
+            }
+            if let type = hook["type"], !(type is String) {
+                throw InstallError.invalidHookType(event)
+            }
+            if let timeout = hook["timeout"], !(timeout is NSNumber) {
+                throw InstallError.invalidHookTimeout(event)
+            }
+            return command
+        }
+
+        return commands.contains { command in
             return command.contains(hookScriptURL.path)
+                || command.contains(shellQuote(hookScriptURL.path))
                 || command.contains(".pixelvillage/hooks/claude-hook.py")
         }
     }
