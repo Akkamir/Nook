@@ -51,6 +51,7 @@ private extension ClaudeHookInstaller {
         case invalidSettingsTopLevel
         case invalidHooks
         case invalidHookEntries(String)
+        case invalidHookEntryHooks(String)
     }
 
     func writeHookScript() throws {
@@ -85,7 +86,7 @@ private extension ClaudeHookInstaller {
                 existing = []
             }
 
-            let filtered = existing.filter { !isNookHookEntry($0) }
+            let filtered = try existing.filter { try !isNookHookEntry($0, event: event) }
             hooks[event] = filtered + [makeHookEntry()]
         }
 
@@ -130,10 +131,17 @@ private extension ClaudeHookInstaller {
         ]
     }
 
-    func isNookHookEntry(_ entry: [String: Any]) -> Bool {
-        let hooks = entry["hooks"] as? [[String: Any]] ?? []
+    func isNookHookEntry(_ entry: [String: Any], event: String) throws -> Bool {
+        guard let hookValue = entry["hooks"],
+              let hooks = hookValue as? [[String: Any]]
+        else {
+            throw InstallError.invalidHookEntryHooks(event)
+        }
+
         return hooks.contains { hook in
-            (hook["command"] as? String)?.contains(".pixelvillage/hooks/claude-hook.py") == true
+            guard let command = hook["command"] as? String else { return false }
+            return command.contains(hookScriptURL.path)
+                || command.contains(".pixelvillage/hooks/claude-hook.py")
         }
     }
 
