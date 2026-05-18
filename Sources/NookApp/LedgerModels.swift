@@ -11,6 +11,15 @@ struct AgentRecord: Codable {
     let name: String
     let totalTokens: Int
     let bond: Int
+    let totalBits: Double
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name)
+        totalTokens = try c.decode(Int.self, forKey: .totalTokens)
+        bond = try c.decode(Int.self, forKey: .bond)
+        totalBits = (try? c.decode(Double.self, forKey: .totalBits)) ?? 0
+    }
 }
 
 struct LedgerState: Codable {

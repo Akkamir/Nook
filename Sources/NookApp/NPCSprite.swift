@@ -30,7 +30,7 @@ final class NPCSprite: SKNode {
         bondLabel.fontColor = NSColor(red: 0.961, green: 0.902, blue: 0.639, alpha: 1)
         bondLabel.verticalAlignmentMode = .bottom
         bondLabel.position = CGPoint(x: 0, y: 34)
-        bondLabel.text = "⬡ \(model.bond)  \(formatTokens(model.totalTokens))"
+        bondLabel.text = "⬡ \(model.bond)  \(formatBits(model.totalBits))"
         bondLabel.isHidden = model.bond < 1
         addChild(bondLabel)
     }
@@ -41,14 +41,39 @@ final class NPCSprite: SKNode {
 
     func update(model: NPCModel) {
         nameLabel.text = model.name
-        bondLabel.text = "⬡ \(model.bond)  \(formatTokens(model.totalTokens))"
+        bondLabel.text = "⬡ \(model.bond)  \(formatBits(model.totalBits))"
         bondLabel.isHidden = model.bond < 1
     }
 
-    private func formatTokens(_ tokens: Int) -> String {
-        if tokens >= 1_000_000 { return String(format: "%.1fM", Double(tokens) / 1_000_000) }
-        if tokens >= 1_000 { return String(format: "%.1fk", Double(tokens) / 1_000) }
-        return "\(tokens)"
+    func showBitsGain(_ delta: Double) {
+        let label = SKLabelNode(fontNamed: "Monaco")
+        label.text = "+\(formatBits(delta))"
+        label.fontSize = 13
+        label.fontColor = NSColor(red: 1.0, green: 0.85, blue: 0.25, alpha: 1)
+        label.verticalAlignmentMode = .bottom
+        label.horizontalAlignmentMode = .center
+        label.position = CGPoint(x: CGFloat.random(in: -10...10), y: 56)
+        label.zPosition = 30
+        label.setScale(0)
+        addChild(label)
+
+        let popIn  = SKAction.scale(to: 1.3, duration: 0.10)
+        let settle = SKAction.scale(to: 1.0, duration: 0.08)
+        let rise   = SKAction.moveBy(x: 0, y: 38, duration: 0.75)
+        let fade   = SKAction.fadeOut(withDuration: 0.75)
+        label.run(.sequence([
+            .group([popIn]),
+            settle,
+            .group([rise, fade]),
+            .removeFromParent()
+        ]))
+    }
+
+    private func formatBits(_ bits: Double) -> String {
+        if bits >= 1_000_000 { return String(format: "%.1fM", bits / 1_000_000) }
+        if bits >= 1_000 { return String(format: "%.1fk", bits / 1_000) }
+        if bits >= 10 { return String(format: "%.0f", bits) }
+        return String(format: "%.1f", bits)
     }
 
     func setActive(_ isActive: Bool) {

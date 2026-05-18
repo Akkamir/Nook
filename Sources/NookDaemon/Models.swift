@@ -16,9 +16,26 @@ struct AgentRecord: Codable {
     var name: String
     var totalTokens: Int
     var bond: Int
+    var totalBits: Double
+
+    init(name: String, totalTokens: Int = 0, bond: Int = 1, totalBits: Double = 0) {
+        self.name = name
+        self.totalTokens = totalTokens
+        self.bond = bond
+        self.totalBits = totalBits
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name)
+        totalTokens = try c.decode(Int.self, forKey: .totalTokens)
+        bond = try c.decode(Int.self, forKey: .bond)
+        totalBits = (try? c.decode(Double.self, forKey: .totalBits)) ?? 0
+    }
 
     mutating func addTokens(_ event: TokenEvent) {
         totalTokens += event.inputTokens + event.outputTokens
+        totalBits += event.bits
         bond = bondLevel(for: totalTokens)
     }
 

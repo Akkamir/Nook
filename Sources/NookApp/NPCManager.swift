@@ -28,6 +28,7 @@ final class NPCManager {
                 name: record.name,
                 bond: record.bond,
                 totalTokens: record.totalTokens,
+                totalBits: record.totalBits,
                 tileX: tileX,
                 tileY: tileY
             )
@@ -56,16 +57,19 @@ final class NPCManager {
         // 2. Updates
         for id in spriteIDs.intersection(agentIDs) {
             guard let record = engine.agents[id], let existing = models[id] else { continue }
-            if record.bond != existing.bond || record.name != existing.name || record.totalTokens != existing.totalTokens {
+            if record.bond != existing.bond || record.name != existing.name || record.totalBits != existing.totalBits {
+                let delta = record.totalBits - existing.totalBits
                 let updated = NPCModel(
                     id: id,
                     name: record.name,
                     bond: record.bond,
                     totalTokens: record.totalTokens,
+                    totalBits: record.totalBits,
                     tileX: existing.tileX,
                     tileY: existing.tileY
                 )
                 sprites[id]?.update(model: updated)
+                if delta > 0 { sprites[id]?.showBitsGain(delta) }
                 models[id] = updated
             }
         }
