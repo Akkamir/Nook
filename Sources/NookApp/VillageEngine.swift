@@ -32,6 +32,7 @@ final class VillageEngine {
     func start() {
         guard !isRunning else { return }
         isRunning = true
+        DaemonInstaller.shared.installIfNeeded()
         watcher.onChange = { [weak self] in self?.reload() }
         watcher.start()
         reload()

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2CCB1161013F489DADDCE355 /* DaemonInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1D29C349535429F981FA726 /* DaemonInstaller.swift */; };
 		0A8D7E6C4B3A291817263544 /* ClaudeHookEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8D7E6C4B3A291817263541 /* ClaudeHookEvent.swift */; };
 		0A8D7E6C4B3A291817263545 /* ClaudeHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8D7E6C4B3A291817263542 /* ClaudeHookInstaller.swift */; };
 		0A8D7E6C4B3A291817263546 /* ClaudeHookServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8D7E6C4B3A291817263543 /* ClaudeHookServer.swift */; };
@@ -33,6 +34,7 @@
 /* Begin PBXFileReference section */
 		05AA11784DE252A1864D7AD9 /* NPCModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCModel.swift; sourceTree = "<group>"; };
 		0632114E8E40B2CA04E37E28 /* NPCSprite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCSprite.swift; sourceTree = "<group>"; };
+		B1D29C349535429F981FA726 /* DaemonInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonInstaller.swift; sourceTree = "<group>"; };
 		0A8D7E6C4B3A291817263541 /* ClaudeHookEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookEvent.swift; sourceTree = "<group>"; };
 		0A8D7E6C4B3A291817263542 /* ClaudeHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookInstaller.swift; sourceTree = "<group>"; };
 		0A8D7E6C4B3A291817263543 /* ClaudeHookServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookServer.swift; sourceTree = "<group>"; };
@@ -74,6 +76,7 @@
 				0A8D7E6C4B3A291817263542 /* ClaudeHookInstaller.swift */,
 				0A8D7E6C4B3A291817263543 /* ClaudeHookServer.swift */,
 				BF08C230635E2A978BEA13E0 /* ContentView.swift */,
+				B1D29C349535429F981FA726 /* DaemonInstaller.swift */,
 				788FBB092E3C4F5AED11854B /* DayPhase.swift */,
 				1652FDC596CE63B0635DC9DB /* FogSystem.swift */,
 				8D9626FFA30055E3806B7CF9 /* HUD.swift */,
@@ -185,6 +188,7 @@
 				0A8D7E6C4B3A291817263545 /* ClaudeHookInstaller.swift in Sources */,
 				0A8D7E6C4B3A291817263546 /* ClaudeHookServer.swift in Sources */,
 				A2421EE7CA0FE95C5E95D7DC /* ContentView.swift in Sources */,
+				2CCB1161013F489DADDCE355 /* DaemonInstaller.swift in Sources */,
 				DDF865642E6FD91ABB02BB39 /* DayPhase.swift in Sources */,
 				88393C57613EE65872E07918 /* FogSystem.swift in Sources */,
 				5F1630065BA60BDB83194870 /* HUD.swift in Sources */,
