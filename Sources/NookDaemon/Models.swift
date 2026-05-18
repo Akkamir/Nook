@@ -30,7 +30,10 @@ struct AgentRecord: Codable {
         name = try c.decode(String.self, forKey: .name)
         totalTokens = try c.decode(Int.self, forKey: .totalTokens)
         bond = try c.decode(Int.self, forKey: .bond)
-        totalBits = (try? c.decode(Double.self, forKey: .totalBits)) ?? 0
+        let decodedBits = (try? c.decode(Double.self, forKey: .totalBits)) ?? 0
+        let decodedTokens = try c.decode(Int.self, forKey: .totalTokens)
+        // One-time migration: estimate bits from tokens if field was absent
+        totalBits = decodedBits > 0 ? decodedBits : Double(decodedTokens) * 10.0 / 1000.0
     }
 
     mutating func addTokens(_ event: TokenEvent) {
