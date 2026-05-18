@@ -53,8 +53,11 @@ final class VillageEngine {
     private func startHookServer() {
         hookServer.onEvent = { [weak self] event in
             guard let self else { return }
-            if self.sessionDetector.handleHookEvent(event) {
-                self.activeSessions = self.sessionDetector.detectActive()
+            Task { @MainActor in
+                let changed = await self.sessionDetector.handleHookEvent(event)
+                if changed {
+                    self.activeSessions = await self.sessionDetector.detectActive()
+                }
             }
         }
 
@@ -72,7 +75,7 @@ final class VillageEngine {
         timer.setEventHandler { [weak self] in
             guard let self else { return }
             Task { @MainActor in
-                self.activeSessions = await self.sessionDetector.detectActiveBackground()
+                self.activeSessions = await self.sessionDetector.detectActive()
             }
         }
         timer.resume()

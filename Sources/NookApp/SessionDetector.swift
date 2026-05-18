@@ -1,7 +1,6 @@
 import Foundation
 
-@MainActor
-final class SessionDetector {
+actor SessionDetector {
     private let fm = FileManager.default
     private let claudeProjectsURL: URL
     private var hookActiveAgents: Set<String> = []
@@ -92,54 +91,22 @@ final class SessionDetector {
     func detectActive() -> Set<String> {
         pruneState()
         let cutoff = now().addingTimeInterval(-300)
-        return applyScannedDirs(Self.scanRecentDirs(claudeProjectsURL: claudeProjectsURL, cutoff: cutoff))
-    }
+        guard let entries = try? fm.contentsOfDirectory(
+            at: claudeProjectsURL,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: .skipsHiddenFiles
+        ) else { return hookActiveAgents }
 
-    func detectActiveBackground() async -> Set<String> {
-        let projectsURL = claudeProjectsURL
-        let cutoff = now().addingTimeInterval(-300)
-        let dirs = await Task.detached(priority: .utility) {
-            Self.scanRecentDirs(claudeProjectsURL: projectsURL, cutoff: cutoff)
-        }.value
-        return applyScannedDirs(dirs)
-    }
-
-    private func applyScannedDirs(_ dirs: [URL]) -> Set<String> {
-        pruneState()
         var active = hookActiveAgents
-        for entry in dirs {
-            if let name = agentName(forProjectDir: entry) {
+        for entry in entries {
+            guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
+            if hasRecentJSONL(in: entry, since: cutoff),
+               let name = agentName(forProjectDir: entry) {
                 guard recentlyEndedAgents[name] == nil else { continue }
                 active.insert(name)
             }
         }
         return active
-    }
-
-    nonisolated private static func scanRecentDirs(claudeProjectsURL: URL, cutoff: Date) -> [URL] {
-        let fm = FileManager.default
-        guard let entries = try? fm.contentsOfDirectory(
-            at: claudeProjectsURL,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: .skipsHiddenFiles
-        ) else { return [] }
-
-        return entries.compactMap { entry -> URL? in
-            guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { return nil }
-
-            guard let contents = try? fm.contentsOfDirectory(
-                at: entry,
-                includingPropertiesForKeys: [.contentModificationDateKey],
-                options: .skipsHiddenFiles
-            ) else { return nil }
-
-            let hasRecent = contents.contains { url in
-                guard url.pathExtension == "jsonl" else { return false }
-                let mod = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
-                return (mod ?? .distantPast) > cutoff
-            }
-            return hasRecent ? entry : nil
-        }
     }
 
     private func hasRecentJSONL(in dir: URL, since cutoff: Date) -> Bool {
