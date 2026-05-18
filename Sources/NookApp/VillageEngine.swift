@@ -10,7 +10,8 @@ final class VillageEngine {
 
     private let ledgerURL: URL
     private let decoder: JSONDecoder
-    private var watcher: LedgerWatcher
+    private let watcher: LedgerWatcher
+    private var isRunning = false
 
     init(ledgerURL: URL = FileManager.default.homeDirectoryForCurrentUser
              .appendingPathComponent(".pixelvillage/ledger.json")) {
@@ -21,18 +22,21 @@ final class VillageEngine {
     }
 
     func start() {
-        watcher.onChange = { [weak self] in
-            self?.reload()
-        }
+        guard !isRunning else { return }
+        isRunning = true
+        watcher.onChange = { [weak self] in self?.reload() }
         watcher.start()
         reload()
     }
 
     func stop() {
         watcher.stop()
+        isRunning = false
     }
 
     func consumePendingBits() {
+        // TODO: This only clears the in-memory value; the next reload() will restore it from disk.
+        // Track a "consumed offset" or persist the clear to ledger.json if needed.
         pendingBits = 0
     }
 
