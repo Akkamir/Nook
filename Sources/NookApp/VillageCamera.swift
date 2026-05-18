@@ -28,9 +28,9 @@ final class VillageCamera: SKCameraNode {
     @objc private func handlePan(_ recognizer: NSPanGestureRecognizer) {
         guard let _ = self.scene else { return }
         let translation = recognizer.translation(in: recognizer.view)
-        // SpriteKit Y is up, AppKit Y is down — invert Y
         let dx = -translation.x * xScale
-        let dy = -translation.y * yScale  // invert Y: AppKit down (positive) → SpriteKit down (negative)
+        // macOS NSView Y+ is up; drag-up → translation.y+ → camera moves down in SpriteKit → negate
+        let dy = -translation.y * yScale
         position.x += dx
         position.y += dy
         recognizer.setTranslation(.zero, in: recognizer.view)
@@ -46,10 +46,13 @@ final class VillageCamera: SKCameraNode {
     }
 
     private func clampPosition() {
+        guard let view = self.scene?.view else { return }
+        let halfW = view.frame.width  * xScale / 2
+        let halfH = view.frame.height * yScale / 2
         let mapW = TileMap.mapWidth
         let mapH = TileMap.mapHeight
-        position.x = position.x.clamped(to: 0...mapW)
-        position.y = position.y.clamped(to: 0...mapH)
+        position.x = position.x.clamped(to: halfW...(mapW - halfW))
+        position.y = position.y.clamped(to: halfH...(mapH - halfH))
     }
 }
 

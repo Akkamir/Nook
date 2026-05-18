@@ -15,6 +15,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            guard scene == nil else { return }
             let s = VillageScene(size: CGSize(width: TileMap.mapWidth, height: TileMap.mapHeight))
             s.configure(engine: engine)
             scene = s

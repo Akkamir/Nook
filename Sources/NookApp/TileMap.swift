@@ -20,6 +20,7 @@ final class TileMap: SKNode {
     private static let colorTent  = NSColor(red: 0.961, green: 0.902, blue: 0.784, alpha: 1) // #F5E6C8
 
     func build() {
+        // TODO(Task 6): replace with SKTileMapNode for GPU batching (current 16k nodes freeze ~150ms on launch)
         for row in 0..<TileMap.gridHeight {
             for col in 0..<TileMap.gridWidth {
                 let isGrass = col >= TileMap.parcelleOriginX &&
