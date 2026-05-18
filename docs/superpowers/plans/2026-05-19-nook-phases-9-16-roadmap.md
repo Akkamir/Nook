@@ -10,6 +10,12 @@
 
 ---
 
+## Backlog (hors phases planifiées)
+
+- **Project Linker** — UI dans Nook pour lier un répertoire projet à un NPC : scan des projets Claude existants (`~/.claude/projects/`), sélection du dossier réel correspondant, création automatique du `.pixelvillage` avec le bon `{"agent":"NomDuNPC"}`. Évite d'avoir à créer le fichier manuellement pour chaque projet.
+
+---
+
 ## File Map
 
 **Phase 9 — Daemon LaunchAgent**
