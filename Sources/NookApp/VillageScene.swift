@@ -42,11 +42,7 @@ final class VillageScene: SKScene {
             y: TileMap.mapHeight / 2
         )
 
-        // HUD — child of camera so it stays fixed on screen
-        let hud = HUD()
-        villageCamera.addChild(hud)
-        self.hud = hud
-        updateHUDPosition()
+        // HUD is rendered via SwiftUI overlay in ContentView (more reliable with SpriteView on macOS)
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
@@ -74,12 +70,6 @@ final class VillageScene: SKScene {
     }
 
     override func update(_ currentTime: TimeInterval) {
-        // Keep HUD anchored — view might not be set during didMove
-        updateHUDPosition()
-        guard let engine else { return }
-        hud?.update(totalBits: engine.totalBits)
-        // Counter-scale HUD to cancel camera zoom — HUD should stay fixed size on screen
-        hud?.xScale = 1.0 / villageCamera.xScale
-        hud?.yScale = 1.0 / villageCamera.yScale
+        // HUD is managed by SwiftUI overlay — nothing to update here for now
     }
 }
