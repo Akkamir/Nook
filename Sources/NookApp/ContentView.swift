@@ -14,6 +14,14 @@ struct ContentView: View {
                 Color.black.ignoresSafeArea()
             }
 
+            // Day/night overlay
+            Rectangle()
+                .fill(engine.dayPhase.overlayColor)
+                .opacity(engine.dayPhase.overlayOpacity)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                .animation(.easeInOut(duration: 30), value: engine.dayPhase)
+
             // HUD overlay — SwiftUI is more reliable than SKCameraNode children on macOS
             Text("⬡ \(engine.totalBits, specifier: "%.1f") Bits")
                 .font(.system(size: 14, weight: .regular, design: .monospaced))

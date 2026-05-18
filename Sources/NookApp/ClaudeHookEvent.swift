@@ -24,7 +24,7 @@ struct ClaudeHookEvent: Decodable {
     var isSessionStart: Bool { name == "SessionStart" }
     var isSessionEnd: Bool { name == "SessionEnd" }
     var refreshesActivity: Bool {
-        ["PreToolUse", "PostToolUse", "Stop", "Notification"].contains(name)
+        ["Stop", "Notification"].contains(name)
     }
 }
 

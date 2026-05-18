@@ -5,9 +5,7 @@ struct ClaudeHookInstaller {
         "SessionStart",
         "SessionEnd",
         "Stop",
-        "Notification",
-        "PreToolUse",
-        "PostToolUse"
+        "Notification"
     ]
 
     private let fm = FileManager.default
@@ -76,6 +74,13 @@ private extension ClaudeHookInstaller {
             hooks = dictionary
         } else {
             hooks = [:]
+        }
+
+        // Remove stale Nook entries from events no longer in hookEvents
+        for event in hooks.keys where !Self.hookEvents.contains(event) {
+            guard let entries = hooks[event] as? [[String: Any]] else { continue }
+            let filtered = (try? entries.filter { !(try isNookHookEntry($0, event: event)) }) ?? entries
+            hooks[event] = filtered.isEmpty ? nil : filtered
         }
 
         for event in Self.hookEvents {

@@ -7,10 +7,21 @@ final class VillageScene: SKScene {
     private var villageCamera: VillageCamera!
     private var engine: VillageEngine?
     private var hud: HUD?
+    private var npcManager: NPCManager?
+    private var fogSystem: FogSystem?
+    private var lastAgentCount: Int = 0
+    private var lastTotalBits: Double = -1
+    private var lastActiveSessions: Set<String> = []
+    private var initialZoomSet = false
 
     // Called by ContentView when engine is available
     func configure(engine: VillageEngine) {
         self.engine = engine
+        npcManager = NPCManager(scene: self, engine: engine)
+        npcManager?.sync()
+        npcManager?.syncActiveStates(engine.activeSessions)
+        lastAgentCount = engine.agents.count
+        lastActiveSessions = engine.activeSessions
         // Animate pending bits once on configure (app launch)
         if engine.pendingBits > 0 {
             hud?.animatePending(engine.pendingBits)
@@ -22,6 +33,7 @@ final class VillageScene: SKScene {
         backgroundColor = .black
         scaleMode = .resizeFill
         anchorPoint = CGPoint(x: 0, y: 0)  // bottom-left origin
+        view.preferredFramesPerSecond = 60
 
         // Camera
         villageCamera = VillageCamera()
@@ -42,12 +54,26 @@ final class VillageScene: SKScene {
             y: TileMap.mapHeight / 2
         )
 
-        // HUD is rendered via SwiftUI overlay in ContentView (more reliable with SpriteView on macOS)
+        // Interim zoom before resizeFill fires — show ~40 tiles wide (parcelle + margins)
+        let targetVisible: CGFloat = CGFloat(TileMap.parcelleWidth + 20) * TileMap.tileSize  // 1280
+        villageCamera.setScale(targetVisible / size.width)
+
+        // Fog
+        fogSystem = FogSystem()
+        addChild(fogSystem!)
+
+        // HUD is rendered via SwiftUI overlay in ContentView (more reliable with SpriteKit on macOS)
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
         super.didChangeSize(oldSize)
         updateHUDPosition()
+        // After resizeFill changes scene from 4096×4096 to view size, fix the zoom
+        if !initialZoomSet, size.width > 100, size.width < TileMap.mapWidth * 0.75 {
+            initialZoomSet = true
+            let targetVisible: CGFloat = CGFloat(TileMap.parcelleWidth + 20) * TileMap.tileSize
+            villageCamera.setScale(targetVisible / size.width)
+        }
     }
 
     private func updateHUDPosition() {
@@ -63,6 +89,12 @@ final class VillageScene: SKScene {
 
     override func willMove(from view: SKView) {
         villageCamera.detach()
+        if let positions = npcManager?.currentPositions() {
+            var state = VillagePersistence.shared.load()
+            state.npcPositions = positions
+            state.lastSaved = Date()
+            VillagePersistence.shared.save(state)
+        }
     }
 
     override func scrollWheel(with event: NSEvent) {
@@ -70,6 +102,18 @@ final class VillageScene: SKScene {
     }
 
     override func update(_ currentTime: TimeInterval) {
-        // HUD is managed by SwiftUI overlay — nothing to update here for now
+        villageCamera.clampPosition()
+        if let engine, engine.agents.count != lastAgentCount {
+            npcManager?.sync()
+            lastAgentCount = engine.agents.count
+        }
+        if let engine, engine.totalBits != lastTotalBits {
+            fogSystem?.update(totalBits: engine.totalBits)
+            lastTotalBits = engine.totalBits
+        }
+        if let engine, engine.activeSessions != lastActiveSessions {
+            npcManager?.syncActiveStates(engine.activeSessions)
+            lastActiveSessions = engine.activeSessions
+        }
     }
 }

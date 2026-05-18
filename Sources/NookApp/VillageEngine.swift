@@ -68,11 +68,11 @@ final class VillageEngine {
 
     private func startSessionTimer() {
         let timer = DispatchSource.makeTimerSource(queue: .main)
-        timer.schedule(deadline: .now(), repeating: .seconds(30))
+        timer.schedule(deadline: .now(), repeating: .seconds(120))
         timer.setEventHandler { [weak self] in
             guard let self else { return }
             Task { @MainActor in
-                self.activeSessions = self.sessionDetector.detectActive()
+                self.activeSessions = await self.sessionDetector.detectActiveBackground()
             }
         }
         timer.resume()

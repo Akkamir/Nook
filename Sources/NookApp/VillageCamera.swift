@@ -5,23 +5,32 @@ import AppKit
 final class VillageCamera: SKCameraNode {
     private weak var trackedView: SKView?
     private var panRecognizer: NSPanGestureRecognizer?
+    private var magnifyRecognizer: NSMagnificationGestureRecognizer?
 
     // Zoom limits
     private let minScale: CGFloat = 0.5
-    private let maxScale: CGFloat = 3.0
+    private let maxScale: CGFloat = 5.0
 
     func attach(to view: SKView) {
         trackedView = view
         let pan = NSPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         view.addGestureRecognizer(pan)
         panRecognizer = pan
+
+        let magnify = NSMagnificationGestureRecognizer(target: self, action: #selector(handleMagnify(_:)))
+        view.addGestureRecognizer(magnify)
+        magnifyRecognizer = magnify
     }
 
     func detach() {
         if let pan = panRecognizer, let view = trackedView {
             view.removeGestureRecognizer(pan)
         }
+        if let magnify = magnifyRecognizer, let view = trackedView {
+            view.removeGestureRecognizer(magnify)
+        }
         panRecognizer = nil
+        magnifyRecognizer = nil
         trackedView = nil
     }
 
@@ -37,7 +46,17 @@ final class VillageCamera: SKCameraNode {
         clampPosition()
     }
 
-    // Called from the scene's scrollWheel override
+    @objc private func handleMagnify(_ recognizer: NSMagnificationGestureRecognizer) {
+        guard recognizer.state == .changed || recognizer.state == .ended else { return }
+        // magnification = 0 → no change, positive = zoom in, negative = zoom out
+        // Camera scale: smaller = zoomed in, larger = zoomed out → invert
+        let newScale = (xScale / (1 + recognizer.magnification)).clamped(to: minScale...maxScale)
+        setScale(newScale)
+        recognizer.magnification = 0
+        clampPosition()
+    }
+
+    // Fallback for non-trackpad scroll (mouse wheel)
     func handleScroll(deltaY: CGFloat) {
         let factor = 1.0 + deltaY * 0.05
         let newScale = (xScale * factor).clamped(to: minScale...maxScale)
@@ -45,14 +64,22 @@ final class VillageCamera: SKCameraNode {
         clampPosition()
     }
 
-    private func clampPosition() {
-        guard let view = self.scene?.view else { return }
-        let halfW = view.frame.width  * xScale / 2
-        let halfH = view.frame.height * yScale / 2
+    func clampPosition() {
+        guard let view = trackedView, view.bounds.width > 0 else { return }
+        let halfW = view.bounds.width  * xScale / 2
+        let halfH = view.bounds.height * yScale / 2
         let mapW = TileMap.mapWidth
         let mapH = TileMap.mapHeight
-        position.x = position.x.clamped(to: halfW...(mapW - halfW))
-        position.y = position.y.clamped(to: halfH...(mapH - halfH))
+        if halfW >= mapW / 2 {
+            position.x = mapW / 2
+        } else {
+            position.x = position.x.clamped(to: halfW...(mapW - halfW))
+        }
+        if halfH >= mapH / 2 {
+            position.y = mapH / 2
+        } else {
+            position.y = position.y.clamped(to: halfH...(mapH - halfH))
+        }
     }
 }
 
