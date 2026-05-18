@@ -179,7 +179,8 @@ final class SessionDetector {
             return agent
         }
 
-        if let agent = agentNameForEncodedClaudeProjectDirName(dirName) {
+        let encodedLookup = agentNameForEncodedClaudeProjectDirName(dirName)
+        if let agent = encodedLookup.agent {
             claudeProjectDirAgentCache[dirName] = agent
             claudeProjectDirMissCache.removeValue(forKey: dirName)
             return agent
@@ -194,24 +195,26 @@ final class SessionDetector {
             return agent
         }
 
-        claudeProjectDirMissCache[dirName] = now()
+        if encodedLookup.searched {
+            claudeProjectDirMissCache[dirName] = now()
+        }
         return nil
     }
 
-    private func agentNameForEncodedClaudeProjectDirName(_ dirName: String) -> String? {
+    private func agentNameForEncodedClaudeProjectDirName(_ dirName: String) -> (agent: String?, searched: Bool) {
         if let missedAt = claudeProjectDirMissCache[dirName],
            now().timeIntervalSince(missedAt) < projectDirMissTTL {
-            return nil
+            return (nil, false)
         }
 
         for root in candidateProjectSearchRoots(for: dirName) {
             if let agent = agentNameForEncodedClaudeProjectDirName(dirName, under: root) {
                 claudeProjectDirAgentCache[dirName] = agent
                 claudeProjectDirMissCache.removeValue(forKey: dirName)
-                return agent
+                return (agent, true)
             }
         }
-        return nil
+        return (nil, true)
     }
 
     private func candidateProjectSearchRoots(for dirName: String) -> [URL] {
