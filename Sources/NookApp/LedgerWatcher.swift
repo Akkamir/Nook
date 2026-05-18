@@ -54,7 +54,9 @@ final class LedgerWatcher {
         }
         if !FileManager.default.fileExists(atPath: ledgerURL.path(percentEncoded: false)) {
             let empty = LedgerState.empty
-            if let data = try? JSONEncoder().encode(empty) {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601  // must match VillageEngine's decoder
+            if let data = try? encoder.encode(empty) {
                 try? data.write(to: ledgerURL)
             }
         }
