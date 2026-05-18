@@ -116,5 +116,9 @@ final class VillageScene: SKScene {
             npcManager?.syncActiveStates(engine.activeSessions)
             lastActiveSessions = engine.activeSessions
         }
+        if let engine, !engine.newBitEvents.isEmpty {
+            npcManager?.handleBitEvents(engine.newBitEvents)
+            engine.newBitEvents = []
+        }
     }
 }

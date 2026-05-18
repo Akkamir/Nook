@@ -27,6 +27,7 @@ final class Ledger {
 
     func apply(event: TokenEvent, agentName: String?, to state: inout LedgerState) {
         let bits = event.bits
+        guard bits > 0 else { return }
         state.pendingBits += bits
         state.totalBits += bits
         state.lastUpdated = Date()
@@ -35,6 +36,12 @@ final class Ledger {
             var record = state.agents[name] ?? AgentRecord(name: name, totalTokens: 0, bond: 1)
             record.addTokens(event)
             state.agents[name] = record
+        }
+
+        state.eventSeq += 1
+        state.recentEvents.append(BitEvent(agentName: agentName, bits: bits, seq: state.eventSeq))
+        if state.recentEvents.count > 100 {
+            state.recentEvents.removeFirst(state.recentEvents.count - 100)
         }
     }
 }

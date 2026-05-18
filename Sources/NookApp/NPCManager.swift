@@ -84,6 +84,24 @@ final class NPCManager {
         }
     }
 
+    func handleBitEvents(_ events: [BitEvent]) {
+        // Group events by agent, then stagger animations 110ms apart
+        var grouped: [String: [BitEvent]] = [:]
+        for event in events {
+            let key = event.agentName ?? "__global__"
+            grouped[key, default: []].append(event)
+        }
+        for (agentName, agentEvents) in grouped {
+            guard let sprite = sprites[agentName] else { continue }
+            for (index, event) in agentEvents.enumerated() {
+                let delay = Double(index) * 0.11
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak sprite] in
+                    sprite?.showBitsGain(event.bits)
+                }
+            }
+        }
+    }
+
     func syncActiveStates(_ active: Set<String>) {
         guard active != activeAgents else { return }
         let previous = activeAgents

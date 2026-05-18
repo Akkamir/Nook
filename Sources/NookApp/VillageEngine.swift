@@ -10,11 +10,13 @@ final class VillageEngine {
 
     private(set) var dayPhase: DayPhase = DayPhase.current()
     private(set) var activeSessions: Set<String> = []
+    var newBitEvents: [BitEvent] = []
 
     private let ledgerURL: URL
     private let decoder: JSONDecoder
     private let watcher: LedgerWatcher
     private var isRunning = false
+    private var lastSeenEventSeq: Int = -1
     private var dayNightTimer: DispatchSourceTimer?
     private var sessionTimer: DispatchSourceTimer?
     private let sessionDetector = SessionDetector()
@@ -112,5 +114,11 @@ final class VillageEngine {
         totalBits = state.totalBits
         pendingBits = state.pendingBits
         agents = state.agents
+
+        let fresh = state.recentEvents.filter { $0.seq > lastSeenEventSeq }
+        if !fresh.isEmpty {
+            newBitEvents = fresh
+            lastSeenEventSeq = fresh.map(\.seq).max() ?? lastSeenEventSeq
+        }
     }
 }
