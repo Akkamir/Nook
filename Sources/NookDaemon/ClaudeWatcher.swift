@@ -69,10 +69,10 @@ final class ClaudeWatcher {
 
     private func readNewLines(in file: URL, projectPath: String, agentName: String?) {
         guard let handle = try? FileHandle(forReadingFrom: file) else { return }
-        defer { try? handle.close() }
+        defer { handle.closeFile() }
 
         let offset = fileOffsets[file] ?? 0
-        try? handle.seek(toOffset: offset)
+        handle.seek(toFileOffset: offset)
 
         let data = handle.readDataToEndOfFile()
         guard !data.isEmpty else { return }
