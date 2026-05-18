@@ -4,6 +4,9 @@ import SpriteKit
 final class HUD: SKNode {
     private let bitsLabel = SKLabelNode(fontNamed: "Monaco")
     private let background = SKSpriteNode()
+    private var lastDisplayedBits: Double = -1
+
+    static let backgroundWidth: CGFloat = 200
 
     override init() {
         super.init()
@@ -15,7 +18,7 @@ final class HUD: SKNode {
 
     private func setupBackground() {
         background.color = NSColor(white: 0, alpha: 0.6)
-        background.size = CGSize(width: 160, height: 32)
+        background.size = CGSize(width: HUD.backgroundWidth, height: 32)
         background.position = .zero
         addChild(background)
     }
@@ -25,15 +28,15 @@ final class HUD: SKNode {
         bitsLabel.fontColor = .white
         bitsLabel.horizontalAlignmentMode = .left
         bitsLabel.verticalAlignmentMode = .center
-        bitsLabel.position = CGPoint(x: -72, y: 0) // left-aligned within background
+        bitsLabel.position = CGPoint(x: -HUD.backgroundWidth / 2 + 8, y: 0) // 8pt left padding
         addChild(bitsLabel)
     }
 
     func update(totalBits: Double) {
+        guard totalBits != lastDisplayedBits else { return }
+        lastDisplayedBits = totalBits
         bitsLabel.text = "⬡ \(String(format: "%.1f", totalBits)) Bits"
-        // Resize background to fit label
-        let padding: CGFloat = 16
-        background.size.width = bitsLabel.frame.width + padding * 2
+        // background width is fixed (see setupBackground), no resize needed here
     }
 
     func animatePending(_ pending: Double) {

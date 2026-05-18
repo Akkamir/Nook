@@ -56,10 +56,9 @@ final class VillageScene: SKScene {
 
     private func updateHUDPosition() {
         let margin: CGFloat = 16
-        // HUD top-left: camera is at center, so top-left is (-width/2, height/2)
         hud?.position = CGPoint(
-            x: -size.width / 2 + margin + 80,  // 80 = half the HUD background width
-            y:  size.height / 2 - margin - 16  // 16 = half the HUD background height
+            x: -size.width / 2 + margin + HUD.backgroundWidth / 2,
+            y:  size.height / 2 - margin - 16  // 16 = half HUD background height
         )
     }
 
@@ -74,5 +73,8 @@ final class VillageScene: SKScene {
     override func update(_ currentTime: TimeInterval) {
         guard let engine else { return }
         hud?.update(totalBits: engine.totalBits)
+        // Counter-scale HUD to cancel camera zoom — HUD should stay fixed size on screen
+        hud?.xScale = 1.0 / villageCamera.xScale
+        hud?.yScale = 1.0 / villageCamera.yScale
     }
 }
