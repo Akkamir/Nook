@@ -15,17 +15,23 @@ final class TileMap: SKNode {
     static let parcelleHeight = 20
 
     func build() {
-        // TODO(Task 6 done): SKTileMapNode would be faster, but individual nodes work for prototype
+        // TODO(Task 7+): 16k SKSpriteNodes causes ~150ms hitch on launch — migrate to SKTileMapNode
+        let grassTexture = SKTexture(imageNamed: "grass")
+        grassTexture.filteringMode = .nearest
+        let dirtTexture = SKTexture(imageNamed: "dirt")
+        dirtTexture.filteringMode = .nearest
+        let tentTexture = SKTexture(imageNamed: "tent")
+        tentTexture.filteringMode = .nearest
+
         for row in 0..<TileMap.gridHeight {
             for col in 0..<TileMap.gridWidth {
                 let isGrass = col >= TileMap.parcelleOriginX &&
                               col < TileMap.parcelleOriginX + TileMap.parcelleWidth &&
                               row >= TileMap.parcelleOriginY &&
                               row < TileMap.parcelleOriginY + TileMap.parcelleHeight
-                let imageName = isGrass ? "grass" : "dirt"
-                let tile = SKSpriteNode(imageNamed: imageName)
-                tile.size = CGSize(width: TileMap.tileSize, height: TileMap.tileSize)
-                tile.texture?.filteringMode = .nearest  // pixel-perfect, no bilinear blur
+                let texture = isGrass ? grassTexture : dirtTexture
+                let tile = SKSpriteNode(texture: texture,
+                                        size: CGSize(width: TileMap.tileSize, height: TileMap.tileSize))
                 tile.position = CGPoint(
                     x: CGFloat(col) * TileMap.tileSize + TileMap.tileSize / 2,
                     y: CGFloat(row) * TileMap.tileSize + TileMap.tileSize / 2
@@ -37,9 +43,8 @@ final class TileMap: SKNode {
         // Tent: 2×2 tiles at center of parcelle
         let tentCol = TileMap.parcelleOriginX + TileMap.parcelleWidth / 2
         let tentRow = TileMap.parcelleOriginY + TileMap.parcelleHeight / 2
-        let tent = SKSpriteNode(imageNamed: "tent")
-        tent.size = CGSize(width: TileMap.tileSize * 2, height: TileMap.tileSize * 2)
-        tent.texture?.filteringMode = .nearest
+        let tent = SKSpriteNode(texture: tentTexture,
+                                size: CGSize(width: TileMap.tileSize * 2, height: TileMap.tileSize * 2))
         tent.position = CGPoint(
             x: CGFloat(tentCol) * TileMap.tileSize + TileMap.tileSize,
             y: CGFloat(tentRow) * TileMap.tileSize + TileMap.tileSize
