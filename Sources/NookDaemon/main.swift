@@ -1,5 +1,6 @@
 import Foundation
 
+setbuf(stdout, nil)  // unbuffered output so log file is written immediately
 print("[NookDaemon] Starting Nook background daemon...")
 
 let ledger = Ledger.production

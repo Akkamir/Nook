@@ -16,25 +16,14 @@ final class ClaudeWatcher {
     }
 
     func start() {
-        let fd = open(projectsRoot.path, O_EVTONLY)
-        guard fd >= 0 else {
-            print("[NookDaemon] Cannot watch \(projectsRoot.path)")
-            return
-        }
-
-        let src = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: fd,
-            eventMask: [.write, .extend],
-            queue: .global(qos: .utility)
-        )
-        src.setEventHandler { [weak self] in
-            self?.scanAllProjects()
-        }
-        src.setCancelHandler { close(fd) }
-        src.resume()
-        self.dispatchSource = src
-
         scanAllProjects()
+
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        timer.schedule(deadline: .now() + 2, repeating: .seconds(2))
+        timer.setEventHandler { [weak self] in self?.scanAllProjects() }
+        timer.resume()
+        dispatchSource = timer
+
         print("[NookDaemon] Watching \(projectsRoot.path)")
     }
 
