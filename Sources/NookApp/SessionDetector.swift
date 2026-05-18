@@ -6,43 +6,54 @@ final class SessionDetector {
     private let claudeProjectsURL: URL
     private var hookActiveAgents: Set<String> = []
     private var recentlyEndedAgents: [String: Date] = [:]
-    private var sessionAgents: [String: String] = [:]
-    private var endedSessionIds: Set<String> = []
+    private var sessionAgents: [String: (agent: String, seenAt: Date)] = [:]
+    private var endedSessionIds: [String: Date] = [:]
     private var claudeProjectDirAgentCache: [String: String] = [:]
+    private var claudeProjectDirMissCache: [String: Date] = [:]
     private let recentlyEndedTTL: TimeInterval
+    private let projectDirMissTTL: TimeInterval
     private let now: () -> Date
 
     init(
         claudeProjectsURL: URL = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/projects"),
         recentlyEndedTTL: TimeInterval = 300,
+        projectDirMissTTL: TimeInterval = 60,
         now: @escaping () -> Date = Date.init
     ) {
         self.claudeProjectsURL = claudeProjectsURL
         self.recentlyEndedTTL = recentlyEndedTTL
+        self.projectDirMissTTL = projectDirMissTTL
         self.now = now
     }
 
     @discardableResult
     func handleHookEvent(_ event: ClaudeHookEvent) -> Bool {
-        pruneRecentlyEnded()
+        pruneState()
         if event.refreshesActivity,
            let sessionId = event.sessionId,
-           endedSessionIds.contains(sessionId) {
+           endedSessionIds[sessionId] != nil {
+            return false
+        }
+        if event.refreshesActivity,
+           ["Stop", "Notification"].contains(event.name),
+           let sessionId = event.sessionId,
+           sessionAgents[sessionId] == nil {
             return false
         }
 
         guard let agent = agentName(for: event) else { return false }
 
         var changed = false
+        let timestamp = now()
 
         if event.isSessionStart {
             if let sessionId = event.sessionId {
-                if sessionAgents[sessionId] != agent {
-                    sessionAgents[sessionId] = agent
+                if sessionAgents[sessionId]?.agent != agent {
                     changed = true
                 }
-                if endedSessionIds.remove(sessionId) != nil {
+                sessionAgents[sessionId] = (agent: agent, seenAt: timestamp)
+                if endedSessionIds.removeValue(forKey: sessionId) != nil {
                     changed = true
                 }
             }
@@ -55,17 +66,22 @@ final class SessionDetector {
                 if sessionAgents.removeValue(forKey: sessionId) != nil {
                     changed = true
                 }
-                changed = endedSessionIds.insert(sessionId).inserted || changed
+                if endedSessionIds[sessionId] == nil {
+                    changed = true
+                }
+                endedSessionIds[sessionId] = timestamp
             }
             if hookActiveAgents.remove(agent) != nil {
                 changed = true
             }
-            recentlyEndedAgents[agent] = now()
+            recentlyEndedAgents[agent] = timestamp
             changed = true
         } else if event.refreshesActivity, recentlyEndedAgents[agent] == nil {
-            if let sessionId = event.sessionId, sessionAgents[sessionId] != agent {
-                sessionAgents[sessionId] = agent
-                changed = true
+            if let sessionId = event.sessionId {
+                if sessionAgents[sessionId]?.agent != agent {
+                    changed = true
+                }
+                sessionAgents[sessionId] = (agent: agent, seenAt: timestamp)
             }
             changed = hookActiveAgents.insert(agent).inserted || changed
         }
@@ -74,7 +90,7 @@ final class SessionDetector {
     }
 
     func detectActive() -> Set<String> {
-        pruneRecentlyEnded()
+        pruneState()
         let cutoff = now().addingTimeInterval(-300)
         guard let entries = try? fm.contentsOfDirectory(
             at: claudeProjectsURL,
@@ -110,8 +126,8 @@ final class SessionDetector {
 
     private func agentName(for event: ClaudeHookEvent) -> String? {
         if let sessionId = event.sessionId,
-           let agent = sessionAgents[sessionId] {
-            return agent
+           let session = sessionAgents[sessionId] {
+            return session.agent
         }
 
         if let transcriptPath = event.transcriptPath {
@@ -128,9 +144,15 @@ final class SessionDetector {
         return nil
     }
 
-    private func pruneRecentlyEnded() {
-        let cutoff = now().addingTimeInterval(-recentlyEndedTTL)
+    private func pruneState() {
+        let timestamp = now()
+        let cutoff = timestamp.addingTimeInterval(-recentlyEndedTTL)
         recentlyEndedAgents = recentlyEndedAgents.filter { $0.value > cutoff }
+        sessionAgents = sessionAgents.filter { $0.value.seenAt > cutoff }
+        endedSessionIds = endedSessionIds.filter { $0.value > cutoff }
+        claudeProjectDirMissCache = claudeProjectDirMissCache.filter {
+            timestamp.timeIntervalSince($0.value) < projectDirMissTTL
+        }
     }
 
     private func claudeProjectDirName(forPath path: String) -> String {
@@ -157,41 +179,72 @@ final class SessionDetector {
             return agent
         }
 
-        let projectPath = "/" + String(dirName.dropFirst()).replacingOccurrences(of: "-", with: "/")
-        if let agent = agentName(forProjectURL: URL(fileURLWithPath: projectPath, isDirectory: true)) {
+        if let agent = agentNameForEncodedClaudeProjectDirName(dirName) {
             claudeProjectDirAgentCache[dirName] = agent
+            claudeProjectDirMissCache.removeValue(forKey: dirName)
             return agent
         }
 
-        return agentNameForEncodedClaudeProjectDirName(dirName)
+        // Legacy compatibility: early versions guessed the path by turning every
+        // hyphen back into "/", which is lossy for real paths containing hyphens.
+        let projectPath = "/" + String(dirName.dropFirst()).replacingOccurrences(of: "-", with: "/")
+        if let agent = agentName(forProjectURL: URL(fileURLWithPath: projectPath, isDirectory: true)) {
+            claudeProjectDirAgentCache[dirName] = agent
+            claudeProjectDirMissCache.removeValue(forKey: dirName)
+            return agent
+        }
+
+        claudeProjectDirMissCache[dirName] = now()
+        return nil
     }
 
     private func agentNameForEncodedClaudeProjectDirName(_ dirName: String) -> String? {
-        for root in candidateProjectSearchRoots() {
+        if let missedAt = claudeProjectDirMissCache[dirName],
+           now().timeIntervalSince(missedAt) < projectDirMissTTL {
+            return nil
+        }
+
+        for root in candidateProjectSearchRoots(for: dirName) {
             if let agent = agentNameForEncodedClaudeProjectDirName(dirName, under: root) {
                 claudeProjectDirAgentCache[dirName] = agent
+                claudeProjectDirMissCache.removeValue(forKey: dirName)
                 return agent
             }
         }
         return nil
     }
 
-    private func candidateProjectSearchRoots() -> [URL] {
-        let roots = [
-            claudeProjectsURL.deletingLastPathComponent().deletingLastPathComponent(),
-            URL(fileURLWithPath: "/private/tmp", isDirectory: true),
-            URL(fileURLWithPath: "/tmp", isDirectory: true),
-            fm.homeDirectoryForCurrentUser
-        ]
+    private func candidateProjectSearchRoots(for dirName: String) -> [URL] {
+        var roots = [claudeProjectsURL.deletingLastPathComponent().deletingLastPathComponent()]
+
+        if dirName.hasPrefix("-private-tmp-") {
+            roots.append(URL(fileURLWithPath: "/private/tmp", isDirectory: true))
+        }
+        if dirName.hasPrefix("-tmp-") {
+            roots.append(URL(fileURLWithPath: "/tmp", isDirectory: true))
+        }
+
+        let homePrefix = claudeProjectDirName(forPath: fm.homeDirectoryForCurrentUser.path) + "-"
+        if dirName.hasPrefix(homePrefix) {
+            roots.append(fm.homeDirectoryForCurrentUser)
+        }
 
         var seen: Set<String> = []
         return roots.compactMap { root in
+            let searchPath = root.path
+            let canonicalPath = root.standardizedFileURL.resolvingSymlinksInPath().path
             var isDirectory: ObjCBool = false
-            guard fm.fileExists(atPath: root.path, isDirectory: &isDirectory),
+            guard fm.fileExists(atPath: searchPath, isDirectory: &isDirectory),
                   isDirectory.boolValue,
-                  seen.insert(root.path).inserted else { return nil }
-            return root
+                  !seen.contains(where: { pathContains($0, canonicalPath) || pathContains(canonicalPath, $0) }),
+                  seen.insert(canonicalPath).inserted else { return nil }
+            return URL(fileURLWithPath: searchPath, isDirectory: true)
         }
+    }
+
+    private func pathContains(_ parent: String, _ child: String) -> Bool {
+        let normalizedParent = parent.hasSuffix("/") ? String(parent.dropLast()) : parent
+        return normalizedParent == child || child.hasPrefix(normalizedParent + "/")
     }
 
     private func agentNameForEncodedClaudeProjectDirName(_ dirName: String, under root: URL) -> String? {
@@ -203,6 +256,7 @@ final class SessionDetector {
 
         let rootPath = root.path
         let maxDepth = 8
+        var bestMatch: (depth: Int, agent: String)?
 
         for case let url as URL in enumerator {
             let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
@@ -221,10 +275,14 @@ final class SessionDetector {
 
             let projectURL = url.deletingLastPathComponent()
             guard claudeProjectDirName(forPath: projectURL.path) == dirName else { continue }
-            return agentName(forProjectURL: projectURL)
+            guard let agent = agentName(forProjectURL: projectURL) else { continue }
+            let projectDepth = pathDepth(of: projectURL.path, relativeTo: rootPath)
+            if bestMatch == nil || projectDepth < bestMatch!.depth {
+                bestMatch = (depth: projectDepth, agent: agent)
+            }
         }
 
-        return nil
+        return bestMatch?.agent
     }
 
     private func pathDepth(of path: String, relativeTo rootPath: String) -> Int {
