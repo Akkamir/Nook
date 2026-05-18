@@ -30,7 +30,7 @@ final class VillageCamera: SKCameraNode {
         let translation = recognizer.translation(in: recognizer.view)
         // SpriteKit Y is up, AppKit Y is down — invert Y
         let dx = -translation.x * xScale
-        let dy =  translation.y * yScale
+        let dy = -translation.y * yScale  // invert Y: AppKit down (positive) → SpriteKit down (negative)
         position.x += dx
         position.y += dy
         recognizer.setTranslation(.zero, in: recognizer.view)
