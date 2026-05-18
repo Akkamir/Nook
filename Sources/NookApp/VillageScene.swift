@@ -109,6 +109,7 @@ final class VillageScene: SKScene {
         }
         if let engine, engine.totalBits != lastTotalBits {
             fogSystem?.update(totalBits: engine.totalBits)
+            npcManager?.sync()
             lastTotalBits = engine.totalBits
         }
         if let engine, engine.activeSessions != lastActiveSessions {
