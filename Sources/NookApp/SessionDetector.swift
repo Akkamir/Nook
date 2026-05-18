@@ -8,6 +8,7 @@ final class SessionDetector {
     private var recentlyEndedAgents: [String: Date] = [:]
     private var sessionAgents: [String: String] = [:]
     private var endedSessionIds: Set<String> = []
+    private var claudeProjectDirAgentCache: [String: String] = [:]
     private let recentlyEndedTTL: TimeInterval
     private let now: () -> Date
 
@@ -152,7 +153,84 @@ final class SessionDetector {
     private func agentName(forProjectDir dir: URL) -> String? {
         let dirName = dir.lastPathComponent
         guard dirName.hasPrefix("-") else { return nil }
+        if let agent = claudeProjectDirAgentCache[dirName] {
+            return agent
+        }
+
         let projectPath = "/" + String(dirName.dropFirst()).replacingOccurrences(of: "-", with: "/")
-        return agentName(forProjectURL: URL(fileURLWithPath: projectPath, isDirectory: true))
+        if let agent = agentName(forProjectURL: URL(fileURLWithPath: projectPath, isDirectory: true)) {
+            claudeProjectDirAgentCache[dirName] = agent
+            return agent
+        }
+
+        return agentNameForEncodedClaudeProjectDirName(dirName)
+    }
+
+    private func agentNameForEncodedClaudeProjectDirName(_ dirName: String) -> String? {
+        for root in candidateProjectSearchRoots() {
+            if let agent = agentNameForEncodedClaudeProjectDirName(dirName, under: root) {
+                claudeProjectDirAgentCache[dirName] = agent
+                return agent
+            }
+        }
+        return nil
+    }
+
+    private func candidateProjectSearchRoots() -> [URL] {
+        let roots = [
+            claudeProjectsURL.deletingLastPathComponent().deletingLastPathComponent(),
+            URL(fileURLWithPath: "/private/tmp", isDirectory: true),
+            URL(fileURLWithPath: "/tmp", isDirectory: true),
+            fm.homeDirectoryForCurrentUser
+        ]
+
+        var seen: Set<String> = []
+        return roots.compactMap { root in
+            var isDirectory: ObjCBool = false
+            guard fm.fileExists(atPath: root.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue,
+                  seen.insert(root.path).inserted else { return nil }
+            return root
+        }
+    }
+
+    private func agentNameForEncodedClaudeProjectDirName(_ dirName: String, under root: URL) -> String? {
+        guard let enumerator = fm.enumerator(
+            at: root,
+            includingPropertiesForKeys: [.isDirectoryKey, .isPackageKey],
+            options: [.skipsPackageDescendants]
+        ) else { return nil }
+
+        let rootPath = root.path
+        let maxDepth = 8
+
+        for case let url as URL in enumerator {
+            let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+            if isDirectory,
+               url.lastPathComponent.hasPrefix(".") {
+                enumerator.skipDescendants()
+                continue
+            }
+
+            let depth = pathDepth(of: url.path, relativeTo: rootPath)
+            if depth >= maxDepth, isDirectory {
+                enumerator.skipDescendants()
+            }
+
+            guard url.lastPathComponent == ".pixelvillage" else { continue }
+
+            let projectURL = url.deletingLastPathComponent()
+            guard claudeProjectDirName(forPath: projectURL.path) == dirName else { continue }
+            return agentName(forProjectURL: projectURL)
+        }
+
+        return nil
+    }
+
+    private func pathDepth(of path: String, relativeTo rootPath: String) -> Int {
+        guard path.hasPrefix(rootPath) else { return Int.max }
+        let relative = path.dropFirst(rootPath.count).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard !relative.isEmpty else { return 0 }
+        return relative.split(separator: "/").count
     }
 }
