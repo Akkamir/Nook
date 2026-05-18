@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class LedgerWatcher {
     private let ledgerURL: URL
     private var source: DispatchSourceProtocol?
@@ -11,18 +12,22 @@ final class LedgerWatcher {
     }
 
     func start() {
+        guard source == nil else { return }
+
         // Ensure the file exists before watching
         ensureFileExists()
 
-        let fd = open(ledgerURL.path, O_EVTONLY)
+        // Watch the parent directory to catch atomic (rename-based) writes
+        let watchURL = ledgerURL.deletingLastPathComponent()
+        let fd = open(watchURL.path(percentEncoded: false), O_EVTONLY)
         guard fd >= 0 else {
-            print("[LedgerWatcher] Cannot open \(ledgerURL.path)")
+            print("[LedgerWatcher] Cannot open \(watchURL.path(percentEncoded: false))")
             return
         }
 
         let src = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: fd,
-            eventMask: [.write, .extend, .attrib],
+            eventMask: [.write, .extend, .rename],
             queue: .main
         )
         src.setEventHandler { [weak self] in
@@ -31,7 +36,7 @@ final class LedgerWatcher {
         src.setCancelHandler { close(fd) }
         src.resume()
         self.source = src
-        print("[LedgerWatcher] Watching \(ledgerURL.path)")
+        print("[LedgerWatcher] Watching \(watchURL.path(percentEncoded: false))")
     }
 
     func stop() {
@@ -41,8 +46,13 @@ final class LedgerWatcher {
 
     private func ensureFileExists() {
         let dir = ledgerURL.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        if !FileManager.default.fileExists(atPath: ledgerURL.path) {
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        } catch {
+            print("[LedgerWatcher] Cannot create directory: \(error)")
+            return
+        }
+        if !FileManager.default.fileExists(atPath: ledgerURL.path(percentEncoded: false)) {
             let empty = LedgerState.empty
             if let data = try? JSONEncoder().encode(empty) {
                 try? data.write(to: ledgerURL)

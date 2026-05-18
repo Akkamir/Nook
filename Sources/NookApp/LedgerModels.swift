@@ -8,16 +8,16 @@ struct TokenEvent {
 }
 
 struct AgentRecord: Codable {
-    var name: String
-    var totalTokens: Int
-    var bond: Int
+    let name: String
+    let totalTokens: Int
+    let bond: Int
 }
 
 struct LedgerState: Codable {
-    var totalBits: Double
-    var pendingBits: Double
-    var agents: [String: AgentRecord]
-    var lastUpdated: Date
+    let totalBits: Double
+    let pendingBits: Double
+    let agents: [String: AgentRecord]
+    let lastUpdated: Date
 
     static var empty: LedgerState {
         LedgerState(totalBits: 0, pendingBits: 0, agents: [:], lastUpdated: Date())
