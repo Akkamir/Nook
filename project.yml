@@ -1,9 +1,23 @@
+# Source of truth for the Xcode project. Run `make app` to regenerate NookApp.xcodeproj.
 name: NookApp
 options:
   bundleIdPrefix: com.mchau
   deploymentTarget:
     macOS: "13.0"
   xcodeVersion: "15"
+
+globalSettings:
+  base:
+    SWIFT_VERSION: "6.0"
+
+schemes:
+  NookApp:
+    build:
+      targets:
+        NookApp: all
+    run:
+      config: Debug
+
 targets:
   NookApp:
     type: application
@@ -23,11 +37,10 @@ targets:
         NSPrincipalClass: NSApplication
         NSMainNibFile: ""
         NSHighResolutionCapable: true
-        NSAppTransportSecurity:
-          NSAllowsArbitraryLoads: true
     settings:
       base:
         PRODUCT_NAME: Nook
+        PRODUCT_BUNDLE_IDENTIFIER: com.mchau.nook
         SWIFT_VERSION: "6.0"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         ENABLE_HARDENED_RUNTIME: false
