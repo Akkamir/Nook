@@ -23,7 +23,14 @@ final class ClaudeHookServer {
         token = UUID().uuidString
         let listener = try Self.makeListeningSocket()
         port = listener.port
-        try writeConfig()
+
+        do {
+            try writeConfig()
+        } catch {
+            Darwin.close(listener.fd)
+            port = 0
+            throw error
+        }
 
         let worker = ClaudeHookServerWorker(socketFD: listener.fd, token: token) { [weak self] event in
             Task { @MainActor in
@@ -101,7 +108,9 @@ private final class ClaudeHookServerWorker: @unchecked Sendable {
     private let queue = DispatchQueue(label: "nook.claude-hook-server")
     private let token: String
     private let onEvent: @Sendable (ClaudeHookEvent) -> Void
-    private var socketFD: Int32
+    private let socketFD: Int32
+    private let lock = NSLock()
+    private var isStopped = false
 
     init(socketFD: Int32, token: String, onEvent: @escaping @Sendable (ClaudeHookEvent) -> Void) {
         self.socketFD = socketFD
@@ -110,26 +119,26 @@ private final class ClaudeHookServerWorker: @unchecked Sendable {
     }
 
     func start() {
+        let fd = socketFD
         queue.async { [self] in
-            acceptLoop()
+            acceptLoop(socketFD: fd)
         }
     }
 
     func stop() {
-        let fd = socketFD
-        socketFD = -1
-        if fd >= 0 {
-            Darwin.shutdown(fd, SHUT_RDWR)
-            Darwin.close(fd)
-        }
+        lock.lock()
+        let shouldClose = !isStopped
+        isStopped = true
+        lock.unlock()
+
+        guard shouldClose else { return }
+        Darwin.shutdown(socketFD, SHUT_RDWR)
+        Darwin.close(socketFD)
     }
 
-    private func acceptLoop() {
+    private func acceptLoop(socketFD: Int32) {
         while true {
-            let fd = socketFD
-            guard fd >= 0 else { break }
-
-            let client = Darwin.accept(fd, nil, nil)
+            let client = Darwin.accept(socketFD, nil, nil)
             guard client >= 0 else { break }
             handle(client: client)
             Darwin.close(client)
@@ -137,7 +146,16 @@ private final class ClaudeHookServerWorker: @unchecked Sendable {
     }
 
     private func handle(client: Int32) {
-        guard let request = readRequest(from: client) else { return }
+        let request: HTTPRequest
+        switch readRequest(from: client) {
+        case .request(let parsed):
+            request = parsed
+        case .badRequest:
+            writeResponse(client, status: 400)
+            return
+        case .closed:
+            return
+        }
 
         guard request.method == "POST", request.path == "/claude-hook" else {
             writeResponse(client, status: 404)
@@ -160,6 +178,12 @@ private final class ClaudeHookServerWorker: @unchecked Sendable {
 }
 
 private extension ClaudeHookServerWorker {
+    enum ReadResult {
+        case request(HTTPRequest)
+        case badRequest
+        case closed
+    }
+
     struct HTTPRequest {
         let method: String
         let path: String
@@ -167,39 +191,65 @@ private extension ClaudeHookServerWorker {
         let body: Data
     }
 
-    func readRequest(from client: Int32) -> HTTPRequest? {
+    func readRequest(from client: Int32) -> ReadResult {
         var data = Data()
         var buffer = [UInt8](repeating: 0, count: 4096)
         var headerEnd: Range<Data.Index>?
-        var expectedLength = 0
+        var partialRequest: (method: String, path: String, headers: [String: String])?
+        var expectedLength: Int?
 
         while true {
             let count = Darwin.read(client, &buffer, buffer.count)
-            guard count > 0 else { return nil }
+            guard count > 0 else { return .closed }
             data.append(buffer, count: count)
 
             if headerEnd == nil,
                let range = data.range(of: Data("\r\n\r\n".utf8)) {
                 headerEnd = range
-                guard let parsedLength = contentLength(in: data[..<range.lowerBound]) else { return nil }
+                guard let parsed = parseHeaders(data: data[..<range.lowerBound]) else {
+                    return .badRequest
+                }
+                partialRequest = parsed
+
+                guard parsed.method == "POST", parsed.path == "/claude-hook" else {
+                    return .request(HTTPRequest(
+                        method: parsed.method,
+                        path: parsed.path,
+                        headers: parsed.headers,
+                        body: Data()
+                    ))
+                }
+
+                guard let parsedLength = contentLength(from: parsed.headers) else {
+                    return .badRequest
+                }
                 expectedLength = parsedLength
             }
 
-            if let headerEnd {
+            if let headerEnd,
+               let partialRequest,
+               let expectedLength {
                 let bodyStart = headerEnd.upperBound
                 if data.count - bodyStart >= expectedLength {
-                    return parseRequest(data: data, headerEnd: headerEnd, contentLength: expectedLength)
+                    let bodyEnd = bodyStart + expectedLength
+                    guard bodyEnd <= data.endIndex else { return .badRequest }
+                    return .request(HTTPRequest(
+                        method: partialRequest.method,
+                        path: partialRequest.path,
+                        headers: partialRequest.headers,
+                        body: data[bodyStart..<bodyEnd]
+                    ))
                 }
             }
 
             if data.count > 1_048_576 {
-                return nil
+                return .badRequest
             }
         }
     }
 
-    func parseRequest(data: Data, headerEnd: Range<Data.Index>, contentLength: Int) -> HTTPRequest? {
-        guard let headerText = String(data: data[..<headerEnd.lowerBound], encoding: .utf8) else {
+    func parseHeaders(data: Data.SubSequence) -> (method: String, path: String, headers: [String: String])? {
+        guard let headerText = String(data: data, encoding: .utf8) else {
             return nil
         }
 
@@ -216,31 +266,18 @@ private extension ClaudeHookServerWorker {
             headers[name] = value
         }
 
-        let bodyStart = headerEnd.upperBound
-        let bodyEnd = bodyStart + contentLength
-        guard bodyEnd <= data.endIndex else { return nil }
-
-        return HTTPRequest(
+        return (
             method: requestParts[0],
             path: requestParts[1],
-            headers: headers,
-            body: data[bodyStart..<bodyEnd]
+            headers: headers
         )
     }
 
-    func contentLength(in headerData: Data.SubSequence) -> Int? {
-        guard let headerText = String(data: headerData, encoding: .utf8) else { return nil }
-
-        for line in headerText.components(separatedBy: "\r\n").dropFirst() {
-            guard let separator = line.firstIndex(of: ":") else { continue }
-            let name = line[..<separator].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            if name == "content-length" {
-                let value = line[line.index(after: separator)...].trimmingCharacters(in: .whitespacesAndNewlines)
-                return Int(value)
-            }
-        }
-
-        return nil
+    func contentLength(from headers: [String: String]) -> Int? {
+        guard let rawValue = headers["content-length"],
+              let length = Int(rawValue),
+              length >= 0 else { return nil }
+        return length
     }
 
     func writeResponse(_ client: Int32, status: Int) {
