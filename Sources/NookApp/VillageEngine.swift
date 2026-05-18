@@ -8,10 +8,16 @@ final class VillageEngine {
     private(set) var pendingBits: Double = 0
     private(set) var agents: [String: AgentRecord] = [:]
 
+    private(set) var dayPhase: DayPhase = DayPhase.current()
+    private(set) var activeSessions: Set<String> = []
+
     private let ledgerURL: URL
     private let decoder: JSONDecoder
     private let watcher: LedgerWatcher
     private var isRunning = false
+    private var dayNightTimer: DispatchSourceTimer?
+    private var sessionTimer: DispatchSourceTimer?
+    private let sessionDetector = SessionDetector()
 
     init(ledgerURL: URL = FileManager.default.homeDirectoryForCurrentUser
              .appendingPathComponent(".pixelvillage/ledger.json")) {
@@ -27,11 +33,40 @@ final class VillageEngine {
         watcher.onChange = { [weak self] in self?.reload() }
         watcher.start()
         reload()
+        startDayNightTimer()
+        startSessionTimer()
     }
 
     func stop() {
         watcher.stop()
+        dayNightTimer?.cancel()
+        dayNightTimer = nil
+        sessionTimer?.cancel()
+        sessionTimer = nil
         isRunning = false
+    }
+
+    private func startSessionTimer() {
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now(), repeating: .seconds(30))
+        timer.setEventHandler { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                self.activeSessions = self.sessionDetector.detectActive()
+            }
+        }
+        timer.resume()
+        sessionTimer = timer
+    }
+
+    private func startDayNightTimer() {
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now(), repeating: .seconds(60))
+        timer.setEventHandler { [weak self] in
+            self?.dayPhase = DayPhase.current()
+        }
+        timer.resume()
+        dayNightTimer = timer
     }
 
     func consumePendingBits() {
