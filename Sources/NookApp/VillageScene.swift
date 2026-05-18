@@ -6,10 +6,16 @@ final class VillageScene: SKScene {
     private var tileMap: TileMap!
     private var villageCamera: VillageCamera!
     private var engine: VillageEngine?
+    private var hud: HUD?
 
     // Called by ContentView when engine is available
     func configure(engine: VillageEngine) {
         self.engine = engine
+        // Animate pending bits once on configure (app launch)
+        if engine.pendingBits > 0 {
+            hud?.animatePending(engine.pendingBits)
+            engine.consumePendingBits()
+        }
     }
 
     override func didMove(to view: SKView) {
@@ -35,6 +41,26 @@ final class VillageScene: SKScene {
             x: TileMap.mapWidth / 2,
             y: TileMap.mapHeight / 2
         )
+
+        // HUD — child of camera so it stays fixed on screen
+        let hud = HUD()
+        villageCamera.addChild(hud)
+        self.hud = hud
+        updateHUDPosition()
+    }
+
+    override func didChangeSize(_ oldSize: CGSize) {
+        super.didChangeSize(oldSize)
+        updateHUDPosition()
+    }
+
+    private func updateHUDPosition() {
+        let margin: CGFloat = 16
+        // HUD top-left: camera is at center, so top-left is (-width/2, height/2)
+        hud?.position = CGPoint(
+            x: -size.width / 2 + margin + 80,  // 80 = half the HUD background width
+            y:  size.height / 2 - margin - 16  // 16 = half the HUD background height
+        )
     }
 
     override func willMove(from view: SKView) {
@@ -46,6 +72,7 @@ final class VillageScene: SKScene {
     }
 
     override func update(_ currentTime: TimeInterval) {
-        // future: NPC animations, weather, etc.
+        guard let engine else { return }
+        hud?.update(totalBits: engine.totalBits)
     }
 }
