@@ -18,6 +18,8 @@ final class VillageEngine {
     private var dayNightTimer: DispatchSourceTimer?
     private var sessionTimer: DispatchSourceTimer?
     private let sessionDetector = SessionDetector()
+    private let hookServer = ClaudeHookServer()
+    private let hookInstaller = ClaudeHookInstaller()
 
     init(ledgerURL: URL = FileManager.default.homeDirectoryForCurrentUser
              .appendingPathComponent(".pixelvillage/ledger.json")) {
@@ -34,6 +36,7 @@ final class VillageEngine {
         watcher.start()
         reload()
         startDayNightTimer()
+        startHookServer()
         startSessionTimer()
     }
 
@@ -43,7 +46,24 @@ final class VillageEngine {
         dayNightTimer = nil
         sessionTimer?.cancel()
         sessionTimer = nil
+        hookServer.stop()
         isRunning = false
+    }
+
+    private func startHookServer() {
+        hookServer.onEvent = { [weak self] event in
+            guard let self else { return }
+            if self.sessionDetector.handleHookEvent(event) {
+                self.activeSessions = self.sessionDetector.detectActive()
+            }
+        }
+
+        do {
+            try hookServer.start()
+            try hookInstaller.install()
+        } catch {
+            print("Nook Claude hooks disabled: \(error)")
+        }
     }
 
     private func startSessionTimer() {

@@ -1,0 +1,398 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0A8D7E6C4B3A291817263544 /* ClaudeHookEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8D7E6C4B3A291817263541 /* ClaudeHookEvent.swift */; };
+		0A8D7E6C4B3A291817263545 /* ClaudeHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8D7E6C4B3A291817263542 /* ClaudeHookInstaller.swift */; };
+		0A8D7E6C4B3A291817263546 /* ClaudeHookServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8D7E6C4B3A291817263543 /* ClaudeHookServer.swift */; };
+		1575124CF722DEF35FAB659A /* LedgerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */; };
+		1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5725AD04028894F2D2FB3B7 /* TileMap.swift */; };
+		24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AA11784DE252A1864D7AD9 /* NPCModel.swift */; };
+		25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EF6720CB18A402B6991A645 /* VillageEngine.swift */; };
+		2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0632114E8E40B2CA04E37E28 /* NPCSprite.swift */; };
+		420B2E2B38F783BE5F08C877 /* NPCWander.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD1D83CB30D9FB48922B680D /* NPCWander.swift */; };
+		4AD242BCB114822653227105 /* SessionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */; };
+		5532CF5BD2112D5A8E875BC1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2F18056EFB53C7EB6D68478E /* Assets.xcassets */; };
+		57A308F542352ABF9D9EA864 /* LedgerWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */; };
+		5F1630065BA60BDB83194870 /* HUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9626FFA30055E3806B7CF9 /* HUD.swift */; };
+		7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */; };
+		88393C57613EE65872E07918 /* FogSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1652FDC596CE63B0635DC9DB /* FogSystem.swift */; };
+		8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72085E2B91EB795E3BD3BA2D /* NookApp.swift */; };
+		A2421EE7CA0FE95C5E95D7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF08C230635E2A978BEA13E0 /* ContentView.swift */; };
+		A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */; };
+		B0FA9796D49CEA662676048F /* NPCManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */; };
+		DDF865642E6FD91ABB02BB39 /* DayPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 788FBB092E3C4F5AED11854B /* DayPhase.swift */; };
+		DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33EA76221916F3943152DFA /* VillageCamera.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		05AA11784DE252A1864D7AD9 /* NPCModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCModel.swift; sourceTree = "<group>"; };
+		0632114E8E40B2CA04E37E28 /* NPCSprite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCSprite.swift; sourceTree = "<group>"; };
+		0A8D7E6C4B3A291817263541 /* ClaudeHookEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookEvent.swift; sourceTree = "<group>"; };
+		0A8D7E6C4B3A291817263542 /* ClaudeHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookInstaller.swift; sourceTree = "<group>"; };
+		0A8D7E6C4B3A291817263543 /* ClaudeHookServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookServer.swift; sourceTree = "<group>"; };
+		0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillagePersistence.swift; sourceTree = "<group>"; };
+		1652FDC596CE63B0635DC9DB /* FogSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FogSystem.swift; sourceTree = "<group>"; };
+		2F18056EFB53C7EB6D68478E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCManager.swift; sourceTree = "<group>"; };
+		5247DA601A4F070C5449DF4C /* NookApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NookApp.entitlements; sourceTree = "<group>"; };
+		6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetector.swift; sourceTree = "<group>"; };
+		72085E2B91EB795E3BD3BA2D /* NookApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NookApp.swift; sourceTree = "<group>"; };
+		788FBB092E3C4F5AED11854B /* DayPhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPhase.swift; sourceTree = "<group>"; };
+		7EF6720CB18A402B6991A645 /* VillageEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageEngine.swift; sourceTree = "<group>"; };
+		8D9626FFA30055E3806B7CF9 /* HUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUD.swift; sourceTree = "<group>"; };
+		B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageScene.swift; sourceTree = "<group>"; };
+		BF08C230635E2A978BEA13E0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		C2642CCD90C9895978862368 /* NookApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NookApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD49547CE7F7DAA060FDE161 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerWatcher.swift; sourceTree = "<group>"; };
+		E33EA76221916F3943152DFA /* VillageCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageCamera.swift; sourceTree = "<group>"; };
+		F5725AD04028894F2D2FB3B7 /* TileMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileMap.swift; sourceTree = "<group>"; };
+		F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerModels.swift; sourceTree = "<group>"; };
+		FD1D83CB30D9FB48922B680D /* NPCWander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCWander.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		145ACBA0FDA1B78DA1D63A3C = {
+			isa = PBXGroup;
+			children = (
+				C2FF4E78342D9C222E5C81A8 /* NookApp */,
+				BC6EDA0834356ED7026E570A /* NookApp */,
+				C8929809B2926CD9739C7009 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BC6EDA0834356ED7026E570A /* NookApp */ = {
+			isa = PBXGroup;
+			children = (
+				0A8D7E6C4B3A291817263541 /* ClaudeHookEvent.swift */,
+				0A8D7E6C4B3A291817263542 /* ClaudeHookInstaller.swift */,
+				0A8D7E6C4B3A291817263543 /* ClaudeHookServer.swift */,
+				BF08C230635E2A978BEA13E0 /* ContentView.swift */,
+				788FBB092E3C4F5AED11854B /* DayPhase.swift */,
+				1652FDC596CE63B0635DC9DB /* FogSystem.swift */,
+				8D9626FFA30055E3806B7CF9 /* HUD.swift */,
+				F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */,
+				DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */,
+				72085E2B91EB795E3BD3BA2D /* NookApp.swift */,
+				38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */,
+				05AA11784DE252A1864D7AD9 /* NPCModel.swift */,
+				0632114E8E40B2CA04E37E28 /* NPCSprite.swift */,
+				FD1D83CB30D9FB48922B680D /* NPCWander.swift */,
+				6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */,
+				F5725AD04028894F2D2FB3B7 /* TileMap.swift */,
+				E33EA76221916F3943152DFA /* VillageCamera.swift */,
+				7EF6720CB18A402B6991A645 /* VillageEngine.swift */,
+				0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */,
+				B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */,
+			);
+			name = NookApp;
+			path = Sources/NookApp;
+			sourceTree = "<group>";
+		};
+		C2FF4E78342D9C222E5C81A8 /* NookApp */ = {
+			isa = PBXGroup;
+			children = (
+				2F18056EFB53C7EB6D68478E /* Assets.xcassets */,
+				DD49547CE7F7DAA060FDE161 /* Info.plist */,
+				5247DA601A4F070C5449DF4C /* NookApp.entitlements */,
+			);
+			path = NookApp;
+			sourceTree = "<group>";
+		};
+		C8929809B2926CD9739C7009 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C2642CCD90C9895978862368 /* NookApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		52BFA12497D4B98E98EC4C51 /* NookApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8B9BCAB53581E57B337768B2 /* Build configuration list for PBXNativeTarget "NookApp" */;
+			buildPhases = (
+				6D094DEC89EA4A79D8DE3D44 /* Sources */,
+				827AA64DA3FA2C35FBF34FBE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NookApp;
+			packageProductDependencies = (
+			);
+			productName = NookApp;
+			productReference = C2642CCD90C9895978862368 /* NookApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		158ED4EDB411F069B98E932E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = F99EEBAAF6D9DA4C600C734C /* Build configuration list for PBXProject "NookApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 145ACBA0FDA1B78DA1D63A3C;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C8929809B2926CD9739C7009 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				52BFA12497D4B98E98EC4C51 /* NookApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		827AA64DA3FA2C35FBF34FBE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5532CF5BD2112D5A8E875BC1 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6D094DEC89EA4A79D8DE3D44 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A8D7E6C4B3A291817263544 /* ClaudeHookEvent.swift in Sources */,
+				0A8D7E6C4B3A291817263545 /* ClaudeHookInstaller.swift in Sources */,
+				0A8D7E6C4B3A291817263546 /* ClaudeHookServer.swift in Sources */,
+				A2421EE7CA0FE95C5E95D7DC /* ContentView.swift in Sources */,
+				DDF865642E6FD91ABB02BB39 /* DayPhase.swift in Sources */,
+				88393C57613EE65872E07918 /* FogSystem.swift in Sources */,
+				5F1630065BA60BDB83194870 /* HUD.swift in Sources */,
+				1575124CF722DEF35FAB659A /* LedgerModels.swift in Sources */,
+				57A308F542352ABF9D9EA864 /* LedgerWatcher.swift in Sources */,
+				B0FA9796D49CEA662676048F /* NPCManager.swift in Sources */,
+				24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */,
+				2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */,
+				420B2E2B38F783BE5F08C877 /* NPCWander.swift in Sources */,
+				8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */,
+				4AD242BCB114822653227105 /* SessionDetector.swift in Sources */,
+				1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */,
+				DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */,
+				25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */,
+				A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */,
+				7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2A9E18359FA540556AC2F4DF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		2CBCC949032451367BC1D3AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_ENTITLEMENTS = NookApp/NookApp.entitlements;
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = NookApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mchau.nook;
+				PRODUCT_NAME = Nook;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		3AE8DD297968EFA9B6BAB6BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_ENTITLEMENTS = NookApp/NookApp.entitlements;
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = NookApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mchau.nook;
+				PRODUCT_NAME = Nook;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		523D82D94E7A81E2B2E114BA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		8B9BCAB53581E57B337768B2 /* Build configuration list for PBXNativeTarget "NookApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2CBCC949032451367BC1D3AB /* Debug */,
+				3AE8DD297968EFA9B6BAB6BF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F99EEBAAF6D9DA4C600C734C /* Build configuration list for PBXProject "NookApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				523D82D94E7A81E2B2E114BA /* Debug */,
+				2A9E18359FA540556AC2F4DF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 158ED4EDB411F069B98E932E /* Project object */;
+}
