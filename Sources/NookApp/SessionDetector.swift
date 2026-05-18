@@ -7,38 +7,65 @@ final class SessionDetector {
     private var hookActiveAgents: Set<String> = []
     private var recentlyEndedAgents: [String: Date] = [:]
     private var sessionAgents: [String: String] = [:]
-    private let recentlyEndedTTL: TimeInterval = 300
+    private var endedSessionIds: Set<String> = []
+    private let recentlyEndedTTL: TimeInterval
+    private let now: () -> Date
 
     init(
         claudeProjectsURL: URL = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".claude/projects")
+            .appendingPathComponent(".claude/projects"),
+        recentlyEndedTTL: TimeInterval = 300,
+        now: @escaping () -> Date = Date.init
     ) {
         self.claudeProjectsURL = claudeProjectsURL
+        self.recentlyEndedTTL = recentlyEndedTTL
+        self.now = now
     }
 
     @discardableResult
     func handleHookEvent(_ event: ClaudeHookEvent) -> Bool {
         pruneRecentlyEnded()
+        if event.refreshesActivity,
+           let sessionId = event.sessionId,
+           endedSessionIds.contains(sessionId) {
+            return false
+        }
+
         guard let agent = agentName(for: event) else { return false }
 
         var changed = false
-        if let sessionId = event.sessionId, sessionAgents[sessionId] != agent {
-            sessionAgents[sessionId] = agent
-            changed = true
-        }
 
         if event.isSessionStart {
+            if let sessionId = event.sessionId {
+                if sessionAgents[sessionId] != agent {
+                    sessionAgents[sessionId] = agent
+                    changed = true
+                }
+                if endedSessionIds.remove(sessionId) != nil {
+                    changed = true
+                }
+            }
             if recentlyEndedAgents.removeValue(forKey: agent) != nil {
                 changed = true
             }
             changed = hookActiveAgents.insert(agent).inserted || changed
         } else if event.isSessionEnd {
+            if let sessionId = event.sessionId {
+                if sessionAgents.removeValue(forKey: sessionId) != nil {
+                    changed = true
+                }
+                changed = endedSessionIds.insert(sessionId).inserted || changed
+            }
             if hookActiveAgents.remove(agent) != nil {
                 changed = true
             }
-            recentlyEndedAgents[agent] = Date()
+            recentlyEndedAgents[agent] = now()
             changed = true
         } else if event.refreshesActivity, recentlyEndedAgents[agent] == nil {
+            if let sessionId = event.sessionId, sessionAgents[sessionId] != agent {
+                sessionAgents[sessionId] = agent
+                changed = true
+            }
             changed = hookActiveAgents.insert(agent).inserted || changed
         }
 
@@ -47,7 +74,7 @@ final class SessionDetector {
 
     func detectActive() -> Set<String> {
         pruneRecentlyEnded()
-        let cutoff = Date().addingTimeInterval(-300)
+        let cutoff = now().addingTimeInterval(-300)
         guard let entries = try? fm.contentsOfDirectory(
             at: claudeProjectsURL,
             includingPropertiesForKeys: [.isDirectoryKey],
@@ -94,16 +121,14 @@ final class SessionDetector {
         }
 
         if let cwd = event.cwd {
-            let projectDirName = claudeProjectDirName(forPath: cwd)
-            let projectDir = claudeProjectsURL.appendingPathComponent(projectDirName, isDirectory: true)
-            return agentName(forProjectDir: projectDir)
+            return agentName(forProjectURL: URL(fileURLWithPath: cwd, isDirectory: true))
         }
 
         return nil
     }
 
     private func pruneRecentlyEnded() {
-        let cutoff = Date().addingTimeInterval(-recentlyEndedTTL)
+        let cutoff = now().addingTimeInterval(-recentlyEndedTTL)
         recentlyEndedAgents = recentlyEndedAgents.filter { $0.value > cutoff }
     }
 
@@ -116,15 +141,18 @@ final class SessionDetector {
         })
     }
 
-    private func agentName(forProjectDir dir: URL) -> String? {
-        let dirName = dir.lastPathComponent
-        guard dirName.hasPrefix("-") else { return nil }
-        let projectPath = "/" + String(dirName.dropFirst()).replacingOccurrences(of: "-", with: "/")
-        let pixelvillageURL = URL(fileURLWithPath: projectPath)
-            .appendingPathComponent(".pixelvillage")
+    private func agentName(forProjectURL projectURL: URL) -> String? {
+        let pixelvillageURL = projectURL.appendingPathComponent(".pixelvillage")
         guard let data = try? Data(contentsOf: pixelvillageURL),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
               let agent = json["agent"] else { return nil }
         return agent
+    }
+
+    private func agentName(forProjectDir dir: URL) -> String? {
+        let dirName = dir.lastPathComponent
+        guard dirName.hasPrefix("-") else { return nil }
+        let projectPath = "/" + String(dirName.dropFirst()).replacingOccurrences(of: "-", with: "/")
+        return agentName(forProjectURL: URL(fileURLWithPath: projectPath, isDirectory: true))
     }
 }
