@@ -2,17 +2,22 @@ import Foundation
 
 final class ClaudeWatcher {
     private let projectsRoot: URL
+    private let offsetsURL: URL
     private let onEvent: (TokenEvent, String?) -> Void
-    private var fileOffsets: [URL: UInt64] = [:]
+    private var fileOffsets: [String: UInt64] = [:]  // keyed by path string for JSON serialization
     private var dispatchSource: DispatchSourceProtocol?
 
     init(
         projectsRoot: URL = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/projects"),
+        offsetsURL: URL = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".pixelvillage/offsets.json"),
         onEvent: @escaping (TokenEvent, String?) -> Void
     ) {
         self.projectsRoot = projectsRoot
+        self.offsetsURL = offsetsURL
         self.onEvent = onEvent
+        loadOffsets()
     }
 
     func start() {
@@ -60,13 +65,15 @@ final class ClaudeWatcher {
         guard let handle = try? FileHandle(forReadingFrom: file) else { return }
         defer { handle.closeFile() }
 
-        let offset = fileOffsets[file] ?? 0
+        let key = file.path
+        let offset = fileOffsets[key] ?? 0
         handle.seek(toFileOffset: offset)
 
         let data = handle.readDataToEndOfFile()
         guard !data.isEmpty else { return }
 
-        fileOffsets[file] = offset + UInt64(data.count)
+        fileOffsets[key] = offset + UInt64(data.count)
+        saveOffsets()
 
         let content = String(data: data, encoding: .utf8) ?? ""
         for line in content.components(separatedBy: "\n") {
@@ -79,5 +86,17 @@ final class ClaudeWatcher {
             )
             onEvent(event, agentName)
         }
+    }
+
+    private func loadOffsets() {
+        guard let data = try? Data(contentsOf: offsetsURL),
+              let decoded = try? JSONDecoder().decode([String: UInt64].self, from: data)
+        else { return }
+        fileOffsets = decoded
+    }
+
+    private func saveOffsets() {
+        guard let data = try? JSONEncoder().encode(fileOffsets) else { return }
+        try? data.write(to: offsetsURL, options: .atomic)
     }
 }
