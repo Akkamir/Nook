@@ -3,7 +3,7 @@ name: NookApp
 options:
   bundleIdPrefix: com.mchau
   deploymentTarget:
-    macOS: "13.0"
+    macOS: "14.0"
   xcodeVersion: "15"
 
 globalSettings:
@@ -22,7 +22,7 @@ targets:
   NookApp:
     type: application
     platform: macOS
-    deploymentTarget: "13.0"
+    deploymentTarget: "14.0"
     sources:
       - path: Sources/NookApp
       - path: NookApp
@@ -33,7 +33,7 @@ targets:
         CFBundleIdentifier: com.mchau.nook
         CFBundleVersion: "1"
         CFBundleShortVersionString: "0.1"
-        LSMinimumSystemVersion: "13.0"
+        LSMinimumSystemVersion: "14.0"
         NSPrincipalClass: NSApplication
         NSMainNibFile: ""
         NSHighResolutionCapable: true
@@ -42,7 +42,7 @@ targets:
         PRODUCT_NAME: Nook
         PRODUCT_BUNDLE_IDENTIFIER: com.mchau.nook
         SWIFT_VERSION: "6.0"
-        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
         ENABLE_HARDENED_RUNTIME: false
         CODE_SIGN_IDENTITY: ""
         CODE_SIGNING_REQUIRED: "NO"
