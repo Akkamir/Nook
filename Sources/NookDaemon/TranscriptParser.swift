@@ -2,8 +2,11 @@ import Foundation
 
 enum TranscriptParser {
     private struct RawLine: Decodable {
-        let type: String
-        let usage: Usage?
+        let message: Message?
+
+        struct Message: Decodable {
+            let usage: Usage?
+        }
 
         struct Usage: Decodable {
             let input_tokens: Int
@@ -15,7 +18,7 @@ enum TranscriptParser {
         guard !line.isEmpty,
               let data = line.data(using: .utf8),
               let raw = try? JSONDecoder().decode(RawLine.self, from: data),
-              let usage = raw.usage
+              let usage = raw.message?.usage
         else { return nil }
 
         return TokenEvent(
