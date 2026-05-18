@@ -129,15 +129,18 @@ actor SessionDetector {
             return session.agent
         }
 
+        // Fast path: read .pixelvillage directly from cwd — O(1), no scan
+        if let cwd = event.cwd,
+           let agent = agentName(forProjectURL: URL(fileURLWithPath: cwd, isDirectory: true)) {
+            return agent
+        }
+
+        // Slow path: filesystem scan via encoded project dir name
         if let transcriptPath = event.transcriptPath {
             let projectDir = URL(fileURLWithPath: transcriptPath).deletingLastPathComponent()
             if let agent = agentName(forProjectDir: projectDir) {
                 return agent
             }
-        }
-
-        if let cwd = event.cwd {
-            return agentName(forProjectURL: URL(fileURLWithPath: cwd, isDirectory: true))
         }
 
         return nil
@@ -260,10 +263,11 @@ actor SessionDetector {
         let maxDepth = 8
         var bestMatch: (depth: Int, agent: String)?
 
+        let skipDirs: Set<String> = ["Library", "node_modules", ".Trash", "Pictures", "Music", "Movies"]
         for case let url as URL in enumerator {
             let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
             if isDirectory,
-               url.lastPathComponent.hasPrefix(".") {
+               url.lastPathComponent.hasPrefix(".") || skipDirs.contains(url.lastPathComponent) {
                 enumerator.skipDescendants()
                 continue
             }
