@@ -223,7 +223,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nNOOK_PKG=\"${SRCROOT}\"\nDAEMON_BIN=\"${NOOK_PKG}/.build/arm64-apple-macosx/release/NookDaemon\"\n\nswift build --package-path \"${NOOK_PKG}\" -c release\n\nDEST=\"${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/NookDaemon\"\ncp \"${DAEMON_BIN}\" \"${DEST}\"\nchmod +x \"${DEST}\"\n";
+			shellScript = "set -e\nNOOK_PKG=\"${SRCROOT}\"\nswift build --package-path \"${NOOK_PKG}\" -c release\nDAEMON_BIN=\"$(swift build --package-path \"${NOOK_PKG}\" -c release --show-bin-path)/NookDaemon\"\nDEST=\"${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/NookDaemon\"\ncp \"${DAEMON_BIN}\" \"${DEST}\"\nchmod +x \"${DEST}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
