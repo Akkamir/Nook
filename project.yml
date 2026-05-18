@@ -1,0 +1,40 @@
+name: NookApp
+options:
+  bundleIdPrefix: com.mchau
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "15"
+targets:
+  NookApp:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Sources/NookApp
+      - path: NookApp
+    info:
+      path: NookApp/Info.plist
+      properties:
+        CFBundleName: Nook
+        CFBundleIdentifier: com.mchau.nook
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "0.1"
+        LSMinimumSystemVersion: "13.0"
+        NSPrincipalClass: NSApplication
+        NSMainNibFile: ""
+        NSHighResolutionCapable: true
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+    settings:
+      base:
+        PRODUCT_NAME: Nook
+        SWIFT_VERSION: "6.0"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        ENABLE_HARDENED_RUNTIME: false
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+    entitlements:
+      path: NookApp/NookApp.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
