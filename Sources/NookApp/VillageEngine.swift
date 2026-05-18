@@ -94,9 +94,15 @@ final class VillageEngine {
     }
 
     func consumePendingBits() {
-        // TODO: This only clears the in-memory value; the next reload() will restore it from disk.
-        // Track a "consumed offset" or persist the clear to ledger.json if needed.
         pendingBits = 0
+        guard let data = try? Data(contentsOf: ledgerURL),
+              var state = try? decoder.decode(LedgerState.self, from: data)
+        else { return }
+        state.pendingBits = 0
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        guard let encoded = try? encoder.encode(state) else { return }
+        try? encoded.write(to: ledgerURL, options: .atomic)
     }
 
     private func reload() {

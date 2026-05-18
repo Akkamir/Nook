@@ -15,7 +15,7 @@ struct AgentRecord: Codable {
 
 struct LedgerState: Codable {
     let totalBits: Double
-    let pendingBits: Double
+    var pendingBits: Double
     let agents: [String: AgentRecord]
     let lastUpdated: Date
 
