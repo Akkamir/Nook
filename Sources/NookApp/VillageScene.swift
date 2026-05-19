@@ -3,6 +3,8 @@ import Foundation
 
 @MainActor
 final class VillageScene: SKScene {
+    var onNPCSelection: ((NPCSelection?) -> Void)?
+
     private var tileMap: TileMap!
     private var decorLayer: VillageDecorLayer?
     private var villageCamera: VillageCamera!
@@ -108,6 +110,16 @@ final class VillageScene: SKScene {
 
     override func scrollWheel(with event: NSEvent) {
         villageCamera.handleScroll(deltaY: event.deltaY)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        let point = event.location(in: self)
+        guard let id = npcManager?.npcID(at: point),
+              let selection = npcManager?.selection(for: id) else {
+            onNPCSelection?(nil)
+            return
+        }
+        onNPCSelection?(selection)
     }
 
     override func update(_ currentTime: TimeInterval) {

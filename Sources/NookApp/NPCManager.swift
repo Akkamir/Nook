@@ -115,6 +115,30 @@ final class NPCManager {
         }
     }
 
+    func npcID(at point: CGPoint) -> String? {
+        sprites.first { _, sprite in
+            sprite.calculateAccumulatedFrame().insetBy(dx: -12, dy: -12).contains(point)
+        }?.key
+    }
+
+    func selection(for id: String) -> NPCSelection? {
+        guard let model = models[id] else { return nil }
+        let visualState = NPCVisualState.derive(
+            from: model,
+            activeSessionCount: engine.activeSessionCounts[id, default: 0],
+            dayPhase: engine.dayPhase
+        )
+        return NPCSelection(
+            id: id,
+            name: model.name,
+            bond: model.bond,
+            totalTokens: model.totalTokens,
+            totalBits: model.totalBits,
+            activeSessionCount: visualState.sessionCount,
+            trait: visualState.trait
+        )
+    }
+
     func syncVisualStates() {
         for (id, model) in models {
             guard let sprite = sprites[id], let behavior = behaviors[id] else { continue }

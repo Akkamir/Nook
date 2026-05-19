@@ -4,6 +4,7 @@ import SpriteKit
 struct ContentView: View {
     @Environment(VillageEngine.self) private var engine
     @State private var scene: VillageScene?
+    @State private var selectedNPC: NPCSelection?
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -31,12 +32,36 @@ struct ContentView: View {
                 .background(.black.opacity(0.6))
                 .cornerRadius(4)
                 .padding(16)
+                .allowsHitTesting(false)
+
+            if let selectedNPC {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(selectedNPC.name)
+                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    Text("Bond \(selectedNPC.bond)")
+                    Text("\(selectedNPC.totalTokens) tokens")
+                    Text("\(selectedNPC.totalBits, specifier: "%.1f") Bits")
+                    Text(selectedNPC.activeSessionCount > 0 ? "\(selectedNPC.activeSessionCount) active session(s)" : "Idle")
+                    Text(selectedNPC.trait.rawValue)
+                }
+                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                .foregroundStyle(.white)
+                .padding(10)
+                .background(.black.opacity(0.72))
+                .cornerRadius(4)
+                .padding(.top, 56)
+                .padding(.leading, 16)
+                .allowsHitTesting(false)
+            }
         }
         .onAppear {
             guard scene == nil else { return }
             engine.start()  // start before scene creation so totalBits is populated on first frame
             let s = VillageScene(size: CGSize(width: TileMap.mapWidth, height: TileMap.mapHeight))
             s.configure(engine: engine)
+            s.onNPCSelection = { selection in
+                selectedNPC = selection
+            }
             scene = s
         }
     }
