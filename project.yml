@@ -61,3 +61,14 @@ targets:
           DEST="${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/NookDaemon"
           cp "${DAEMON_BIN}" "${DEST}"
           chmod +x "${DEST}"
+      - name: Copy Local Maygetsu Assets
+        script: |
+          SRC="${SRCROOT}/NookApp/GeneratedAssets.local/Maygetsu"
+          DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/Maygetsu"
+          if [ -f "${SRC}/maygetsu-manifest.json" ]; then
+            rm -rf "${DST}"
+            cp -R "${SRC}" "${DST}"
+            echo "Copied local Maygetsu assets into bundle."
+          else
+            echo "No local Maygetsu assets found — skipping copy."
+          fi
