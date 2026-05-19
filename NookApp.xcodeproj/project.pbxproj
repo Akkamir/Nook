@@ -16,7 +16,6 @@
 		24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AA11784DE252A1864D7AD9 /* NPCModel.swift */; };
 		25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EF6720CB18A402B6991A645 /* VillageEngine.swift */; };
 		2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0632114E8E40B2CA04E37E28 /* NPCSprite.swift */; };
-		420B2E2B38F783BE5F08C877 /* NPCWander.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD1D83CB30D9FB48922B680D /* NPCWander.swift */; };
 		4AD242BCB114822653227105 /* SessionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */; };
 		4B285942D8489685A5E3A252 /* ClaudeHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */; };
 		5532CF5BD2112D5A8E875BC1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2F18056EFB53C7EB6D68478E /* Assets.xcassets */; };
@@ -66,7 +65,6 @@
 		EF61D9B40D49D8C02EC0A03C /* DaemonInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonInstaller.swift; sourceTree = "<group>"; };
 		F5725AD04028894F2D2FB3B7 /* TileMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileMap.swift; sourceTree = "<group>"; };
 		F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerModels.swift; sourceTree = "<group>"; };
-		FD1D83CB30D9FB48922B680D /* NPCWander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCWander.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -99,7 +97,6 @@
 				ED2C24E5F764012190299A94 /* NPCSelection.swift */,
 				0632114E8E40B2CA04E37E28 /* NPCSprite.swift */,
 				44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */,
-				FD1D83CB30D9FB48922B680D /* NPCWander.swift */,
 				8FF945C762C4A512213149ED /* PixelNodeFactory.swift */,
 				6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */,
 				F5725AD04028894F2D2FB3B7 /* TileMap.swift */,
@@ -236,7 +233,6 @@
 				945DC0F8A10BA13FEFDDD443 /* NPCSelection.swift in Sources */,
 				2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */,
 				05BF171F8F6147A7F945B4A4 /* NPCVisualState.swift in Sources */,
-				420B2E2B38F783BE5F08C877 /* NPCWander.swift in Sources */,
 				8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */,
 				DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */,
 				4AD242BCB114822653227105 /* SessionDetector.swift in Sources */,
