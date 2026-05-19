@@ -2,37 +2,107 @@ import SpriteKit
 
 @MainActor
 final class NPCSprite: SKNode {
-
+    private let shadow: SKSpriteNode
+    private let leftFoot: SKSpriteNode
+    private let rightFoot: SKSpriteNode
     private let body: SKSpriteNode
+    private let head: SKSpriteNode
+    private let hair: SKSpriteNode
+    private let accessory: SKSpriteNode
+    private let desk: SKNode
+    private let statusBubble = SKNode()
     private let nameLabel: SKLabelNode
     private let bondLabel: SKLabelNode
+    private var currentVisualState: NPCVisualState?
 
     init(model: NPCModel) {
-        body = SKSpriteNode(
-            color: NSColor(red: 0.494, green: 0.784, blue: 0.643, alpha: 1),
-            size: CGSize(width: 32, height: 32)
+        shadow = PixelNodeFactory.rect(
+            size: CGSize(width: 34, height: 10),
+            color: NSColor.black.withAlphaComponent(0.35),
+            position: CGPoint(x: 0, y: -15),
+            z: -2
         )
-        nameLabel = SKLabelNode(fontNamed: "Monaco")
-        bondLabel = SKLabelNode(fontNamed: "Monaco")
+        leftFoot = PixelNodeFactory.rect(
+            size: CGSize(width: 8, height: 8),
+            color: NSColor(red: 0.14, green: 0.16, blue: 0.20, alpha: 1),
+            position: CGPoint(x: -7, y: -12),
+            z: 1
+        )
+        rightFoot = PixelNodeFactory.rect(
+            size: CGSize(width: 8, height: 8),
+            color: NSColor(red: 0.14, green: 0.16, blue: 0.20, alpha: 1),
+            position: CGPoint(x: 7, y: -12),
+            z: 1
+        )
+        body = PixelNodeFactory.rect(
+            size: CGSize(width: 22, height: 24),
+            color: NSColor(red: 0.31, green: 0.62, blue: 0.78, alpha: 1),
+            position: CGPoint(x: 0, y: -1),
+            z: 2
+        )
+        head = PixelNodeFactory.rect(
+            size: CGSize(width: 20, height: 18),
+            color: NSColor(red: 0.93, green: 0.75, blue: 0.58, alpha: 1),
+            position: CGPoint(x: 0, y: 18),
+            z: 3
+        )
+        hair = PixelNodeFactory.rect(
+            size: CGSize(width: 22, height: 7),
+            color: NSColor(red: 0.17, green: 0.10, blue: 0.07, alpha: 1),
+            position: CGPoint(x: 0, y: 27),
+            z: 4
+        )
+        accessory = PixelNodeFactory.rect(
+            size: CGSize(width: 24, height: 4),
+            color: .clear,
+            position: CGPoint(x: 0, y: 18),
+            z: 5
+        )
+        desk = SKNode()
+        nameLabel = PixelNodeFactory.label(
+            model.name,
+            size: 10,
+            color: .white,
+            position: CGPoint(x: 0, y: 48),
+            z: 20
+        )
+        bondLabel = PixelNodeFactory.label(
+            "",
+            size: 9,
+            color: NSColor(red: 1.0, green: 0.86, blue: 0.35, alpha: 1),
+            position: CGPoint(x: 0, y: 62),
+            z: 20
+        )
         super.init()
 
-        body.colorBlendFactor = 1.0
+        desk.zPosition = -1
+        desk.isHidden = true
+        desk.addChild(PixelNodeFactory.rect(
+            size: CGSize(width: 46, height: 18),
+            color: NSColor(red: 0.28, green: 0.18, blue: 0.10, alpha: 1),
+            position: CGPoint(x: 0, y: -28),
+            z: 0
+        ))
+        desk.addChild(PixelNodeFactory.rect(
+            size: CGSize(width: 16, height: 10),
+            color: NSColor(red: 0.07, green: 0.12, blue: 0.16, alpha: 1),
+            position: CGPoint(x: -11, y: -20),
+            z: 1
+        ))
+
+        addChild(shadow)
+        addChild(desk)
+        addChild(leftFoot)
+        addChild(rightFoot)
         addChild(body)
-
-        nameLabel.fontSize = 11
-        nameLabel.fontColor = .white
-        nameLabel.verticalAlignmentMode = .bottom
-        nameLabel.position = CGPoint(x: 0, y: 20)
-        nameLabel.text = model.name
+        addChild(head)
+        addChild(hair)
+        addChild(accessory)
         addChild(nameLabel)
-
-        bondLabel.fontSize = 9
-        bondLabel.fontColor = NSColor(red: 0.961, green: 0.902, blue: 0.639, alpha: 1)
-        bondLabel.verticalAlignmentMode = .bottom
-        bondLabel.position = CGPoint(x: 0, y: 34)
-        bondLabel.text = "⬡ \(model.bond)  \(formatBits(model.totalBits))"
-        bondLabel.isHidden = model.bond < 1
         addChild(bondLabel)
+        addChild(statusBubble)
+
+        update(model: model)
     }
 
     required init?(coder: NSCoder) {
@@ -40,9 +110,37 @@ final class NPCSprite: SKNode {
     }
 
     func update(model: NPCModel) {
-        nameLabel.text = model.name
-        bondLabel.text = "⬡ \(model.bond)  \(formatBits(model.totalBits))"
-        bondLabel.isHidden = model.bond < 1
+        let fallback = NPCVisualState.derive(
+            from: model,
+            activeSessionCount: currentVisualState?.sessionCount ?? 0,
+            dayPhase: currentVisualState?.isNight == true ? .night : .day
+        )
+        apply(visualState: fallback)
+    }
+
+    func apply(visualState: NPCVisualState) {
+        currentVisualState = visualState
+        nameLabel.text = visualState.name
+        bondLabel.text = "Bond \(visualState.bond)  \(formatBits(visualState.totalBits))"
+
+        let palette = palette(for: visualState)
+        body.color = palette.body
+        hair.color = palette.hair
+        accessory.color = palette.accessory
+        accessory.isHidden = visualState.bond < 2
+        desk.isHidden = !visualState.isWorking
+
+        statusBubble.removeAllChildren()
+        if visualState.isWorking {
+            let symbol = visualState.loadTier >= 3 ? "!!!" : String(repeating: ">", count: visualState.loadTier)
+            statusBubble.addChild(PixelNodeFactory.bubble(text: symbol, position: CGPoint(x: 0, y: 82)))
+            startWorkingAnimation(loadTier: visualState.loadTier)
+        } else if visualState.activity == .resting {
+            statusBubble.addChild(PixelNodeFactory.bubble(text: "zzz", position: CGPoint(x: 0, y: 82)))
+            stopWorkingAnimation()
+        } else {
+            stopWorkingAnimation()
+        }
     }
 
     func showBitsGain(_ delta: Double) {
@@ -69,26 +167,61 @@ final class NPCSprite: SKNode {
         ]))
     }
 
+    func setActive(_ isActive: Bool) {
+        if isActive {
+            startWorkingAnimation(loadTier: max(currentVisualState?.loadTier ?? 1, 1))
+        } else {
+            stopWorkingAnimation()
+            setScale(1.0)
+        }
+    }
+
+    private func palette(for state: NPCVisualState) -> (body: NSColor, hair: NSColor, accessory: NSColor) {
+        let bodyColors: [NSColor] = [
+            NSColor(red: 0.31, green: 0.62, blue: 0.78, alpha: 1),
+            NSColor(red: 0.50, green: 0.70, blue: 0.38, alpha: 1),
+            NSColor(red: 0.66, green: 0.48, blue: 0.78, alpha: 1),
+            NSColor(red: 0.82, green: 0.58, blue: 0.30, alpha: 1),
+            NSColor(red: 0.90, green: 0.74, blue: 0.26, alpha: 1)
+        ]
+        let index = max(0, min(state.bond - 1, bodyColors.count - 1))
+        let accessory: NSColor
+        switch state.trait {
+        case .newAgent:
+            accessory = .clear
+        case .steady:
+            accessory = NSColor(red: 0.95, green: 0.95, blue: 0.78, alpha: 1)
+        case .deepThinker:
+            accessory = NSColor(red: 0.10, green: 0.13, blue: 0.18, alpha: 1)
+        case .powerUser:
+            accessory = NSColor(red: 0.25, green: 0.95, blue: 0.74, alpha: 1)
+        }
+        return (
+            body: bodyColors[index],
+            hair: state.isNight ? NSColor(red: 0.08, green: 0.08, blue: 0.13, alpha: 1) : NSColor(red: 0.17, green: 0.10, blue: 0.07, alpha: 1),
+            accessory: accessory
+        )
+    }
+
+    private func startWorkingAnimation(loadTier: Int) {
+        let duration = max(0.12, 0.34 - Double(loadTier) * 0.06)
+        if action(forKey: "workBob") == nil {
+            let bob = SKAction.repeatForever(.sequence([
+                .moveBy(x: 0, y: 2, duration: duration),
+                .moveBy(x: 0, y: -2, duration: duration)
+            ]))
+            run(bob, withKey: "workBob")
+        }
+    }
+
+    private func stopWorkingAnimation() {
+        removeAction(forKey: "workBob")
+    }
+
     private func formatBits(_ bits: Double) -> String {
         if bits >= 1_000_000 { return String(format: "%.1fM", bits / 1_000_000) }
         if bits >= 1_000 { return String(format: "%.1fk", bits / 1_000) }
         if bits >= 10 { return String(format: "%.0f", bits) }
         return String(format: "%.1f", bits)
-    }
-
-    func setActive(_ isActive: Bool) {
-        if isActive {
-            body.color = NSColor(red: 0.42, green: 0.50, blue: 0.83, alpha: 1.0)
-            guard action(forKey: "pulse") == nil else { return }
-            let pulse = SKAction.repeatForever(SKAction.sequence([
-                SKAction.scale(to: 0.85, duration: 0.5),
-                SKAction.scale(to: 1.0, duration: 0.5)
-            ]))
-            run(pulse, withKey: "pulse")
-        } else {
-            body.color = NSColor(red: 0.494, green: 0.784, blue: 0.643, alpha: 1.0)
-            removeAction(forKey: "pulse")
-            setScale(1.0)
-        }
     }
 }

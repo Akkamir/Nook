@@ -51,3 +51,13 @@ targets:
       path: NookApp/NookApp.entitlements
       properties:
         com.apple.security.app-sandbox: false
+    postBuildScripts:
+      - name: Embed NookDaemon
+        script: |
+          set -e
+          NOOK_PKG="${SRCROOT}"
+          swift build --package-path "${NOOK_PKG}" -c release
+          DAEMON_BIN="$(swift build --package-path "${NOOK_PKG}" -c release --show-bin-path)/NookDaemon"
+          DEST="${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/NookDaemon"
+          cp "${DAEMON_BIN}" "${DEST}"
+          chmod +x "${DEST}"
