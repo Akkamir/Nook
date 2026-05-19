@@ -76,11 +76,16 @@ final class NPCManager {
                     tileY: currentTile.tileY
                 )
                 sprites[id]?.update(model: updated)
+                if let previousBond = lastBondByAgent[id], record.bond > previousBond {
+                    sprites[id]?.showBondPromotion(level: record.bond)
+                }
+                lastBondByAgent[id] = record.bond
                 behaviors[id]?.update(model: updated)
                 if delta > 0 { sprites[id]?.showBitsGain(delta) }
                 models[id] = updated
             }
         }
+        syncVisualStates()
 
         // 3. Removals
         for id in spriteIDs.subtracting(agentIDs) {

@@ -167,6 +167,33 @@ final class NPCSprite: SKNode {
         ]))
     }
 
+    func showBondPromotion(level: Int) {
+        let ring = SKShapeNode(circleOfRadius: 28)
+        ring.strokeColor = NSColor(red: 1.0, green: 0.88, blue: 0.30, alpha: 1)
+        ring.lineWidth = 3
+        ring.alpha = 0.95
+        ring.zPosition = 70
+        addChild(ring)
+
+        let label = PixelNodeFactory.label(
+            "Bond \(level)",
+            size: 12,
+            color: NSColor(red: 1.0, green: 0.88, blue: 0.30, alpha: 1),
+            position: CGPoint(x: 0, y: 94),
+            z: 72
+        )
+        addChild(label)
+
+        ring.run(.sequence([
+            .group([.scale(to: 1.8, duration: 0.55), .fadeOut(withDuration: 0.55)]),
+            .removeFromParent()
+        ]))
+        label.run(.sequence([
+            .group([.moveBy(x: 0, y: 24, duration: 0.9), .fadeOut(withDuration: 0.9)]),
+            .removeFromParent()
+        ]))
+    }
+
     func setActive(_ isActive: Bool) {
         if isActive {
             startWorkingAnimation(loadTier: max(currentVisualState?.loadTier ?? 1, 1))
