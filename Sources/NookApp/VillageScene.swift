@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class VillageScene: SKScene {
     var onNPCSelection: ((NPCSelection?) -> Void)?
+    var onLocalAssetAvailability: ((Bool) -> Void)?
 
     private var tileMap: TileMap!
     private var decorLayer: VillageDecorLayer?
@@ -52,10 +53,12 @@ final class VillageScene: SKScene {
         villageCamera.attach(to: view)
 
         if let catalog = PixelAssetCatalog.loadMaygetsu() {
+            onLocalAssetAvailability?(true)
             let assetLayer = AssetVillageLayer(catalog: catalog)
             addChild(assetLayer)
             assetVillageLayer = assetLayer
         } else {
+            onLocalAssetAvailability?(false)
             // TileMap
             tileMap = TileMap()
             addChild(tileMap)

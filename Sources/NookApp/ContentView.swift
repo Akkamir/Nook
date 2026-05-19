@@ -5,6 +5,7 @@ struct ContentView: View {
     @Environment(VillageEngine.self) private var engine
     @State private var scene: VillageScene?
     @State private var selectedNPC: NPCSelection?
+    @State private var localVillageAssetsAvailable = true
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -34,6 +35,21 @@ struct ContentView: View {
                 .padding(16)
                 .allowsHitTesting(false)
 
+            if !localVillageAssetsAvailable {
+                HStack {
+                    Spacer()
+                    Text("Local village assets missing")
+                        .font(.system(size: 12, weight: .regular, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.black.opacity(0.62))
+                        .cornerRadius(4)
+                }
+                .padding(16)
+                .allowsHitTesting(false)
+            }
+
             if let selectedNPC {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(selectedNPC.name)
@@ -58,10 +74,13 @@ struct ContentView: View {
             guard scene == nil else { return }
             engine.start()  // start before scene creation so totalBits is populated on first frame
             let s = VillageScene(size: CGSize(width: TileMap.mapWidth, height: TileMap.mapHeight))
-            s.configure(engine: engine)
             s.onNPCSelection = { selection in
                 selectedNPC = selection
             }
+            s.onLocalAssetAvailability = { available in
+                localVillageAssetsAvailable = available
+            }
+            s.configure(engine: engine)
             scene = s
         }
     }
