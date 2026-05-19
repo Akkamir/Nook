@@ -12,6 +12,7 @@ final class VillageScene: SKScene {
     private var lastAgentCount: Int = 0
     private var lastTotalBits: Double = -1
     private var lastActiveSessions: Set<String> = []
+    private var lastActiveSessionCounts: [String: Int] = [:]
     private var initialZoomSet = false
 
     // Called by ContentView when engine is available
@@ -22,6 +23,7 @@ final class VillageScene: SKScene {
         npcManager?.syncActiveStates(engine.activeSessions)
         lastAgentCount = engine.agents.count
         lastActiveSessions = engine.activeSessions
+        lastActiveSessionCounts = engine.activeSessionCounts
         // Animate pending bits once on configure (app launch)
         if engine.pendingBits > 0 {
             hud?.animatePending(engine.pendingBits)
@@ -115,6 +117,10 @@ final class VillageScene: SKScene {
         if let engine, engine.activeSessions != lastActiveSessions {
             npcManager?.syncActiveStates(engine.activeSessions)
             lastActiveSessions = engine.activeSessions
+        }
+        if let engine, engine.activeSessionCounts != lastActiveSessionCounts {
+            npcManager?.syncVisualStates()
+            lastActiveSessionCounts = engine.activeSessionCounts
         }
         if let engine, !engine.newBitEvents.isEmpty {
             npcManager?.handleBitEvents(engine.newBitEvents)

@@ -102,6 +102,10 @@ final class NPCManager {
         }
     }
 
+    func syncVisualStates() {
+        // Filled in by the NPC visual state pass. Kept as a stable scene hook.
+    }
+
     func syncActiveStates(_ active: Set<String>) {
         guard active != activeAgents else { return }
         let previous = activeAgents

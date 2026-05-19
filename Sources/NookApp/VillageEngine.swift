@@ -10,6 +10,7 @@ final class VillageEngine {
 
     private(set) var dayPhase: DayPhase = DayPhase.current()
     private(set) var activeSessions: Set<String> = []
+    private(set) var activeSessionCounts: [String: Int] = [:]
     var newBitEvents: [BitEvent] = []
 
     private let ledgerURL: URL
@@ -59,7 +60,8 @@ final class VillageEngine {
             Task { @MainActor in
                 let changed = await self.sessionDetector.handleHookEvent(event)
                 if changed {
-                    self.activeSessions = await self.sessionDetector.detectActive()
+                    self.activeSessionCounts = await self.sessionDetector.detectActiveCounts()
+                    self.activeSessions = Set(self.activeSessionCounts.keys)
                 }
             }
         }
@@ -78,7 +80,9 @@ final class VillageEngine {
         timer.setEventHandler { [weak self] in
             guard let self else { return }
             Task { @MainActor in
-                self.activeSessions = await self.sessionDetector.detectActive()
+                let counts = await self.sessionDetector.detectActiveCounts()
+                self.activeSessionCounts = counts
+                self.activeSessions = Set(counts.keys)
             }
         }
         timer.resume()

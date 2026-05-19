@@ -89,24 +89,38 @@ actor SessionDetector {
     }
 
     func detectActive() -> Set<String> {
+        Set(detectActiveCounts().keys)
+    }
+
+    func detectActiveCounts() -> [String: Int] {
         pruneState()
         let cutoff = now().addingTimeInterval(-300)
+        var counts: [String: Int] = [:]
+
+        for session in sessionAgents.values {
+            guard recentlyEndedAgents[session.agent] == nil else { continue }
+            counts[session.agent, default: 0] += 1
+        }
+
+        for agent in hookActiveAgents where recentlyEndedAgents[agent] == nil {
+            counts[agent] = max(counts[agent, default: 0], 1)
+        }
+
         guard let entries = try? fm.contentsOfDirectory(
             at: claudeProjectsURL,
             includingPropertiesForKeys: [.isDirectoryKey],
             options: .skipsHiddenFiles
-        ) else { return hookActiveAgents }
+        ) else { return counts }
 
-        var active = hookActiveAgents
         for entry in entries {
             guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
             if hasRecentJSONL(in: entry, since: cutoff),
                let name = agentName(forProjectDir: entry) {
                 guard recentlyEndedAgents[name] == nil else { continue }
-                active.insert(name)
+                counts[name] = max(counts[name, default: 0], 1)
             }
         }
-        return active
+        return counts
     }
 
     private func hasRecentJSONL(in dir: URL, since cutoff: Date) -> Bool {
