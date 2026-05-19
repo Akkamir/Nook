@@ -12,6 +12,7 @@
 
 ## Backlog (hors phases planifiées)
 
+- **Immediate visual foundation before Phase 10+** — execute `docs/superpowers/plans/2026-05-19-nook-npc-village-graphics.md` before farming, terminal panels, or build mode. The app needs a convincing NPC/village baseline first.
 - **Project Linker** — UI dans Nook pour lier un répertoire projet à un NPC : scan des projets Claude existants (`~/.claude/projects/`), sélection du dossier réel correspondant, création automatique du `.pixelvillage` avec le bon `{"agent":"NomDuNPC"}`. Évite d'avoir à créer le fichier manuellement pour chaque projet.
 
 ---
