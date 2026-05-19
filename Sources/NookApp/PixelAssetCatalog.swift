@@ -20,6 +20,17 @@ struct PixelAssetManifest: Codable, Equatable {
     let tileSize: Int
     let terrain: [PixelAssetEntry]
     let props: [PixelAssetEntry]
+    let characters: [PixelAssetEntry]
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = try c.decode(Int.self, forKey: .version)
+        pack = try c.decode(String.self, forKey: .pack)
+        tileSize = try c.decode(Int.self, forKey: .tileSize)
+        terrain = try c.decode([PixelAssetEntry].self, forKey: .terrain)
+        props = try c.decode([PixelAssetEntry].self, forKey: .props)
+        characters = (try? c.decode([PixelAssetEntry].self, forKey: .characters)) ?? []
+    }
 }
 
 final class PixelAssetCatalog {
@@ -62,14 +73,32 @@ final class PixelAssetCatalog {
             candidates.append(URL(fileURLWithPath: override, isDirectory: true))
         }
 
+        // Bundled (only present when explicitly copied into the app bundle)
         if let resourceURL = bundle.resourceURL {
             candidates.append(resourceURL.appendingPathComponent("GeneratedAssets.local/Maygetsu", isDirectory: true))
             candidates.append(resourceURL.appendingPathComponent("Maygetsu", isDirectory: true))
         }
 
+        // Walk up from bundle path — finds the repo root even when Xcode sets a
+        // different CWD (e.g. DerivedData). Stops after 10 levels.
+        let relPath = "NookApp/GeneratedAssets.local/Maygetsu"
+        var walkers: [URL] = []
+        if let bundleURL = bundle.bundleURL.standardizedFileURL as URL? {
+            walkers.append(bundleURL)
+        }
         let cwd = URL(fileURLWithPath: currentDirectory, isDirectory: true)
-        candidates.append(cwd.appendingPathComponent("NookApp/GeneratedAssets.local/Maygetsu", isDirectory: true))
-        candidates.append(cwd.appendingPathComponent("GeneratedAssets.local/Maygetsu", isDirectory: true))
+        walkers.append(cwd)
+
+        for start in walkers {
+            var dir = start
+            for _ in 0..<10 {
+                candidates.append(dir.appendingPathComponent(relPath, isDirectory: true))
+                candidates.append(dir.appendingPathComponent("GeneratedAssets.local/Maygetsu", isDirectory: true))
+                let parent = dir.deletingLastPathComponent()
+                if parent.path == dir.path { break }
+                dir = parent
+            }
+        }
 
         return unique(candidates)
     }

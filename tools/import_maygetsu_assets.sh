@@ -1,145 +1,121 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env python3
+"""Import Maygetsu Cozy Town local assets into NookApp's generated asset catalog."""
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SOURCE_DIR="${ROOT_DIR}/Assets.local/Maygetsu/source"
-OUT_DIR="${ROOT_DIR}/NookApp/GeneratedAssets.local/Maygetsu"
-MANIFEST="${OUT_DIR}/maygetsu-manifest.json"
+import json
+import os
+import re
+import shutil
+import sys
+from pathlib import Path
 
-if [[ ! -d "${SOURCE_DIR}" ]]; then
-  cat >&2 <<EOF
-Maygetsu source assets not found.
+ROOT_DIR = Path(__file__).resolve().parent.parent
+SOURCE_DIR = ROOT_DIR / "Assets.local" / "Maygetsu" / "source"
+OUT_DIR = ROOT_DIR / "NookApp" / "GeneratedAssets.local" / "Maygetsu"
+MANIFEST = OUT_DIR / "maygetsu-manifest.json"
 
-Expected extracted assets under:
-  ${SOURCE_DIR}
 
-Download/extract the Maygetsu Cozy Town pack locally, then run:
-  tools/import_maygetsu_assets.sh
-EOF
-  exit 1
-fi
+def fail(msg: str) -> None:
+    print(msg, file=sys.stderr)
+    sys.exit(1)
 
-mapfile -t PNGS < <(find "${SOURCE_DIR}" -type f \( -iname '*.png' -o -iname '*.PNG' \) | sort)
-if [[ "${#PNGS[@]}" -eq 0 ]]; then
-  echo "No PNG files found under ${SOURCE_DIR}" >&2
-  exit 1
-fi
 
-rm -rf "${OUT_DIR}"
-mkdir -p "${OUT_DIR}/terrain" "${OUT_DIR}/props"
+if not SOURCE_DIR.exists():
+    fail(
+        f"Maygetsu source assets not found.\n\n"
+        f"Expected extracted assets under:\n  {SOURCE_DIR}\n\n"
+        f"Download/extract the Maygetsu Cozy Town pack locally, then run:\n"
+        f"  tools/import_maygetsu_assets.sh"
+    )
 
-json_escape() {
-  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+pngs = sorted(
+    p for p in SOURCE_DIR.rglob("*.png")
+    if "__MACOSX" not in str(p)
+)
+if not pngs:
+    fail(f"No PNG files found under {SOURCE_DIR}")
+
+if OUT_DIR.exists():
+    shutil.rmtree(OUT_DIR)
+for sub in ("terrain", "props", "characters"):
+    (OUT_DIR / sub).mkdir(parents=True, exist_ok=True)
+
+
+def find_and_copy(section: str, role: str, patterns: list[str], size: tuple[int, int]) -> dict | None:
+    """Find first PNG matching any pattern, copy it, return manifest entry."""
+    for pattern in patterns:
+        for p in pngs:
+            if re.search(pattern, p.name, re.IGNORECASE):
+                dest = OUT_DIR / section / f"{role}{p.suffix.lower()}"
+                shutil.copy2(p, dest)
+                w, h = size
+                return {
+                    "role": role,
+                    "path": f"{section}/{role}{p.suffix.lower()}",
+                    "kind": section.rstrip("s"),
+                    "tileWidth": w,
+                    "tileHeight": h,
+                }
+    return None
+
+
+terrain: list[dict] = []
+props: list[dict] = []
+characters: list[dict] = []
+
+# Terrain
+for role, patterns, size in [
+    ("grass",  ["terrain", "grass", "ground"],            (16, 16)),
+    ("path",   ["pavement", "path", "road", "cobble"],    (16, 16)),
+    ("water",  ["water", "river", "pond", "bridge"],      (16, 16)),
+    ("plaza",  ["pavement", "plaza", "cobble", "floor"],  (16, 16)),
+]:
+    entry = find_and_copy("terrain", role, patterns, size)
+    if entry:
+        terrain.append(entry)
+
+# Props
+for role, patterns, size in [
+    ("tree",      ["cozytown_tree\\.png", "pinetree", "2tree"],       (32, 48)),
+    ("bush",      ["bush", "shrub"],                                   (16, 16)),
+    ("bench",     ["bench_parkf", "bench_whitef", "bench"],            (16, 16)),
+    ("lamp",      ["biglamp", "smalllamp", "lamp", "lantern"],         (16, 32)),
+    ("house",     ["buildings_roofs", "buildings_walls", "roof"],      (16, 16)),
+    ("market",    ["marketstall01", "marketstall", "market", "stall"], (32, 32)),
+    ("fountain",  ["fountain01", "fountain", "well"],                  (32, 32)),
+    ("fence",     ["props_fences", "fence", "wall"],                   (16, 16)),
+    ("table",     ["props_table01", "table"],                          (16, 16)),
+    ("flowerbed", ["flowerbed_horizontal", "flowerbed", "flower"],     (16, 16)),
+]:
+    entry = find_and_copy("props", role, patterns, size)
+    if entry:
+        props.append(entry)
+
+# Character spritesheets
+for role, patterns in [
+    ("char_boy_walk",  ["characters_boy_walking"]),
+    ("char_girl_walk", ["characters_girl_walking"]),
+    ("char_boy_idle",  ["characters_boy_idle"]),
+    ("char_girl_idle", ["characters_girl_idle"]),
+]:
+    entry = find_and_copy("characters", role, patterns, (16, 16))
+    if entry:
+        characters.append(entry)
+
+if not terrain and not props and not characters:
+    fail("No known Maygetsu roles could be matched from PNG filenames.")
+
+manifest = {
+    "version": 1,
+    "pack": "Maygetsu Cozy Town",
+    "tileSize": 16,
+    "terrain": terrain,
+    "props": props,
+    "characters": characters,
 }
+MANIFEST.write_text(json.dumps(manifest, indent=2))
 
-find_match() {
-  local pattern="$1"
-  local fallback="${2:-}"
-  local match=""
-  for file in "${PNGS[@]}"; do
-    local base
-    base="$(basename "$file" | tr '[:upper:]' '[:lower:]')"
-    if [[ "$base" =~ $pattern ]]; then
-      match="$file"
-      break
-    fi
-  done
-  if [[ -z "$match" && -n "$fallback" ]]; then
-    for file in "${PNGS[@]}"; do
-      local base
-      base="$(basename "$file" | tr '[:upper:]' '[:lower:]')"
-      if [[ "$base" =~ $fallback ]]; then
-        match="$file"
-        break
-      fi
-    done
-  fi
-  printf '%s' "$match"
-}
-
-copy_role() {
-  local section="$1"
-  local role="$2"
-  local pattern="$3"
-  local fallback="${4:-}"
-  local match
-  match="$(find_match "$pattern" "$fallback")"
-  if [[ -z "$match" ]]; then
-    return 1
-  fi
-  local ext="${match##*.}"
-  local rel="${section}/${role}.${ext,,}"
-  cp "$match" "${OUT_DIR}/${rel}"
-  printf '%s' "$rel"
-}
-
-declare -a TERRAIN_ENTRIES=()
-declare -a PROP_ENTRIES=()
-
-add_entry() {
-  local array_name="$1"
-  local role="$2"
-  local rel="$3"
-  local kind="$4"
-  local width="$5"
-  local height="$6"
-  local entry
-  entry="    { \"role\": \"$(json_escape "$role")\", \"path\": \"$(json_escape "$rel")\", \"kind\": \"${kind}\", \"tileWidth\": ${width}, \"tileHeight\": ${height} }"
-  eval "$array_name+=(\"\$entry\")"
-}
-
-if rel="$(copy_role terrain grass 'grass|terrain|ground' '')"; then add_entry TERRAIN_ENTRIES grass "$rel" terrain 16 16; fi
-if rel="$(copy_role terrain path 'path|road|stone|cobble' '')"; then add_entry TERRAIN_ENTRIES path "$rel" terrain 16 16; fi
-if rel="$(copy_role terrain water 'water|river|pond' '')"; then add_entry TERRAIN_ENTRIES water "$rel" terrain 16 16; fi
-if rel="$(copy_role terrain plaza 'plaza|stone|cobble|floor' 'path|road')"; then add_entry TERRAIN_ENTRIES plaza "$rel" terrain 16 16; fi
-
-if rel="$(copy_role props tree 'tree|oak|pine' '')"; then add_entry PROP_ENTRIES tree "$rel" prop 16 16; fi
-if rel="$(copy_role props bush 'bush|shrub' '')"; then add_entry PROP_ENTRIES bush "$rel" prop 16 16; fi
-if rel="$(copy_role props bench 'bench|seat' '')"; then add_entry PROP_ENTRIES bench "$rel" prop 16 16; fi
-if rel="$(copy_role props lamp 'lamp|light|lantern' '')"; then add_entry PROP_ENTRIES lamp "$rel" prop 16 16; fi
-if rel="$(copy_role props house 'house|home|building|roof' '')"; then add_entry PROP_ENTRIES house "$rel" prop 16 16; fi
-if rel="$(copy_role props market 'market|stall|shop' '')"; then add_entry PROP_ENTRIES market "$rel" prop 16 16; fi
-if rel="$(copy_role props fountain 'fountain|well' '')"; then add_entry PROP_ENTRIES fountain "$rel" prop 16 16; fi
-if rel="$(copy_role props fence 'fence|wall' '')"; then add_entry PROP_ENTRIES fence "$rel" prop 16 16; fi
-
-if [[ "${#TERRAIN_ENTRIES[@]}" -eq 0 && "${#PROP_ENTRIES[@]}" -eq 0 ]]; then
-  echo "No known Maygetsu roles could be matched from PNG filenames." >&2
-  exit 1
-fi
-
-write_entries() {
-  local -n entries_ref="$1"
-  local count="${#entries_ref[@]}"
-  for ((i = 0; i < count; i++)); do
-    if [[ "$i" -lt $((count - 1)) ]]; then
-      printf '%s,\n' "${entries_ref[$i]}"
-    else
-      printf '%s\n' "${entries_ref[$i]}"
-    fi
-  done
-}
-
-{
-  cat <<EOF
-{
-  "version": 1,
-  "pack": "Maygetsu Cozy Town",
-  "tileSize": 16,
-  "terrain": [
-EOF
-  write_entries TERRAIN_ENTRIES
-  cat <<EOF
-  ],
-  "props": [
-EOF
-  write_entries PROP_ENTRIES
-  cat <<EOF
-  ]
-}
-EOF
-} > "${MANIFEST}"
-
-echo "Imported Maygetsu local assets:"
-echo "  ${MANIFEST}"
-echo "  terrain roles: ${#TERRAIN_ENTRIES[@]}"
-echo "  prop roles: ${#PROP_ENTRIES[@]}"
+print(f"Imported Maygetsu local assets:")
+print(f"  {MANIFEST}")
+print(f"  terrain roles: {len(terrain)}")
+print(f"  prop roles: {len(props)}")
+print(f"  character sheets: {len(characters)}")
