@@ -7,6 +7,7 @@ final class VillageScene: SKScene {
 
     private var tileMap: TileMap!
     private var decorLayer: VillageDecorLayer?
+    private var assetVillageLayer: AssetVillageLayer?
     private var villageCamera: VillageCamera!
     private var engine: VillageEngine?
     private var hud: HUD?
@@ -50,14 +51,20 @@ final class VillageScene: SKScene {
         // Attach pan gesture recognizer to the view
         villageCamera.attach(to: view)
 
-        // TileMap
-        tileMap = TileMap()
-        addChild(tileMap)
-        tileMap.build()
+        if let catalog = PixelAssetCatalog.loadMaygetsu() {
+            let assetLayer = AssetVillageLayer(catalog: catalog)
+            addChild(assetLayer)
+            assetVillageLayer = assetLayer
+        } else {
+            // TileMap
+            tileMap = TileMap()
+            addChild(tileMap)
+            tileMap.build()
 
-        let decor = VillageDecorLayer()
-        addChild(decor)
-        decorLayer = decor
+            let decor = VillageDecorLayer()
+            addChild(decor)
+            decorLayer = decor
+        }
 
         // Start centered on the parcelle
         villageCamera.position = CGPoint(

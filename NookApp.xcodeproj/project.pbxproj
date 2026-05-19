@@ -15,6 +15,7 @@
 		1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5725AD04028894F2D2FB3B7 /* TileMap.swift */; };
 		24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AA11784DE252A1864D7AD9 /* NPCModel.swift */; };
 		25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EF6720CB18A402B6991A645 /* VillageEngine.swift */; };
+		27D8FF885473695A134DE1F1 /* AssetVillageLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE36CEF1F5177D25A0CAE68 /* AssetVillageLayer.swift */; };
 		2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0632114E8E40B2CA04E37E28 /* NPCSprite.swift */; };
 		4AD242BCB114822653227105 /* SessionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */; };
 		4B285942D8489685A5E3A252 /* ClaudeHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */; };
@@ -31,6 +32,8 @@
 		A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */; };
 		A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */; };
 		B0FA9796D49CEA662676048F /* NPCManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */; };
+		CE370E8C74F15F7C7E3C733C /* VillageLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57CB39EEF877552A0952566A /* VillageLayout.swift */; };
+		D48158162A9D76019D4550FC /* AssetTileMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 893F6C4B86BCE2EC5C24A49B /* AssetTileMap.swift */; };
 		DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF945C762C4A512213149ED /* PixelNodeFactory.swift */; };
 		DDF865642E6FD91ABB02BB39 /* DayPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 788FBB092E3C4F5AED11854B /* DayPhase.swift */; };
 		DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33EA76221916F3943152DFA /* VillageCamera.swift */; };
@@ -41,15 +44,18 @@
 		0632114E8E40B2CA04E37E28 /* NPCSprite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCSprite.swift; sourceTree = "<group>"; };
 		0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillagePersistence.swift; sourceTree = "<group>"; };
 		1652FDC596CE63B0635DC9DB /* FogSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FogSystem.swift; sourceTree = "<group>"; };
+		1CE36CEF1F5177D25A0CAE68 /* AssetVillageLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetVillageLayer.swift; sourceTree = "<group>"; };
 		2F18056EFB53C7EB6D68478E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageDecorLayer.swift; sourceTree = "<group>"; };
 		38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCManager.swift; sourceTree = "<group>"; };
 		44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCVisualState.swift; sourceTree = "<group>"; };
 		5247DA601A4F070C5449DF4C /* NookApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NookApp.entitlements; sourceTree = "<group>"; };
+		57CB39EEF877552A0952566A /* VillageLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageLayout.swift; sourceTree = "<group>"; };
 		6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetector.swift; sourceTree = "<group>"; };
 		72085E2B91EB795E3BD3BA2D /* NookApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NookApp.swift; sourceTree = "<group>"; };
 		788FBB092E3C4F5AED11854B /* DayPhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPhase.swift; sourceTree = "<group>"; };
 		7EF6720CB18A402B6991A645 /* VillageEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageEngine.swift; sourceTree = "<group>"; };
+		893F6C4B86BCE2EC5C24A49B /* AssetTileMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetTileMap.swift; sourceTree = "<group>"; };
 		8D9626FFA30055E3806B7CF9 /* HUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUD.swift; sourceTree = "<group>"; };
 		8FF945C762C4A512213149ED /* PixelNodeFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelNodeFactory.swift; sourceTree = "<group>"; };
 		967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookInstaller.swift; sourceTree = "<group>"; };
@@ -82,6 +88,8 @@
 		BC6EDA0834356ED7026E570A /* NookApp */ = {
 			isa = PBXGroup;
 			children = (
+				893F6C4B86BCE2EC5C24A49B /* AssetTileMap.swift */,
+				1CE36CEF1F5177D25A0CAE68 /* AssetVillageLayer.swift */,
 				A9716CBBC4718B4C10B97C53 /* ClaudeHookEvent.swift */,
 				967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */,
 				D5114922922791068AD6A06F /* ClaudeHookServer.swift */,
@@ -106,6 +114,7 @@
 				E33EA76221916F3943152DFA /* VillageCamera.swift */,
 				364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */,
 				7EF6720CB18A402B6991A645 /* VillageEngine.swift */,
+				57CB39EEF877552A0952566A /* VillageLayout.swift */,
 				0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */,
 				B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */,
 			);
@@ -220,6 +229,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D48158162A9D76019D4550FC /* AssetTileMap.swift in Sources */,
+				27D8FF885473695A134DE1F1 /* AssetVillageLayer.swift in Sources */,
 				185980967C8422CA297FEB49 /* ClaudeHookEvent.swift in Sources */,
 				4B285942D8489685A5E3A252 /* ClaudeHookInstaller.swift in Sources */,
 				1011C3D684DCFCB1C6013F9E /* ClaudeHookServer.swift in Sources */,
@@ -244,6 +255,7 @@
 				DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */,
 				A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */,
 				25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */,
+				CE370E8C74F15F7C7E3C733C /* VillageLayout.swift in Sources */,
 				A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */,
 				7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */,
 			);
