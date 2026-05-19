@@ -25,24 +25,22 @@ final class AssetVillageLayer: SKNode {
     }
 
     private func propNode(for prop: VillagePropPlacement) -> SKNode {
+        let ts = TileMap.tileSize
         let root = SKNode()
         root.position = CGPoint(
-            x: CGFloat(prop.tileX) * TileMap.tileSize + TileMap.tileSize / 2,
-            y: CGFloat(prop.tileY) * TileMap.tileSize + TileMap.tileSize / 2
+            x: CGFloat(prop.tileX) * ts + CGFloat(prop.footprintWidth) * ts / 2,
+            y: CGFloat(prop.tileY) * ts
         )
         root.zPosition = CGFloat(prop.tileY) + prop.zOffset
 
         if let entry = catalog.entry(for: prop.role, in: .props),
            let texture = catalog.texture(for: entry) {
-            let sprite = SKSpriteNode(
-                texture: texture,
-                size: CGSize(
-                    width: CGFloat(max(prop.footprintWidth, 1)) * TileMap.tileSize,
-                    height: CGFloat(max(prop.footprintHeight, 1)) * TileMap.tileSize
-                )
-            )
+            texture.filteringMode = .nearest
+            // Display at native pixel size × 2 (assets are 16px native, display tile = 32px)
+            let w = CGFloat(entry.tileWidth) * 2
+            let h = CGFloat(entry.tileHeight) * 2
+            let sprite = SKSpriteNode(texture: texture, size: CGSize(width: w, height: h))
             sprite.anchorPoint = CGPoint(x: 0.5, y: 0)
-            sprite.texture?.filteringMode = .nearest
             root.addChild(sprite)
         } else {
             root.addChild(fallbackProp(for: prop))
@@ -53,10 +51,11 @@ final class AssetVillageLayer: SKNode {
 
     private func fallbackProp(for prop: VillagePropPlacement) -> SKNode {
         let root = SKNode()
-        let width = CGFloat(max(prop.footprintWidth, 1)) * TileMap.tileSize
-        let height = CGFloat(max(prop.footprintHeight, 1)) * TileMap.tileSize
+        let ts = TileMap.tileSize
+        let width = CGFloat(max(prop.footprintWidth, 1)) * ts
+        let height = CGFloat(max(prop.footprintHeight, 1)) * ts
         switch prop.role {
-        case "tree":
+        case "tree", "pinetree":
             root.addChild(PixelNodeFactory.rect(size: CGSize(width: width * 0.45, height: height * 0.42), color: NSColor(red: 0.35, green: 0.22, blue: 0.10, alpha: 1), position: CGPoint(x: 0, y: height * 0.18), z: 1))
             root.addChild(PixelNodeFactory.rect(size: CGSize(width: width, height: height * 0.62), color: NSColor(red: 0.16, green: 0.45, blue: 0.22, alpha: 1), position: CGPoint(x: 0, y: height * 0.62), z: 2))
         case "house":

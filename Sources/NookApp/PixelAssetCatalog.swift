@@ -4,6 +4,7 @@ import SpriteKit
 enum PixelAssetSection {
     case terrain
     case props
+    case characters
 }
 
 struct PixelAssetEntry: Codable, Equatable {
@@ -110,6 +111,8 @@ final class PixelAssetCatalog {
             entries = manifest.terrain
         case .props:
             entries = manifest.props
+        case .characters:
+            entries = manifest.characters
         }
         return entries.first { $0.role == role }
     }
