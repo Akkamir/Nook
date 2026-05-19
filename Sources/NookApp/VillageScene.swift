@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class VillageScene: SKScene {
     private var tileMap: TileMap!
+    private var decorLayer: VillageDecorLayer?
     private var villageCamera: VillageCamera!
     private var engine: VillageEngine?
     private var hud: HUD?
@@ -51,6 +52,10 @@ final class VillageScene: SKScene {
         tileMap = TileMap()
         addChild(tileMap)
         tileMap.build()
+
+        let decor = VillageDecorLayer()
+        addChild(decor)
+        decorLayer = decor
 
         // Start centered on the parcelle
         villageCamera.position = CGPoint(

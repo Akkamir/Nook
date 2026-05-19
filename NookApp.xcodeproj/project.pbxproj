@@ -27,6 +27,7 @@
 		8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72085E2B91EB795E3BD3BA2D /* NookApp.swift */; };
 		910C2637B0A78141214F79F9 /* DaemonInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF61D9B40D49D8C02EC0A03C /* DaemonInstaller.swift */; };
 		A2421EE7CA0FE95C5E95D7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF08C230635E2A978BEA13E0 /* ContentView.swift */; };
+		A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */; };
 		A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */; };
 		B0FA9796D49CEA662676048F /* NPCManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */; };
 		DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF945C762C4A512213149ED /* PixelNodeFactory.swift */; };
@@ -40,6 +41,7 @@
 		0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillagePersistence.swift; sourceTree = "<group>"; };
 		1652FDC596CE63B0635DC9DB /* FogSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FogSystem.swift; sourceTree = "<group>"; };
 		2F18056EFB53C7EB6D68478E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageDecorLayer.swift; sourceTree = "<group>"; };
 		38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCManager.swift; sourceTree = "<group>"; };
 		44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCVisualState.swift; sourceTree = "<group>"; };
 		5247DA601A4F070C5449DF4C /* NookApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NookApp.entitlements; sourceTree = "<group>"; };
@@ -99,6 +101,7 @@
 				6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */,
 				F5725AD04028894F2D2FB3B7 /* TileMap.swift */,
 				E33EA76221916F3943152DFA /* VillageCamera.swift */,
+				364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */,
 				7EF6720CB18A402B6991A645 /* VillageEngine.swift */,
 				0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */,
 				B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */,
@@ -235,6 +238,7 @@
 				4AD242BCB114822653227105 /* SessionDetector.swift in Sources */,
 				1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */,
 				DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */,
+				A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */,
 				25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */,
 				A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */,
 				7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */,
