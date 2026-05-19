@@ -61,9 +61,9 @@ struct VillageLayout: Equatable {
         let props: [VillagePropPlacement] = [
             // Fontaine au centre
             VillagePropPlacement(role: "fountain", tileX: cx - 1, tileY: cy - 1, footprintWidth: 2, footprintHeight: 2, zOffset: 2),
-            // Maisons dans les coins hauts
-            VillagePropPlacement(role: "house", tileX: origin.tileX, tileY: origin.tileY + 13, footprintWidth: 3, footprintHeight: 5, zOffset: 1),
-            VillagePropPlacement(role: "house", tileX: origin.tileX + 14, tileY: origin.tileY + 13, footprintWidth: 3, footprintHeight: 5, zOffset: 1),
+            // Maisons dans les coins hauts (96×96px natifs → footprint 6×6 tiles natifs = 3×3 tiles display)
+            VillagePropPlacement(role: "house_purple", tileX: origin.tileX, tileY: origin.tileY + 13, footprintWidth: 6, footprintHeight: 6, zOffset: 1),
+            VillagePropPlacement(role: "house_pink",   tileX: origin.tileX + 11, tileY: origin.tileY + 13, footprintWidth: 6, footprintHeight: 6, zOffset: 1),
             // Marché
             VillagePropPlacement(role: "market", tileX: cx + 4, tileY: origin.tileY + 14, footprintWidth: 3, footprintHeight: 4, zOffset: 1),
             // Arbres dans les coins herbe

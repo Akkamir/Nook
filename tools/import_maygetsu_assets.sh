@@ -72,12 +72,13 @@ def copy_asset(src: Path, dest: Path) -> None:
 pavements_src = PACK_DIR / "Tileset" / "Structure" / "cozytown_structure_pavements.png"
 terrain_src = PACK_DIR / "Tileset" / "Terrain" / "cozytown_terrain.png"
 
-# path → pavements.png tile (col=1, row=1) → pixels (16,16,32,32)
-crop_tile(pavements_src, OUT_DIR / "terrain" / "path.png", 16, 16, 32, 32)
+# path → pavements.png tile intérieur (col=2, row=2) → pixels (32,32,48,48)
+# col=1,row=1 était un coin de bordure → col=2,row=2 est un fill pur
+crop_tile(pavements_src, OUT_DIR / "terrain" / "path.png", 32, 32, 48, 48)
 terrain.append({"role": "path", "path": "terrain/path.png", "kind": "terrain", "tileWidth": 16, "tileHeight": 16})
 
-# plaza → pavements.png tile (col=2, row=2) → pixels (32,32,48,48)
-crop_tile(pavements_src, OUT_DIR / "terrain" / "plaza.png", 32, 32, 48, 48)
+# plaza → pavements.png tile intérieur (col=1, row=2) → pixels (16,32,32,48)
+crop_tile(pavements_src, OUT_DIR / "terrain" / "plaza.png", 16, 32, 32, 48)
 terrain.append({"role": "plaza", "path": "terrain/plaza.png", "kind": "terrain", "tileWidth": 16, "tileHeight": 16})
 
 # water → terrain.png tile (col=2, row=2) → pixels (32,32,48,48)
@@ -87,6 +88,18 @@ terrain.append({"role": "water", "path": "terrain/water.png", "kind": "terrain",
 # ground → terrain.png tile (col=1, row=7) → pixels (16,112,32,128)
 crop_tile(terrain_src, OUT_DIR / "terrain" / "ground.png", 16, 112, 32, 128)
 terrain.append({"role": "ground", "path": "terrain/ground.png", "kind": "terrain", "tileWidth": 16, "tileHeight": 16})
+
+# ─── MAISONS (crop depuis roofs.png 96×96px) ─────────────────────────────────
+roofs_src = PACK_DIR / "Tileset" / "Building" / "cozytown_buildings_roofs.png"
+# Maison violette : cols 0-5, rows 0-5 → pixels (0,0,96,96)
+crop_tile(roofs_src, OUT_DIR / "props" / "house_purple.png", 0, 0, 96, 96)
+props.append({"role": "house_purple", "path": "props/house_purple.png", "kind": "prop", "tileWidth": 96, "tileHeight": 96})
+# Maison rose : cols 6-11, rows 0-5 → pixels (96,0,192,96)
+crop_tile(roofs_src, OUT_DIR / "props" / "house_pink.png", 96, 0, 192, 96)
+props.append({"role": "house_pink", "path": "props/house_pink.png", "kind": "prop", "tileWidth": 96, "tileHeight": 96})
+# Maison orange/rouge : cols 0-5, rows 7-13 → pixels (0,112,96,208)
+crop_tile(roofs_src, OUT_DIR / "props" / "house_orange.png", 0, 112, 96, 208)
+props.append({"role": "house_orange", "path": "props/house_orange.png", "kind": "prop", "tileWidth": 96, "tileHeight": 96})
 
 # ─── PROPS ────────────────────────────────────────────────────────────────────
 nature_dir = PACK_DIR / "Individual" / "Nature"
