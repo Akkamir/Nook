@@ -6,7 +6,8 @@ final class NPCManager {
     private let engine: VillageEngine
 
     private var sprites: [String: NPCSprite] = [:]
-    private var wanders: [String: NPCWander] = [:]
+    private var behaviors: [String: NPCBehavior] = [:]
+    private var lastBondByAgent: [String: Int] = [:]
     private var models:  [String: NPCModel]  = [:]
     private var activeAgents: Set<String> = []
 
@@ -18,6 +19,7 @@ final class NPCManager {
     func sync() {
         let agentIDs = Set(engine.agents.keys)
         let spriteIDs = Set(sprites.keys)
+        let sortedIDs = engine.agents.keys.sorted()
 
         // 1. Additions
         for (id, record) in engine.agents where !sprites.keys.contains(id) {
@@ -42,15 +44,19 @@ final class NPCManager {
 
             scene?.addChild(sprite)
 
-            let wander = NPCWander(sprite: sprite, model: model)
-            if activeAgents.contains(id) {
-                sprite.setActive(true)
-            } else {
-                wander.start()
-            }
+            let slotIndex = sortedIDs.firstIndex(of: id) ?? sprites.count
+            let behavior = NPCBehavior(sprite: sprite, model: model, deskTile: deskTile(for: slotIndex))
+            let visualState = NPCVisualState.derive(
+                from: model,
+                activeSessionCount: engine.activeSessionCounts[id, default: 0],
+                dayPhase: engine.dayPhase
+            )
+            sprite.apply(visualState: visualState)
+            behavior.apply(visualState)
 
             sprites[id] = sprite
-            wanders[id] = wander
+            behaviors[id] = behavior
+            lastBondByAgent[id] = record.bond
             models[id]  = model
         }
 
@@ -59,16 +65,18 @@ final class NPCManager {
             guard let record = engine.agents[id], let existing = models[id] else { continue }
             if record.bond != existing.bond || record.name != existing.name || record.totalBits != existing.totalBits {
                 let delta = record.totalBits - existing.totalBits
+                let currentTile = behaviors[id]?.currentTile() ?? TilePosition(tileX: existing.tileX, tileY: existing.tileY)
                 let updated = NPCModel(
                     id: id,
                     name: record.name,
                     bond: record.bond,
                     totalTokens: record.totalTokens,
                     totalBits: record.totalBits,
-                    tileX: existing.tileX,
-                    tileY: existing.tileY
+                    tileX: currentTile.tileX,
+                    tileY: currentTile.tileY
                 )
                 sprites[id]?.update(model: updated)
+                behaviors[id]?.update(model: updated)
                 if delta > 0 { sprites[id]?.showBitsGain(delta) }
                 models[id] = updated
             }
@@ -76,10 +84,10 @@ final class NPCManager {
 
         // 3. Removals
         for id in spriteIDs.subtracting(agentIDs) {
-            wanders[id]?.stop()
             sprites[id]?.removeFromParent()
             sprites.removeValue(forKey: id)
-            wanders.removeValue(forKey: id)
+            behaviors.removeValue(forKey: id)
+            lastBondByAgent.removeValue(forKey: id)
             models.removeValue(forKey: id)
         }
     }
@@ -103,25 +111,22 @@ final class NPCManager {
     }
 
     func syncVisualStates() {
-        // Filled in by the NPC visual state pass. Kept as a stable scene hook.
+        for (id, model) in models {
+            guard let sprite = sprites[id], let behavior = behaviors[id] else { continue }
+            let visualState = NPCVisualState.derive(
+                from: model,
+                activeSessionCount: engine.activeSessionCounts[id, default: 0],
+                dayPhase: engine.dayPhase
+            )
+            sprite.apply(visualState: visualState)
+            behavior.apply(visualState)
+        }
     }
 
     func syncActiveStates(_ active: Set<String>) {
         guard active != activeAgents else { return }
-        let previous = activeAgents
         activeAgents = active
-        for (id, sprite) in sprites {
-            let wasActive = previous.contains(id)
-            let isActive = active.contains(id)
-            guard wasActive != isActive else { continue }
-            if isActive {
-                wanders[id]?.stop()
-                sprite.setActive(true)
-            } else {
-                sprite.setActive(false)
-                wanders[id]?.start()
-            }
-        }
+        syncVisualStates()
     }
 
     // Returns a random tile within the parcelle, avoiding a 2-tile radius around the tent center.
@@ -152,12 +157,18 @@ final class NPCManager {
         return (pos.tileX, pos.tileY)
     }
 
+    private func deskTile(for index: Int) -> TilePosition {
+        let startX = TileMap.parcelleOriginX + 4
+        let startY = TileMap.parcelleOriginY + TileMap.parcelleHeight - 5
+        let col = index % 4
+        let row = index / 4
+        return TilePosition(tileX: startX + col * 4, tileY: startY - row * 3)
+    }
+
     func currentPositions() -> [String: TilePosition] {
         var result: [String: TilePosition] = [:]
-        for (id, sprite) in sprites {
-            let tileX = Int(sprite.position.x / TileMap.tileSize)
-            let tileY = Int(sprite.position.y / TileMap.tileSize)
-            result[id] = TilePosition(tileX: tileX, tileY: tileY)
+        for (id, behavior) in behaviors {
+            result[id] = behavior.currentTile()
         }
         return result
     }

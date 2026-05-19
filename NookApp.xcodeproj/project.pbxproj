@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		05BF171F8F6147A7F945B4A4 /* NPCVisualState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */; };
+		0EAA348A8CD3E470C543E774 /* NPCBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED98C3737B8E7A1B0FF79415 /* NPCBehavior.swift */; };
 		1011C3D684DCFCB1C6013F9E /* ClaudeHookServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5114922922791068AD6A06F /* ClaudeHookServer.swift */; };
 		1575124CF722DEF35FAB659A /* LedgerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */; };
 		185980967C8422CA297FEB49 /* ClaudeHookEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9716CBBC4718B4C10B97C53 /* ClaudeHookEvent.swift */; };
@@ -57,6 +58,7 @@
 		DD49547CE7F7DAA060FDE161 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerWatcher.swift; sourceTree = "<group>"; };
 		E33EA76221916F3943152DFA /* VillageCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageCamera.swift; sourceTree = "<group>"; };
+		ED98C3737B8E7A1B0FF79415 /* NPCBehavior.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCBehavior.swift; sourceTree = "<group>"; };
 		EF61D9B40D49D8C02EC0A03C /* DaemonInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonInstaller.swift; sourceTree = "<group>"; };
 		F5725AD04028894F2D2FB3B7 /* TileMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileMap.swift; sourceTree = "<group>"; };
 		F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerModels.swift; sourceTree = "<group>"; };
@@ -87,6 +89,7 @@
 				F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */,
 				DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */,
 				72085E2B91EB795E3BD3BA2D /* NookApp.swift */,
+				ED98C3737B8E7A1B0FF79415 /* NPCBehavior.swift */,
 				38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */,
 				05AA11784DE252A1864D7AD9 /* NPCModel.swift */,
 				0632114E8E40B2CA04E37E28 /* NPCSprite.swift */,
@@ -221,6 +224,7 @@
 				5F1630065BA60BDB83194870 /* HUD.swift in Sources */,
 				1575124CF722DEF35FAB659A /* LedgerModels.swift in Sources */,
 				57A308F542352ABF9D9EA864 /* LedgerWatcher.swift in Sources */,
+				0EAA348A8CD3E470C543E774 /* NPCBehavior.swift in Sources */,
 				B0FA9796D49CEA662676048F /* NPCManager.swift in Sources */,
 				24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */,
 				2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */,
