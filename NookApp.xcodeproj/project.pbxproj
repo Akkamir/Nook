@@ -23,6 +23,7 @@
 		5F1630065BA60BDB83194870 /* HUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9626FFA30055E3806B7CF9 /* HUD.swift */; };
 		7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */; };
 		88393C57613EE65872E07918 /* FogSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1652FDC596CE63B0635DC9DB /* FogSystem.swift */; };
+		8A7405584E29E43EC55F497B /* PixelAssetCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */; };
 		8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72085E2B91EB795E3BD3BA2D /* NookApp.swift */; };
 		910C2637B0A78141214F79F9 /* DaemonInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF61D9B40D49D8C02EC0A03C /* DaemonInstaller.swift */; };
 		945DC0F8A10BA13FEFDDD443 /* NPCSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2C24E5F764012190299A94 /* NPCSelection.swift */; };
@@ -57,6 +58,7 @@
 		BF08C230635E2A978BEA13E0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C2642CCD90C9895978862368 /* NookApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NookApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5114922922791068AD6A06F /* ClaudeHookServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookServer.swift; sourceTree = "<group>"; };
+		DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelAssetCatalog.swift; sourceTree = "<group>"; };
 		DD49547CE7F7DAA060FDE161 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerWatcher.swift; sourceTree = "<group>"; };
 		E33EA76221916F3943152DFA /* VillageCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageCamera.swift; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 				ED2C24E5F764012190299A94 /* NPCSelection.swift */,
 				0632114E8E40B2CA04E37E28 /* NPCSprite.swift */,
 				44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */,
+				DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */,
 				8FF945C762C4A512213149ED /* PixelNodeFactory.swift */,
 				6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */,
 				F5725AD04028894F2D2FB3B7 /* TileMap.swift */,
@@ -234,6 +237,7 @@
 				2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */,
 				05BF171F8F6147A7F945B4A4 /* NPCVisualState.swift in Sources */,
 				8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */,
+				8A7405584E29E43EC55F497B /* PixelAssetCatalog.swift in Sources */,
 				DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */,
 				4AD242BCB114822653227105 /* SessionDetector.swift in Sources */,
 				1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */,
