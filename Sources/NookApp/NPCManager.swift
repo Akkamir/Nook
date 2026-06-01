@@ -143,6 +143,13 @@ final class NPCManager {
             activeSessionCount: engine.activeSessionCounts[id, default: 0],
             dayPhase: engine.dayPhase
         )
+
+        let agentSessions = engine.sessions.values.filter { $0.agentName == id }
+        let projects = ProjectRollup.forAgent(Array(agentSessions))
+        let recent = agentSessions.sorted { $0.lastActivityAt > $1.lastActivityAt }
+        let moments = Moment.forAgent(Array(agentSessions))
+        let summary = Moment.summary(Array(agentSessions))
+
         return NPCSelection(
             id: id,
             name: model.name,
@@ -150,7 +157,12 @@ final class NPCManager {
             totalTokens: model.totalTokens,
             totalBits: model.totalBits,
             activeSessionCount: visualState.sessionCount,
-            trait: visualState.trait
+            trait: visualState.trait,
+            projects: Array(projects.prefix(5)),
+            recentSessions: Array(recent.prefix(5)),
+            moments: moments,
+            currentStreakDays: summary.currentStreakDays,
+            longestSessionSeconds: summary.longestSessionSeconds
         )
     }
 

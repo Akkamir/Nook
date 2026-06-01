@@ -8,4 +8,11 @@ struct NPCSelection: Equatable {
     let totalBits: Double
     let activeSessionCount: Int
     let trait: NPCWorkTrait
+
+    // History (Task 8)
+    let projects: [ProjectRollup]
+    let recentSessions: [SessionRecord]
+    let moments: [Moment]
+    let currentStreakDays: Int
+    let longestSessionSeconds: TimeInterval
 }
