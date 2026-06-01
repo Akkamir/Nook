@@ -51,25 +51,19 @@ struct ContentView: View {
             }
 
             if let selectedNPC {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(selectedNPC.name)
-                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                    Text("Bond \(selectedNPC.bond)")
-                    Text("\(selectedNPC.totalTokens) tokens")
-                    Text("\(selectedNPC.totalBits, specifier: "%.1f") Bits")
-                    Text(selectedNPC.activeSessionCount > 0 ? "\(selectedNPC.activeSessionCount) active session(s)" : "Idle")
-                    Text(selectedNPC.trait.rawValue)
+                HStack {
+                    Spacer()
+                    NPCInspectorPanel(selection: selectedNPC) {
+                        self.selectedNPC = nil
+                        scene?.clearSelection()
+                    }
                 }
-                .font(.system(size: 12, weight: .regular, design: .monospaced))
-                .foregroundStyle(.white)
-                .padding(10)
-                .background(.black.opacity(0.72))
-                .cornerRadius(4)
-                .padding(.top, 56)
-                .padding(.leading, 16)
-                .allowsHitTesting(false)
+                .padding(.vertical, 16)
+                .padding(.trailing, 16)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
+        .animation(.easeOut(duration: 0.16), value: selectedNPC)
         .onAppear {
             guard scene == nil else { return }
             engine.start()  // start before scene creation so totalBits is populated on first frame

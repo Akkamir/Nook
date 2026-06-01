@@ -11,6 +11,20 @@ final class NPCManager {
     private var models:  [String: NPCModel]  = [:]
     private var activeAgents: Set<String> = []
 
+    struct TileBounds {
+        let minX, minY, maxX, maxY: Int
+        func contains(_ x: Int, _ y: Int) -> Bool {
+            x >= minX && x <= maxX && y >= minY && y <= maxY
+        }
+    }
+
+    var spawnBounds = TileBounds(
+        minX: TileMap.parcelleOriginX,
+        minY: TileMap.parcelleOriginY,
+        maxX: TileMap.parcelleOriginX + TileMap.parcelleWidth  - 1,
+        maxY: TileMap.parcelleOriginY + TileMap.parcelleHeight - 1
+    )
+
     init(scene: SKScene, engine: VillageEngine) {
         self.scene = scene
         self.engine = engine
@@ -40,12 +54,15 @@ final class NPCManager {
                 x: CGFloat(model.tileX) * TileMap.tileSize + TileMap.tileSize / 2,
                 y: CGFloat(model.tileY) * TileMap.tileSize + TileMap.tileSize / 2
             )
-            sprite.zPosition = 10
+            // TiledVillageLayer (z=4) + highest tile layer (z=100) + y-sort (≈2) = 106.
+            // SpriteView uses ignoresSiblingOrder=true → cumulative z matters.
+            // Set NPC above all tiles.
+            sprite.zPosition = 200
 
             scene?.addChild(sprite)
 
             let slotIndex = sortedIDs.firstIndex(of: id) ?? sprites.count
-            let behavior = NPCBehavior(sprite: sprite, model: model, deskTile: deskTile(for: slotIndex))
+            let behavior = NPCBehavior(sprite: sprite, model: model, deskTile: deskTile(for: slotIndex), spawnBounds: spawnBounds)
             let visualState = NPCVisualState.derive(
                 from: model,
                 activeSessionCount: engine.activeSessionCounts[id, default: 0],
@@ -64,7 +81,6 @@ final class NPCManager {
         for id in spriteIDs.intersection(agentIDs) {
             guard let record = engine.agents[id], let existing = models[id] else { continue }
             if record.bond != existing.bond || record.name != existing.name || record.totalBits != existing.totalBits {
-                let delta = record.totalBits - existing.totalBits
                 let currentTile = behaviors[id]?.currentTile() ?? TilePosition(tileX: existing.tileX, tileY: existing.tileY)
                 let updated = NPCModel(
                     id: id,
@@ -81,7 +97,6 @@ final class NPCManager {
                 }
                 lastBondByAgent[id] = record.bond
                 behaviors[id]?.update(model: updated)
-                if delta > 0 { sprites[id]?.showBitsGain(delta) }
                 models[id] = updated
             }
         }
@@ -139,6 +154,10 @@ final class NPCManager {
         )
     }
 
+    func containsNPC(id: String) -> Bool {
+        models[id] != nil
+    }
+
     func syncVisualStates() {
         for (id, model) in models {
             guard let sprite = sprites[id], let behavior = behaviors[id] else { continue }
@@ -158,40 +177,37 @@ final class NPCManager {
         syncVisualStates()
     }
 
-    // Returns a random tile within the parcelle, avoiding a 2-tile radius around the tent center.
     private func randomSpawnTile() -> (Int, Int) {
-        let centerX = TileMap.parcelleOriginX + TileMap.parcelleWidth / 2   // 64
-        let centerY = TileMap.parcelleOriginY + TileMap.parcelleHeight / 2  // 64
-
-        let minX = TileMap.parcelleOriginX
-        let maxX = TileMap.parcelleOriginX + TileMap.parcelleWidth - 1
-        let minY = TileMap.parcelleOriginY
-        let maxY = TileMap.parcelleOriginY + TileMap.parcelleHeight - 1
-
+        let b = spawnBounds
+        let centerX = (b.minX + b.maxX) / 2
+        let centerY = (b.minY + b.maxY) / 2
         for _ in 0..<10 {
-            let tileX = Int.random(in: minX...maxX)
-            let tileY = Int.random(in: minY...maxY)
+            let tileX = Int.random(in: b.minX...b.maxX)
+            let tileY = Int.random(in: b.minY...b.maxY)
             if abs(tileX - centerX) >= 2 || abs(tileY - centerY) >= 2 {
                 return (tileX, tileY)
             }
         }
-
-        // Fallback: corner of the parcelle, guaranteed outside exclusion zone
-        return (minX, minY)
+        return (b.minX, b.minY)
     }
 
     private func savedTile(for id: String) -> (Int, Int)? {
         let state = VillagePersistence.shared.load()
-        guard let pos = state.npcPositions[id] else { return nil }
+        guard let pos = state.npcPositions[id],
+              spawnBounds.contains(pos.tileX, pos.tileY) else { return nil }
         return (pos.tileX, pos.tileY)
     }
 
     private func deskTile(for index: Int) -> TilePosition {
-        let startX = TileMap.parcelleOriginX + 4
-        let startY = TileMap.parcelleOriginY + TileMap.parcelleHeight - 5
+        let b = spawnBounds
+        let startX = b.minX + 4
+        let startY = b.maxY - 4
         let col = index % 4
         let row = index / 4
-        return TilePosition(tileX: startX + col * 4, tileY: startY - row * 3)
+        return TilePosition(
+            tileX: min(startX + col * 4, b.maxX),
+            tileY: max(startY - row * 3, b.minY)
+        )
     }
 
     func currentPositions() -> [String: TilePosition] {

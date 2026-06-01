@@ -17,6 +17,10 @@ schemes:
         NookApp: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - NookAppTests
 
 targets:
   NookApp:
@@ -72,3 +76,36 @@ targets:
           else
             echo "No local Maygetsu assets found — skipping copy."
           fi
+      - name: Copy Tiled Map
+        script: |
+          SRC="${SRCROOT}/tiled"
+          DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/tiled"
+          if [ -f "${SRC}/nook-village.tmj" ]; then
+            rm -rf "${DST}"
+            cp -R "${SRC}" "${DST}"
+            PACK="${SRCROOT}/Assets.local/Maygetsu/source/CozyTown_AssetPack"
+            for TSJ in "${DST}/tilesets/"*.tsj; do
+              sed -i '' "s|../../Assets.local/Maygetsu/source/CozyTown_AssetPack|${PACK}|g" "${TSJ}"
+            done
+            echo "Copied and patched Tiled map into bundle."
+          else
+            echo "No Tiled map found — skipping copy."
+          fi
+  NookAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/NookAppTests
+    dependencies:
+      - target: NookApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mchau.nook.tests
+        SWIFT_VERSION: "6.0"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGNING_ALLOWED: "NO"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Nook.app/Contents/MacOS/Nook"
+        BUNDLE_LOADER: "$(TEST_HOST)"

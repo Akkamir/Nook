@@ -23,6 +23,7 @@ final class VillageEngine {
     private let sessionDetector = SessionDetector()
     private let hookServer = ClaudeHookServer()
     private let hookInstaller = ClaudeHookInstaller()
+    private let claudeProjectsWatcher = ClaudeProjectsWatcher()
 
     init(ledgerURL: URL = FileManager.default.homeDirectoryForCurrentUser
              .appendingPathComponent(".pixelvillage/ledger.json")) {
@@ -41,6 +42,7 @@ final class VillageEngine {
         reload()
         startDayNightTimer()
         startHookServer()
+        startClaudeProjectsWatcher()
         startSessionTimer()
     }
 
@@ -50,6 +52,7 @@ final class VillageEngine {
         dayNightTimer = nil
         sessionTimer?.cancel()
         sessionTimer = nil
+        claudeProjectsWatcher.stop()
         hookServer.stop()
         isRunning = false
     }
@@ -60,8 +63,7 @@ final class VillageEngine {
             Task { @MainActor in
                 let changed = await self.sessionDetector.handleHookEvent(event)
                 if changed {
-                    self.activeSessionCounts = await self.sessionDetector.detectActiveCounts()
-                    self.activeSessions = Set(self.activeSessionCounts.keys)
+                    await self.refreshActiveSessionCounts()
                 }
             }
         }
@@ -74,19 +76,33 @@ final class VillageEngine {
         }
     }
 
+    private func startClaudeProjectsWatcher() {
+        claudeProjectsWatcher.onChange = { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                await self.refreshActiveSessionCounts()
+            }
+        }
+        claudeProjectsWatcher.start()
+    }
+
     private func startSessionTimer() {
         let timer = DispatchSource.makeTimerSource(queue: .main)
         timer.schedule(deadline: .now(), repeating: .seconds(120))
         timer.setEventHandler { [weak self] in
             guard let self else { return }
             Task { @MainActor in
-                let counts = await self.sessionDetector.detectActiveCounts()
-                self.activeSessionCounts = counts
-                self.activeSessions = Set(counts.keys)
+                await self.refreshActiveSessionCounts()
             }
         }
         timer.resume()
         sessionTimer = timer
+    }
+
+    private func refreshActiveSessionCounts() async {
+        let counts = await sessionDetector.detectActiveCounts()
+        activeSessionCounts = counts
+        activeSessions = Set(counts.keys)
     }
 
     private func startDayNightTimer() {
@@ -119,9 +135,15 @@ final class VillageEngine {
         pendingBits = state.pendingBits
         agents = state.agents
 
+        if lastSeenEventSeq == -1 {
+            // First load: anchor to current position, don't replay old events.
+            lastSeenEventSeq = state.eventSeq
+            return
+        }
+
         let fresh = state.recentEvents.filter { $0.seq > lastSeenEventSeq }
         if !fresh.isEmpty {
-            newBitEvents = fresh
+            newBitEvents += fresh
             lastSeenEventSeq = fresh.map(\.seq).max() ?? lastSeenEventSeq
         }
     }

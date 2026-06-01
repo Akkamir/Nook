@@ -24,7 +24,7 @@ final class ClaudeWatcher {
         scanAllProjects()
 
         let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
-        timer.schedule(deadline: .now() + 2, repeating: .seconds(2))
+        timer.schedule(deadline: .now() + 0.25, repeating: .milliseconds(250))
         timer.setEventHandler { [weak self] in self?.scanAllProjects() }
         timer.resume()
         dispatchSource = timer
@@ -76,8 +76,14 @@ final class ClaudeWatcher {
         saveOffsets()
 
         let content = String(data: data, encoding: .utf8) ?? ""
+        var lastUsage: (Int, Int)? = nil
         for line in content.components(separatedBy: "\n") {
             guard let parsed = TranscriptParser.parseLine(line) else { continue }
+            let pair = (parsed.inputTokens, parsed.outputTokens)
+            // Skip zero-token streaming deltas and consecutive duplicate entries
+            guard pair.0 > 0 || pair.1 > 0 else { continue }
+            guard lastUsage.map({ $0 != pair }) ?? true else { continue }
+            lastUsage = pair
             let event = TokenEvent(
                 projectPath: projectPath,
                 inputTokens: parsed.inputTokens,

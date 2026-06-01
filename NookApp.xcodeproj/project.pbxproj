@@ -10,6 +10,7 @@
 		05BF171F8F6147A7F945B4A4 /* NPCVisualState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */; };
 		0EAA348A8CD3E470C543E774 /* NPCBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED98C3737B8E7A1B0FF79415 /* NPCBehavior.swift */; };
 		1011C3D684DCFCB1C6013F9E /* ClaudeHookServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5114922922791068AD6A06F /* ClaudeHookServer.swift */; };
+		117B7D7A2539D005E422EB5E /* house_pink.png in Resources */ = {isa = PBXBuildFile; fileRef = BE66F6FB5B2515F619C1CF3C /* house_pink.png */; };
 		1575124CF722DEF35FAB659A /* LedgerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */; };
 		185980967C8422CA297FEB49 /* ClaudeHookEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9716CBBC4718B4C10B97C53 /* ClaudeHookEvent.swift */; };
 		1A5ED630CE36A4288B66DA2E /* maygetsu-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 14C2FDEF2413183F6658D48D /* maygetsu-manifest.json */; };
@@ -20,58 +21,84 @@
 		273579AB62DD647DE59A3A22 /* flowerbed.png in Resources */ = {isa = PBXBuildFile; fileRef = EE5A1353BA48B62824498D5D /* flowerbed.png */; };
 		27D8FF885473695A134DE1F1 /* AssetVillageLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE36CEF1F5177D25A0CAE68 /* AssetVillageLayer.swift */; };
 		2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0632114E8E40B2CA04E37E28 /* NPCSprite.swift */; };
+		36425BDFEB826B3746C965F1 /* BondProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA44C5033FD00C73EB140D2E /* BondProgress.swift */; };
 		36D4795E0745205B3D1F558B /* char_boy_walk.png in Resources */ = {isa = PBXBuildFile; fileRef = C451021251E55454B88470F1 /* char_boy_walk.png */; };
+		37DB0635E10824B98268CF3E /* char_5.png in Resources */ = {isa = PBXBuildFile; fileRef = 28F1228EC3F459DA2727BC2B /* char_5.png */; };
+		3AA3C80F5E77DEE463BA557E /* ClaudeProjectsWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294B8A768380837FF39F8205 /* ClaudeProjectsWatcher.swift */; };
+		45E34D10576812F014FE8A0A /* SessionDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */; };
 		4AD242BCB114822653227105 /* SessionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */; };
 		4B285942D8489685A5E3A252 /* ClaudeHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */; };
 		5532CF5BD2112D5A8E875BC1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2F18056EFB53C7EB6D68478E /* Assets.xcassets */; };
 		57A308F542352ABF9D9EA864 /* LedgerWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */; };
+		5EB278EE10E9B6CECE614466 /* char_1.png in Resources */ = {isa = PBXBuildFile; fileRef = 6F6C98C4EC4AB0B801FF94C4 /* char_1.png */; };
 		5F1630065BA60BDB83194870 /* HUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9626FFA30055E3806B7CF9 /* HUD.swift */; };
+		65C2A4FA71AF3AE9D1B2B462 /* ClaudeProjectsWatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF6D1493B958601DA258FDD3 /* ClaudeProjectsWatcherTests.swift */; };
+		707E07897B3DE72BE0ED6FD7 /* char_3.png in Resources */ = {isa = PBXBuildFile; fileRef = EA4D97BD59346C2941FFED8A /* char_3.png */; };
+		707F4B624676BBB1B61CB45E /* char_4.png in Resources */ = {isa = PBXBuildFile; fileRef = D463EFBEE7462698FAC44776 /* char_4.png */; };
 		7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */; };
 		844029AFE16ACAC5D6036617 /* fence.png in Resources */ = {isa = PBXBuildFile; fileRef = 86F2FA90E298286AF78B584D /* fence.png */; };
 		84F3F47E06DCBD320E8E2524 /* char_girl_idle.png in Resources */ = {isa = PBXBuildFile; fileRef = DD4C61F89EEF2BF49288E9AB /* char_girl_idle.png */; };
 		88393C57613EE65872E07918 /* FogSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1652FDC596CE63B0635DC9DB /* FogSystem.swift */; };
+		896C008D3193175083FA6089 /* bush_large.png in Resources */ = {isa = PBXBuildFile; fileRef = 115E8D1B7237D862851B7074 /* bush_large.png */; };
+		89C467E6957F46E8274F5E63 /* NPCInspectorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D926F7793A8037D2ED36C5 /* NPCInspectorPanel.swift */; };
+		8A6B15CAFECF11C35E89AB12 /* TiledVillageLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */; };
 		8A7405584E29E43EC55F497B /* PixelAssetCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */; };
 		8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72085E2B91EB795E3BD3BA2D /* NookApp.swift */; };
+		8E80928ED42618A2EFA86460 /* house_purple.png in Resources */ = {isa = PBXBuildFile; fileRef = 851348E68B741BB3D500AD02 /* house_purple.png */; };
 		910C2637B0A78141214F79F9 /* DaemonInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF61D9B40D49D8C02EC0A03C /* DaemonInstaller.swift */; };
 		945DC0F8A10BA13FEFDDD443 /* NPCSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2C24E5F764012190299A94 /* NPCSelection.swift */; };
+		97489219F25658622875FD92 /* ground.png in Resources */ = {isa = PBXBuildFile; fileRef = EABEF51855B0E13A491C8164 /* ground.png */; };
 		996F91939BAB8A4AE357E161 /* fountain.png in Resources */ = {isa = PBXBuildFile; fileRef = 6CAC0DDFA107430AF6EC3C63 /* fountain.png */; };
 		9C0687E98AA614190AC6F370 /* char_boy_idle.png in Resources */ = {isa = PBXBuildFile; fileRef = 31CECC7765565AD5167A288D /* char_boy_idle.png */; };
 		A18C39FE0320400209DC9415 /* tree.png in Resources */ = {isa = PBXBuildFile; fileRef = 3938CD5B32CC406896BAE5E0 /* tree.png */; };
 		A2421EE7CA0FE95C5E95D7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF08C230635E2A978BEA13E0 /* ContentView.swift */; };
 		A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */; };
 		A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */; };
+		ADC915B016A9F472F495DDBE /* TiledMapData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E70DD5EA817B84A724ECDB75 /* TiledMapData.swift */; };
+		AEE5FB1A9217329A955198D4 /* char_0.png in Resources */ = {isa = PBXBuildFile; fileRef = E7DD7BEF7413F5080D9C32D4 /* char_0.png */; };
 		B0FA9796D49CEA662676048F /* NPCManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */; };
 		B4E3549C4A14AF726D111B85 /* water.png in Resources */ = {isa = PBXBuildFile; fileRef = E57097CB7891820262715289 /* water.png */; };
+		B4EDD90AE7ADD9B6CE726EE8 /* fountain2.png in Resources */ = {isa = PBXBuildFile; fileRef = DE9C3AB8B6B9B6BF3FB183AE /* fountain2.png */; };
 		B551961578601E62389CA1FA /* bush.png in Resources */ = {isa = PBXBuildFile; fileRef = 59E853286096A4FD418F54C9 /* bush.png */; };
+		BA1EBCC3A90A87D6792FCEF6 /* BondProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 630141035B347B3B0E85E786 /* BondProgressTests.swift */; };
 		BBF626A5DAE9E6339E92F7A5 /* lamp.png in Resources */ = {isa = PBXBuildFile; fileRef = A4FB58B52DAE8B8CC9F78B8E /* lamp.png */; };
+		BCA43C3CC5934C3C57BD974F /* pinetree.png in Resources */ = {isa = PBXBuildFile; fileRef = 89BAEA4339EF86789A0231BB /* pinetree.png */; };
 		C5C7EB819F685D8C5C679AC7 /* table.png in Resources */ = {isa = PBXBuildFile; fileRef = 7A3A58C9388E202D6A8FC73A /* table.png */; };
 		CE370E8C74F15F7C7E3C733C /* VillageLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57CB39EEF877552A0952566A /* VillageLayout.swift */; };
 		CF4AF8B248BCB380CD787C3E /* bench.png in Resources */ = {isa = PBXBuildFile; fileRef = BA0CAD8A563129B1F2480903 /* bench.png */; };
 		D016BE883A8243F1B3B327B6 /* market.png in Resources */ = {isa = PBXBuildFile; fileRef = 4E343E29ED6016B9A4146F32 /* market.png */; };
 		D48158162A9D76019D4550FC /* AssetTileMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 893F6C4B86BCE2EC5C24A49B /* AssetTileMap.swift */; };
 		D6ABAE391D3E7E0704CBD90B /* path.png in Resources */ = {isa = PBXBuildFile; fileRef = 6BBEAC07E20C0244E43220A4 /* path.png */; };
-		9A1B2C3D4E5F6A7B8C9D0E1F /* ground.png in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* ground.png */; };
-		AB12CD34EF56AB78CD90EF12 /* pinetree.png in Resources */ = {isa = PBXBuildFile; fileRef = BC23DE45F067BC89DE01F023 /* pinetree.png */; };
-		CD34EF56AB78CD90EF12AB34 /* bush_large.png in Resources */ = {isa = PBXBuildFile; fileRef = DE45F067BC89DE01F023BC45 /* bush_large.png */; };
-		EF56AB78CD90EF12AB34CD56 /* fountain2.png in Resources */ = {isa = PBXBuildFile; fileRef = F067BC89DE01F023BC45DE67 /* fountain2.png */; };
 		DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF945C762C4A512213149ED /* PixelNodeFactory.swift */; };
 		DDF865642E6FD91ABB02BB39 /* DayPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 788FBB092E3C4F5AED11854B /* DayPhase.swift */; };
 		DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33EA76221916F3943152DFA /* VillageCamera.swift */; };
+		E82089414A5DC38949E1AA4B /* char_2.png in Resources */ = {isa = PBXBuildFile; fileRef = B4816423A377146702B472CB /* char_2.png */; };
 		EE770D506B4A1C1403F79DD0 /* char_girl_walk.png in Resources */ = {isa = PBXBuildFile; fileRef = 6E36A33DFB7382F22F0AFB16 /* char_girl_walk.png */; };
+		F5E36C7DE04068DA979EA032 /* house_orange.png in Resources */ = {isa = PBXBuildFile; fileRef = BD6D25A0A25D4934393B5B01 /* house_orange.png */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		418313AF46E5202C6FB3D849 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 158ED4EDB411F069B98E932E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 52BFA12497D4B98E98EC4C51;
+			remoteInfo = NookApp;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		040C390DB14725661B2F8C5F /* NookAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NookAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		05AA11784DE252A1864D7AD9 /* NPCModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCModel.swift; sourceTree = "<group>"; };
 		0632114E8E40B2CA04E37E28 /* NPCSprite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCSprite.swift; sourceTree = "<group>"; };
 		0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillagePersistence.swift; sourceTree = "<group>"; };
+		115E8D1B7237D862851B7074 /* bush_large.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bush_large.png; sourceTree = "<group>"; };
 		14C2FDEF2413183F6658D48D /* maygetsu-manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "maygetsu-manifest.json"; sourceTree = "<group>"; };
 		1652FDC596CE63B0635DC9DB /* FogSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FogSystem.swift; sourceTree = "<group>"; };
 		1A622DAE1242B39AA1B078CD /* plaza.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = plaza.png; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* ground.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ground.png; sourceTree = "<group>"; };
-		BC23DE45F067BC89DE01F023 /* pinetree.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = pinetree.png; sourceTree = "<group>"; };
-		DE45F067BC89DE01F023BC45 /* bush_large.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bush_large.png; sourceTree = "<group>"; };
-		F067BC89DE01F023BC45DE67 /* fountain2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = fountain2.png; sourceTree = "<group>"; };
 		1CE36CEF1F5177D25A0CAE68 /* AssetVillageLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetVillageLayer.swift; sourceTree = "<group>"; };
+		28F1228EC3F459DA2727BC2B /* char_5.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_5.png; sourceTree = "<group>"; };
+		294B8A768380837FF39F8205 /* ClaudeProjectsWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProjectsWatcher.swift; sourceTree = "<group>"; };
 		2F18056EFB53C7EB6D68478E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		31CECC7765565AD5167A288D /* char_boy_idle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_boy_idle.png; sourceTree = "<group>"; };
 		364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageDecorLayer.swift; sourceTree = "<group>"; };
@@ -80,35 +107,53 @@
 		44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCVisualState.swift; sourceTree = "<group>"; };
 		4E343E29ED6016B9A4146F32 /* market.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = market.png; sourceTree = "<group>"; };
 		5247DA601A4F070C5449DF4C /* NookApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NookApp.entitlements; sourceTree = "<group>"; };
+		55D926F7793A8037D2ED36C5 /* NPCInspectorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCInspectorPanel.swift; sourceTree = "<group>"; };
 		57CB39EEF877552A0952566A /* VillageLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageLayout.swift; sourceTree = "<group>"; };
 		59E853286096A4FD418F54C9 /* bush.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bush.png; sourceTree = "<group>"; };
+		630141035B347B3B0E85E786 /* BondProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BondProgressTests.swift; sourceTree = "<group>"; };
 		6BBEAC07E20C0244E43220A4 /* path.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = path.png; sourceTree = "<group>"; };
 		6CAC0DDFA107430AF6EC3C63 /* fountain.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = fountain.png; sourceTree = "<group>"; };
 		6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetector.swift; sourceTree = "<group>"; };
 		6E36A33DFB7382F22F0AFB16 /* char_girl_walk.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_girl_walk.png; sourceTree = "<group>"; };
+		6F6C98C4EC4AB0B801FF94C4 /* char_1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_1.png; sourceTree = "<group>"; };
 		72085E2B91EB795E3BD3BA2D /* NookApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NookApp.swift; sourceTree = "<group>"; };
 		788FBB092E3C4F5AED11854B /* DayPhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPhase.swift; sourceTree = "<group>"; };
 		7A3A58C9388E202D6A8FC73A /* table.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = table.png; sourceTree = "<group>"; };
 		7EF6720CB18A402B6991A645 /* VillageEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageEngine.swift; sourceTree = "<group>"; };
+		851348E68B741BB3D500AD02 /* house_purple.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = house_purple.png; sourceTree = "<group>"; };
 		86F2FA90E298286AF78B584D /* fence.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = fence.png; sourceTree = "<group>"; };
 		893F6C4B86BCE2EC5C24A49B /* AssetTileMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetTileMap.swift; sourceTree = "<group>"; };
+		89BAEA4339EF86789A0231BB /* pinetree.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = pinetree.png; sourceTree = "<group>"; };
 		8D9626FFA30055E3806B7CF9 /* HUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUD.swift; sourceTree = "<group>"; };
 		8FF945C762C4A512213149ED /* PixelNodeFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelNodeFactory.swift; sourceTree = "<group>"; };
 		967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookInstaller.swift; sourceTree = "<group>"; };
+		969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiledVillageLayer.swift; sourceTree = "<group>"; };
 		A4FB58B52DAE8B8CC9F78B8E /* lamp.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = lamp.png; sourceTree = "<group>"; };
 		A9716CBBC4718B4C10B97C53 /* ClaudeHookEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookEvent.swift; sourceTree = "<group>"; };
+		AA44C5033FD00C73EB140D2E /* BondProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BondProgress.swift; sourceTree = "<group>"; };
+		B4816423A377146702B472CB /* char_2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_2.png; sourceTree = "<group>"; };
 		B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageScene.swift; sourceTree = "<group>"; };
 		BA0CAD8A563129B1F2480903 /* bench.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bench.png; sourceTree = "<group>"; };
+		BD6D25A0A25D4934393B5B01 /* house_orange.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = house_orange.png; sourceTree = "<group>"; };
+		BE66F6FB5B2515F619C1CF3C /* house_pink.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = house_pink.png; sourceTree = "<group>"; };
 		BF08C230635E2A978BEA13E0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C2642CCD90C9895978862368 /* NookApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NookApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C451021251E55454B88470F1 /* char_boy_walk.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_boy_walk.png; sourceTree = "<group>"; };
+		D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetectorTests.swift; sourceTree = "<group>"; };
+		D463EFBEE7462698FAC44776 /* char_4.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_4.png; sourceTree = "<group>"; };
 		D5114922922791068AD6A06F /* ClaudeHookServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookServer.swift; sourceTree = "<group>"; };
 		DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelAssetCatalog.swift; sourceTree = "<group>"; };
 		DD49547CE7F7DAA060FDE161 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DD4C61F89EEF2BF49288E9AB /* char_girl_idle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_girl_idle.png; sourceTree = "<group>"; };
 		DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerWatcher.swift; sourceTree = "<group>"; };
+		DE9C3AB8B6B9B6BF3FB183AE /* fountain2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = fountain2.png; sourceTree = "<group>"; };
+		DF6D1493B958601DA258FDD3 /* ClaudeProjectsWatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeProjectsWatcherTests.swift; sourceTree = "<group>"; };
 		E33EA76221916F3943152DFA /* VillageCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageCamera.swift; sourceTree = "<group>"; };
 		E57097CB7891820262715289 /* water.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = water.png; sourceTree = "<group>"; };
+		E70DD5EA817B84A724ECDB75 /* TiledMapData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiledMapData.swift; sourceTree = "<group>"; };
+		E7DD7BEF7413F5080D9C32D4 /* char_0.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_0.png; sourceTree = "<group>"; };
+		EA4D97BD59346C2941FFED8A /* char_3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_3.png; sourceTree = "<group>"; };
+		EABEF51855B0E13A491C8164 /* ground.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ground.png; sourceTree = "<group>"; };
 		ED2C24E5F764012190299A94 /* NPCSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCSelection.swift; sourceTree = "<group>"; };
 		ED98C3737B8E7A1B0FF79415 /* NPCBehavior.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCBehavior.swift; sourceTree = "<group>"; };
 		EE5A1353BA48B62824498D5D /* flowerbed.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = flowerbed.png; sourceTree = "<group>"; };
@@ -118,30 +163,58 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		030DA640B0C9048E1B4B216E /* pixel-agents */ = {
+			isa = PBXGroup;
+			children = (
+				E7DD7BEF7413F5080D9C32D4 /* char_0.png */,
+				6F6C98C4EC4AB0B801FF94C4 /* char_1.png */,
+				B4816423A377146702B472CB /* char_2.png */,
+				EA4D97BD59346C2941FFED8A /* char_3.png */,
+				D463EFBEE7462698FAC44776 /* char_4.png */,
+				28F1228EC3F459DA2727BC2B /* char_5.png */,
+			);
+			path = "pixel-agents";
+			sourceTree = "<group>";
+		};
 		145ACBA0FDA1B78DA1D63A3C = {
 			isa = PBXGroup;
 			children = (
 				C2FF4E78342D9C222E5C81A8 /* NookApp */,
 				BC6EDA0834356ED7026E570A /* NookApp */,
+				205798E690A5666280F124E7 /* NookAppTests */,
 				C8929809B2926CD9739C7009 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		205798E690A5666280F124E7 /* NookAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				630141035B347B3B0E85E786 /* BondProgressTests.swift */,
+				DF6D1493B958601DA258FDD3 /* ClaudeProjectsWatcherTests.swift */,
+				D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */,
+			);
+			name = NookAppTests;
+			path = Tests/NookAppTests;
 			sourceTree = "<group>";
 		};
 		72D6FEAC8073FF2E84EDDE0B /* props */ = {
 			isa = PBXGroup;
 			children = (
 				BA0CAD8A563129B1F2480903 /* bench.png */,
+				115E8D1B7237D862851B7074 /* bush_large.png */,
 				59E853286096A4FD418F54C9 /* bush.png */,
-				DE45F067BC89DE01F023BC45 /* bush_large.png */,
 				86F2FA90E298286AF78B584D /* fence.png */,
 				EE5A1353BA48B62824498D5D /* flowerbed.png */,
 				6CAC0DDFA107430AF6EC3C63 /* fountain.png */,
-				F067BC89DE01F023BC45DE67 /* fountain2.png */,
+				DE9C3AB8B6B9B6BF3FB183AE /* fountain2.png */,
+				BD6D25A0A25D4934393B5B01 /* house_orange.png */,
+				BE66F6FB5B2515F619C1CF3C /* house_pink.png */,
+				851348E68B741BB3D500AD02 /* house_purple.png */,
 				A4FB58B52DAE8B8CC9F78B8E /* lamp.png */,
 				4E343E29ED6016B9A4146F32 /* market.png */,
+				89BAEA4339EF86789A0231BB /* pinetree.png */,
 				7A3A58C9388E202D6A8FC73A /* table.png */,
 				3938CD5B32CC406896BAE5E0 /* tree.png */,
-				BC23DE45F067BC89DE01F023 /* pinetree.png */,
 			);
 			path = props;
 			sourceTree = "<group>";
@@ -149,7 +222,7 @@
 		90E99DDBD42073EFE4DDF94D /* terrain */ = {
 			isa = PBXGroup;
 			children = (
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* ground.png */,
+				EABEF51855B0E13A491C8164 /* ground.png */,
 				6BBEAC07E20C0244E43220A4 /* path.png */,
 				1A622DAE1242B39AA1B078CD /* plaza.png */,
 				E57097CB7891820262715289 /* water.png */,
@@ -162,9 +235,11 @@
 			children = (
 				893F6C4B86BCE2EC5C24A49B /* AssetTileMap.swift */,
 				1CE36CEF1F5177D25A0CAE68 /* AssetVillageLayer.swift */,
+				AA44C5033FD00C73EB140D2E /* BondProgress.swift */,
 				A9716CBBC4718B4C10B97C53 /* ClaudeHookEvent.swift */,
 				967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */,
 				D5114922922791068AD6A06F /* ClaudeHookServer.swift */,
+				294B8A768380837FF39F8205 /* ClaudeProjectsWatcher.swift */,
 				BF08C230635E2A978BEA13E0 /* ContentView.swift */,
 				EF61D9B40D49D8C02EC0A03C /* DaemonInstaller.swift */,
 				788FBB092E3C4F5AED11854B /* DayPhase.swift */,
@@ -174,6 +249,7 @@
 				DE50CD2FFD4861A9A61D244E /* LedgerWatcher.swift */,
 				72085E2B91EB795E3BD3BA2D /* NookApp.swift */,
 				ED98C3737B8E7A1B0FF79415 /* NPCBehavior.swift */,
+				55D926F7793A8037D2ED36C5 /* NPCInspectorPanel.swift */,
 				38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */,
 				05AA11784DE252A1864D7AD9 /* NPCModel.swift */,
 				ED2C24E5F764012190299A94 /* NPCSelection.swift */,
@@ -182,6 +258,8 @@
 				DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */,
 				8FF945C762C4A512213149ED /* PixelNodeFactory.swift */,
 				6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */,
+				E70DD5EA817B84A724ECDB75 /* TiledMapData.swift */,
+				969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */,
 				F5725AD04028894F2D2FB3B7 /* TileMap.swift */,
 				E33EA76221916F3943152DFA /* VillageCamera.swift */,
 				364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */,
@@ -209,6 +287,7 @@
 			isa = PBXGroup;
 			children = (
 				C2642CCD90C9895978862368 /* NookApp.app */,
+				040C390DB14725661B2F8C5F /* NookAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -218,6 +297,7 @@
 			children = (
 				14C2FDEF2413183F6658D48D /* maygetsu-manifest.json */,
 				DFA8D0771CF7E6EAB6951DF4 /* characters */,
+				030DA640B0C9048E1B4B216E /* pixel-agents */,
 				72D6FEAC8073FF2E84EDDE0B /* props */,
 				90E99DDBD42073EFE4DDF94D /* terrain */,
 			);
@@ -246,6 +326,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		4438D32D9A75F22F6CCD23DE /* NookAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C8A25B2DF5A92F0A035CC232 /* Build configuration list for PBXNativeTarget "NookAppTests" */;
+			buildPhases = (
+				4B8B88C447D9B54E1E96081E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				23BDC02C522E66F68785DD2B /* PBXTargetDependency */,
+			);
+			name = NookAppTests;
+			packageProductDependencies = (
+			);
+			productName = NookAppTests;
+			productReference = 040C390DB14725661B2F8C5F /* NookAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		52BFA12497D4B98E98EC4C51 /* NookApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8B9BCAB53581E57B337768B2 /* Build configuration list for PBXNativeTarget "NookApp" */;
@@ -254,6 +352,7 @@
 				827AA64DA3FA2C35FBF34FBE /* Resources */,
 				050E4DA1459FF6D591817CBA /* Embed NookDaemon */,
 				E8725A7DAB2CA70144A137E8 /* Copy Local Maygetsu Assets */,
+				259A9A40976FB6596CCE75B3 /* Copy Tiled Map */,
 			);
 			buildRules = (
 			);
@@ -292,6 +391,7 @@
 			projectRoot = "";
 			targets = (
 				52BFA12497D4B98E98EC4C51 /* NookApp */,
+				4438D32D9A75F22F6CCD23DE /* NookAppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -304,7 +404,13 @@
 				5532CF5BD2112D5A8E875BC1 /* Assets.xcassets in Resources */,
 				CF4AF8B248BCB380CD787C3E /* bench.png in Resources */,
 				B551961578601E62389CA1FA /* bush.png in Resources */,
-				CD34EF56AB78CD90EF12AB34 /* bush_large.png in Resources */,
+				896C008D3193175083FA6089 /* bush_large.png in Resources */,
+				AEE5FB1A9217329A955198D4 /* char_0.png in Resources */,
+				5EB278EE10E9B6CECE614466 /* char_1.png in Resources */,
+				E82089414A5DC38949E1AA4B /* char_2.png in Resources */,
+				707E07897B3DE72BE0ED6FD7 /* char_3.png in Resources */,
+				707F4B624676BBB1B61CB45E /* char_4.png in Resources */,
+				37DB0635E10824B98268CF3E /* char_5.png in Resources */,
 				9C0687E98AA614190AC6F370 /* char_boy_idle.png in Resources */,
 				36D4795E0745205B3D1F558B /* char_boy_walk.png in Resources */,
 				84F3F47E06DCBD320E8E2524 /* char_girl_idle.png in Resources */,
@@ -312,13 +418,16 @@
 				844029AFE16ACAC5D6036617 /* fence.png in Resources */,
 				273579AB62DD647DE59A3A22 /* flowerbed.png in Resources */,
 				996F91939BAB8A4AE357E161 /* fountain.png in Resources */,
-				EF56AB78CD90EF12AB34CD56 /* fountain2.png in Resources */,
-				9A1B2C3D4E5F6A7B8C9D0E1F /* ground.png in Resources */,
+				B4EDD90AE7ADD9B6CE726EE8 /* fountain2.png in Resources */,
+				97489219F25658622875FD92 /* ground.png in Resources */,
+				F5E36C7DE04068DA979EA032 /* house_orange.png in Resources */,
+				117B7D7A2539D005E422EB5E /* house_pink.png in Resources */,
+				8E80928ED42618A2EFA86460 /* house_purple.png in Resources */,
 				BBF626A5DAE9E6339E92F7A5 /* lamp.png in Resources */,
 				D016BE883A8243F1B3B327B6 /* market.png in Resources */,
 				1A5ED630CE36A4288B66DA2E /* maygetsu-manifest.json in Resources */,
 				D6ABAE391D3E7E0704CBD90B /* path.png in Resources */,
-				AB12CD34EF56AB78CD90EF12 /* pinetree.png in Resources */,
+				BCA43C3CC5934C3C57BD974F /* pinetree.png in Resources */,
 				240305E4D9361B4AF5E09613 /* plaza.png in Resources */,
 				C5C7EB819F685D8C5C679AC7 /* table.png in Resources */,
 				A18C39FE0320400209DC9415 /* tree.png in Resources */,
@@ -347,6 +456,24 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\nNOOK_PKG=\"${SRCROOT}\"\nswift build --package-path \"${NOOK_PKG}\" -c release\nDAEMON_BIN=\"$(swift build --package-path \"${NOOK_PKG}\" -c release --show-bin-path)/NookDaemon\"\nDEST=\"${BUILT_PRODUCTS_DIR}/${EXECUTABLE_FOLDER_PATH}/NookDaemon\"\ncp \"${DAEMON_BIN}\" \"${DEST}\"\nchmod +x \"${DEST}\"\n";
 		};
+		259A9A40976FB6596CCE75B3 /* Copy Tiled Map */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Tiled Map";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "SRC=\"${SRCROOT}/tiled\"\nDST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/tiled\"\nif [ -f \"${SRC}/nook-village.tmj\" ]; then\n  rm -rf \"${DST}\"\n  cp -R \"${SRC}\" \"${DST}\"\n  PACK=\"${SRCROOT}/Assets.local/Maygetsu/source/CozyTown_AssetPack\"\n  for TSJ in \"${DST}/tilesets/\"*.tsj; do\n    sed -i '' \"s|../../Assets.local/Maygetsu/source/CozyTown_AssetPack|${PACK}|g\" \"${TSJ}\"\n  done\n  echo \"Copied and patched Tiled map into bundle.\"\nelse\n  echo \"No Tiled map found — skipping copy.\"\nfi\n";
+		};
 		E8725A7DAB2CA70144A137E8 /* Copy Local Maygetsu Assets */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -368,15 +495,27 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4B8B88C447D9B54E1E96081E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BA1EBCC3A90A87D6792FCEF6 /* BondProgressTests.swift in Sources */,
+				65C2A4FA71AF3AE9D1B2B462 /* ClaudeProjectsWatcherTests.swift in Sources */,
+				45E34D10576812F014FE8A0A /* SessionDetectorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6D094DEC89EA4A79D8DE3D44 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				D48158162A9D76019D4550FC /* AssetTileMap.swift in Sources */,
 				27D8FF885473695A134DE1F1 /* AssetVillageLayer.swift in Sources */,
+				36425BDFEB826B3746C965F1 /* BondProgress.swift in Sources */,
 				185980967C8422CA297FEB49 /* ClaudeHookEvent.swift in Sources */,
 				4B285942D8489685A5E3A252 /* ClaudeHookInstaller.swift in Sources */,
 				1011C3D684DCFCB1C6013F9E /* ClaudeHookServer.swift in Sources */,
+				3AA3C80F5E77DEE463BA557E /* ClaudeProjectsWatcher.swift in Sources */,
 				A2421EE7CA0FE95C5E95D7DC /* ContentView.swift in Sources */,
 				910C2637B0A78141214F79F9 /* DaemonInstaller.swift in Sources */,
 				DDF865642E6FD91ABB02BB39 /* DayPhase.swift in Sources */,
@@ -385,6 +524,7 @@
 				1575124CF722DEF35FAB659A /* LedgerModels.swift in Sources */,
 				57A308F542352ABF9D9EA864 /* LedgerWatcher.swift in Sources */,
 				0EAA348A8CD3E470C543E774 /* NPCBehavior.swift in Sources */,
+				89C467E6957F46E8274F5E63 /* NPCInspectorPanel.swift in Sources */,
 				B0FA9796D49CEA662676048F /* NPCManager.swift in Sources */,
 				24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */,
 				945DC0F8A10BA13FEFDDD443 /* NPCSelection.swift in Sources */,
@@ -395,6 +535,8 @@
 				DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */,
 				4AD242BCB114822653227105 /* SessionDetector.swift in Sources */,
 				1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */,
+				ADC915B016A9F472F495DDBE /* TiledMapData.swift in Sources */,
+				8A6B15CAFECF11C35E89AB12 /* TiledVillageLayer.swift in Sources */,
 				DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */,
 				A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */,
 				25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */,
@@ -406,7 +548,36 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		23BDC02C522E66F68785DD2B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 52BFA12497D4B98E98EC4C51 /* NookApp */;
+			targetProxy = 418313AF46E5202C6FB3D849 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		282760B198BD3350452F7F15 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mchau.nook.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nook.app/Contents/MacOS/Nook";
+			};
+			name = Debug;
+		};
 		2A9E18359FA540556AC2F4DF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -572,6 +743,27 @@
 			};
 			name = Debug;
 		};
+		9991F2FF80ECE55507FBDEBD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mchau.nook.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nook.app/Contents/MacOS/Nook";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -580,6 +772,15 @@
 			buildConfigurations = (
 				2CBCC949032451367BC1D3AB /* Debug */,
 				3AE8DD297968EFA9B6BAB6BF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C8A25B2DF5A92F0A035CC232 /* Build configuration list for PBXNativeTarget "NookAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				282760B198BD3350452F7F15 /* Debug */,
+				9991F2FF80ECE55507FBDEBD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

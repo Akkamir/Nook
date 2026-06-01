@@ -114,26 +114,27 @@ actor SessionDetector {
 
         for entry in entries {
             guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
-            if hasRecentJSONL(in: entry, since: cutoff),
+            let recentSessionCount = recentJSONLCount(in: entry, since: cutoff)
+            if recentSessionCount > 0,
                let name = agentName(forProjectDir: entry) {
                 guard recentlyEndedAgents[name] == nil else { continue }
-                counts[name] = max(counts[name, default: 0], 1)
+                counts[name] = max(counts[name, default: 0], recentSessionCount)
             }
         }
         return counts
     }
 
-    private func hasRecentJSONL(in dir: URL, since cutoff: Date) -> Bool {
+    private func recentJSONLCount(in dir: URL, since cutoff: Date) -> Int {
         guard let contents = try? fm.contentsOfDirectory(
             at: dir,
             includingPropertiesForKeys: [.contentModificationDateKey],
             options: .skipsHiddenFiles
-        ) else { return false }
+        ) else { return 0 }
 
-        return contents.contains { url in
-            guard url.pathExtension == "jsonl" else { return false }
+        return contents.reduce(0) { count, url in
+            guard url.pathExtension == "jsonl" else { return count }
             let mod = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
-            return (mod ?? .distantPast) > cutoff
+            return (mod ?? .distantPast) > cutoff ? count + 1 : count
         }
     }
 
@@ -181,11 +182,22 @@ actor SessionDetector {
     }
 
     private func agentName(forProjectURL projectURL: URL) -> String? {
-        let pixelvillageURL = projectURL.appendingPathComponent(".pixelvillage")
-        guard let data = try? Data(contentsOf: pixelvillageURL),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-              let agent = json["agent"] else { return nil }
-        return agent
+        var currentURL = projectURL.standardizedFileURL
+        var searchedDepth = 0
+        while searchedDepth < 16 {
+            let pixelvillageURL = currentURL.appendingPathComponent(".pixelvillage")
+            if let data = try? Data(contentsOf: pixelvillageURL),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+               let agent = json["agent"] {
+                return agent
+            }
+
+            let parentURL = currentURL.deletingLastPathComponent()
+            guard parentURL.path != currentURL.path else { break }
+            currentURL = parentURL
+            searchedDepth += 1
+        }
+        return nil
     }
 
     private func agentName(forProjectDir dir: URL) -> String? {
