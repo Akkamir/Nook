@@ -38,6 +38,29 @@ final class Ledger {
             state.agents[name] = record
         }
 
+        let project = event.cwd.map { URL(fileURLWithPath: $0).lastPathComponent }
+            ?? URL(fileURLWithPath: event.projectPath).lastPathComponent
+        if var session = state.sessions[event.sessionId] {
+            session.lastActivityAt = event.timestamp
+            session.inputTokens += event.inputTokens
+            session.outputTokens += event.outputTokens
+            session.totalBits += bits
+            session.agentName = agentName
+            state.sessions[event.sessionId] = session
+        } else {
+            state.sessions[event.sessionId] = SessionRecord(
+                sessionId: event.sessionId,
+                project: project,
+                projectPath: event.projectPath,
+                agentName: agentName,
+                startedAt: event.timestamp,
+                lastActivityAt: event.timestamp,
+                inputTokens: event.inputTokens,
+                outputTokens: event.outputTokens,
+                totalBits: bits
+            )
+        }
+
         state.eventSeq += 1
         state.recentEvents.append(BitEvent(agentName: agentName, bits: bits, seq: state.eventSeq))
         if state.recentEvents.count > 100 {

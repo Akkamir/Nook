@@ -34,7 +34,7 @@ final class TranscriptParserTests: XCTestCase {
         {"type":"assistant","message":{"role":"assistant","usage":{"input_tokens":1000,"output_tokens":1000}}}
         """
         let parsed = try XCTUnwrap(TranscriptParser.parseLine(line))
-        let event = TokenEvent(projectPath: "", inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens, timestamp: parsed.timestamp)
+        let event = TokenEvent(sessionId: "t", projectPath: "", cwd: nil, inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens, timestamp: parsed.timestamp)
         // 1000 input * 5/1000 + 1000 output * 15/1000 = 5 + 15 = 20
         XCTAssertEqual(event.bits, 20.0, accuracy: 0.001)
     }

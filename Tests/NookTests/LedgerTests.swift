@@ -43,7 +43,7 @@ final class LedgerTests: XCTestCase {
 
     func test_apply_event_global_pool_increases_bits() throws {
         let event = TokenEvent(
-            projectPath: "/some/project",
+            sessionId: "t", projectPath: "/some/project", cwd: nil,
             inputTokens: 1000,
             outputTokens: 1000,
             timestamp: Date()
@@ -59,7 +59,7 @@ final class LedgerTests: XCTestCase {
 
     func test_apply_event_with_agent_updates_bond() throws {
         let event = TokenEvent(
-            projectPath: "/some/project",
+            sessionId: "t", projectPath: "/some/project", cwd: nil,
             inputTokens: 10_000,
             outputTokens: 0,
             timestamp: Date()
@@ -69,5 +69,50 @@ final class LedgerTests: XCTestCase {
 
         XCTAssertEqual(state.agents["Radion"]?.totalTokens, 10_000)
         XCTAssertEqual(state.agents["Radion"]?.bond, 2)
+    }
+
+    func test_apply_creates_session_record_on_first_event() {
+        var state = LedgerState.empty
+        let event = TokenEvent(sessionId: "s1", projectPath: "/p", cwd: "/Users/me/Code/Nook",
+                               inputTokens: 100, outputTokens: 200, timestamp: date("2026-06-01T10:00:00Z"))
+        ledger.apply(event: event, agentName: "Radion", to: &state)
+
+        let s = state.sessions["s1"]
+        XCTAssertEqual(s?.project, "Nook")
+        XCTAssertEqual(s?.agentName, "Radion")
+        XCTAssertEqual(s?.totalTokens, 300)
+        XCTAssertEqual(s?.startedAt, date("2026-06-01T10:00:00Z"))
+        XCTAssertEqual(s?.lastActivityAt, date("2026-06-01T10:00:00Z"))
+    }
+
+    func test_apply_updates_session_record_on_subsequent_event() {
+        var state = LedgerState.empty
+        let e1 = TokenEvent(sessionId: "s1", projectPath: "/p", cwd: "/Users/me/Code/Nook",
+                            inputTokens: 100, outputTokens: 200, timestamp: date("2026-06-01T10:00:00Z"))
+        let e2 = TokenEvent(sessionId: "s1", projectPath: "/p", cwd: "/Users/me/Code/Nook",
+                            inputTokens: 50, outputTokens: 50, timestamp: date("2026-06-01T11:00:00Z"))
+        ledger.apply(event: e1, agentName: "Radion", to: &state)
+        ledger.apply(event: e2, agentName: "Radion", to: &state)
+
+        let s = state.sessions["s1"]
+        XCTAssertEqual(s?.totalTokens, 400)
+        XCTAssertEqual(s?.startedAt, date("2026-06-01T10:00:00Z"))
+        XCTAssertEqual(s?.lastActivityAt, date("2026-06-01T11:00:00Z"))
+        XCTAssertEqual(state.sessions.count, 1)
+    }
+
+    func test_apply_separate_session_ids_create_separate_records() {
+        var state = LedgerState.empty
+        let e1 = TokenEvent(sessionId: "s1", projectPath: "/p", cwd: "/c/Nook",
+                            inputTokens: 100, outputTokens: 0, timestamp: date("2026-06-01T10:00:00Z"))
+        let e2 = TokenEvent(sessionId: "s2", projectPath: "/p", cwd: "/c/Nook",
+                            inputTokens: 100, outputTokens: 0, timestamp: date("2026-06-01T10:00:00Z"))
+        ledger.apply(event: e1, agentName: "Radion", to: &state)
+        ledger.apply(event: e2, agentName: "Radion", to: &state)
+        XCTAssertEqual(state.sessions.count, 2)
+    }
+
+    private func date(_ s: String) -> Date {
+        ISO8601DateFormatter().date(from: s)!
     }
 }

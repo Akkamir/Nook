@@ -1,7 +1,9 @@
 import Foundation
 
 struct TokenEvent {
+    let sessionId: String
     let projectPath: String
+    let cwd: String?
     let inputTokens: Int
     let outputTokens: Int
     let timestamp: Date

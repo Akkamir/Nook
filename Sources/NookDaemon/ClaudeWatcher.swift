@@ -75,6 +75,7 @@ final class ClaudeWatcher {
         fileOffsets[key] = offset + UInt64(data.count)
         saveOffsets()
 
+        let sessionId = file.deletingPathExtension().lastPathComponent
         let content = String(data: data, encoding: .utf8) ?? ""
         var lastUsage: (Int, Int)? = nil
         for line in content.components(separatedBy: "\n") {
@@ -85,7 +86,9 @@ final class ClaudeWatcher {
             guard lastUsage.map({ $0 != pair }) ?? true else { continue }
             lastUsage = pair
             let event = TokenEvent(
+                sessionId: sessionId,
                 projectPath: projectPath,
+                cwd: parsed.cwd,
                 inputTokens: parsed.inputTokens,
                 outputTokens: parsed.outputTokens,
                 timestamp: parsed.timestamp
