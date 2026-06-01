@@ -20,4 +20,14 @@ final class LedgerStateAppDecodeTests: XCTestCase {
         XCTAssertEqual(state.sessions["s1"]?.totalTokens, 300)
         XCTAssertEqual(state.sessions["s1"]?.agentName, "Radion")
     }
+
+    func test_decodes_activity_and_session_subject_fields() throws {
+        let json = #"{"totalBits":0,"pendingBits":0,"agents":{},"lastUpdated":"2026-06-01T00:00:00Z","recentEvents":[],"eventSeq":0,"activitySeq":2,"recentActivity":[{"agentName":"Radion","sessionId":"s1","kind":"file","payload":"Auth.swift","seq":2}],"sessions":{"s1":{"sessionId":"s1","project":"Nook","projectPath":"/p","agentName":"Radion","startedAt":"2026-06-01T10:00:00Z","lastActivityAt":"2026-06-01T11:00:00Z","inputTokens":1,"outputTokens":1,"totalBits":0,"task":"refactor","filesTouched":["/p/Auth.swift"],"editCount":3}}}"#
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
+        XCTAssertEqual(state.activitySeq, 2)
+        XCTAssertEqual(state.recentActivity.first?.kind, "file")
+        XCTAssertEqual(state.sessions["s1"]?.task, "refactor")
+        XCTAssertEqual(state.sessions["s1"]?.editCount, 3)
+    }
 }

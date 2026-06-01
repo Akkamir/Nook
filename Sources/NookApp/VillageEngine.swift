@@ -13,12 +13,14 @@ final class VillageEngine {
     private(set) var activeSessions: Set<String> = []
     private(set) var activeSessionCounts: [String: Int] = [:]
     var newBitEvents: [BitEvent] = []
+    var newActivityEvents: [SessionActivityEvent] = []
 
     private let ledgerURL: URL
     private let decoder: JSONDecoder
     private let watcher: LedgerWatcher
     private var isRunning = false
     private var lastSeenEventSeq: Int = -1
+    private var lastSeenActivitySeq: Int = -1
     private var dayNightTimer: DispatchSourceTimer?
     private var sessionTimer: DispatchSourceTimer?
     private let sessionDetector = SessionDetector()
@@ -140,6 +142,7 @@ final class VillageEngine {
         if lastSeenEventSeq == -1 {
             // First load: anchor to current position, don't replay old events.
             lastSeenEventSeq = state.eventSeq
+            lastSeenActivitySeq = state.activitySeq
             return
         }
 
@@ -147,6 +150,12 @@ final class VillageEngine {
         if !fresh.isEmpty {
             newBitEvents += fresh
             lastSeenEventSeq = fresh.map(\.seq).max() ?? lastSeenEventSeq
+        }
+
+        let freshActivity = state.recentActivity.filter { $0.seq > lastSeenActivitySeq }
+        if !freshActivity.isEmpty {
+            newActivityEvents += freshActivity
+            lastSeenActivitySeq = freshActivity.map(\.seq).max() ?? lastSeenActivitySeq
         }
     }
 }
