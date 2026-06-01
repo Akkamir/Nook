@@ -23,6 +23,7 @@
 		2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0632114E8E40B2CA04E37E28 /* NPCSprite.swift */; };
 		2D8EF8CE3A39BC3C583AAA9E /* Moment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CD79B8A5103B55BCE54DC26 /* Moment.swift */; };
 		36425BDFEB826B3746C965F1 /* BondProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA44C5033FD00C73EB140D2E /* BondProgress.swift */; };
+		36723F9649DEEDC76A84D058 /* SpeechLineComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A94036890799645DFA0A4E1 /* SpeechLineComposer.swift */; };
 		36D4795E0745205B3D1F558B /* char_boy_walk.png in Resources */ = {isa = PBXBuildFile; fileRef = C451021251E55454B88470F1 /* char_boy_walk.png */; };
 		37DB0635E10824B98268CF3E /* char_5.png in Resources */ = {isa = PBXBuildFile; fileRef = 28F1228EC3F459DA2727BC2B /* char_5.png */; };
 		3AA3C80F5E77DEE463BA557E /* ClaudeProjectsWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294B8A768380837FF39F8205 /* ClaudeProjectsWatcher.swift */; };
@@ -62,6 +63,7 @@
 		B4E3549C4A14AF726D111B85 /* water.png in Resources */ = {isa = PBXBuildFile; fileRef = E57097CB7891820262715289 /* water.png */; };
 		B4EDD90AE7ADD9B6CE726EE8 /* fountain2.png in Resources */ = {isa = PBXBuildFile; fileRef = DE9C3AB8B6B9B6BF3FB183AE /* fountain2.png */; };
 		B551961578601E62389CA1FA /* bush.png in Resources */ = {isa = PBXBuildFile; fileRef = 59E853286096A4FD418F54C9 /* bush.png */; };
+		B6FC0F8C677450FB68EDD319 /* SpeechLineComposerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5954D78FBC27D98B3A12F53E /* SpeechLineComposerTests.swift */; };
 		BA1EBCC3A90A87D6792FCEF6 /* BondProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 630141035B347B3B0E85E786 /* BondProgressTests.swift */; };
 		BBF626A5DAE9E6339E92F7A5 /* lamp.png in Resources */ = {isa = PBXBuildFile; fileRef = A4FB58B52DAE8B8CC9F78B8E /* lamp.png */; };
 		BCA43C3CC5934C3C57BD974F /* pinetree.png in Resources */ = {isa = PBXBuildFile; fileRef = 89BAEA4339EF86789A0231BB /* pinetree.png */; };
@@ -117,6 +119,7 @@
 		5247DA601A4F070C5449DF4C /* NookApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NookApp.entitlements; sourceTree = "<group>"; };
 		55D926F7793A8037D2ED36C5 /* NPCInspectorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCInspectorPanel.swift; sourceTree = "<group>"; };
 		57CB39EEF877552A0952566A /* VillageLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageLayout.swift; sourceTree = "<group>"; };
+		5954D78FBC27D98B3A12F53E /* SpeechLineComposerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechLineComposerTests.swift; sourceTree = "<group>"; };
 		59E853286096A4FD418F54C9 /* bush.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bush.png; sourceTree = "<group>"; };
 		630141035B347B3B0E85E786 /* BondProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BondProgressTests.swift; sourceTree = "<group>"; };
 		6BBEAC07E20C0244E43220A4 /* path.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = path.png; sourceTree = "<group>"; };
@@ -136,6 +139,7 @@
 		8FF945C762C4A512213149ED /* PixelNodeFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelNodeFactory.swift; sourceTree = "<group>"; };
 		967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookInstaller.swift; sourceTree = "<group>"; };
 		969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiledVillageLayer.swift; sourceTree = "<group>"; };
+		9A94036890799645DFA0A4E1 /* SpeechLineComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechLineComposer.swift; sourceTree = "<group>"; };
 		A4FB58B52DAE8B8CC9F78B8E /* lamp.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = lamp.png; sourceTree = "<group>"; };
 		A9716CBBC4718B4C10B97C53 /* ClaudeHookEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookEvent.swift; sourceTree = "<group>"; };
 		AA44C5033FD00C73EB140D2E /* BondProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BondProgress.swift; sourceTree = "<group>"; };
@@ -205,6 +209,7 @@
 				074408FE5EA9C38FF638D953 /* MomentTests.swift */,
 				FACF6566299AE4174BCB3D62 /* ProjectRollupTests.swift */,
 				D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */,
+				5954D78FBC27D98B3A12F53E /* SpeechLineComposerTests.swift */,
 			);
 			name = NookAppTests;
 			path = Tests/NookAppTests;
@@ -273,6 +278,7 @@
 				8FF945C762C4A512213149ED /* PixelNodeFactory.swift */,
 				C1961662C30E2AC5A0403174 /* ProjectRollup.swift */,
 				6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */,
+				9A94036890799645DFA0A4E1 /* SpeechLineComposer.swift */,
 				E70DD5EA817B84A724ECDB75 /* TiledMapData.swift */,
 				969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */,
 				F5725AD04028894F2D2FB3B7 /* TileMap.swift */,
@@ -520,6 +526,7 @@
 				DDCEE996C32E5E6C0FC211D1 /* MomentTests.swift in Sources */,
 				EE2D74C75340DC2F8C28A06D /* ProjectRollupTests.swift in Sources */,
 				45E34D10576812F014FE8A0A /* SessionDetectorTests.swift in Sources */,
+				B6FC0F8C677450FB68EDD319 /* SpeechLineComposerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -554,6 +561,7 @@
 				DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */,
 				ECCE607C39730E7179336813 /* ProjectRollup.swift in Sources */,
 				4AD242BCB114822653227105 /* SessionDetector.swift in Sources */,
+				36723F9649DEEDC76A84D058 /* SpeechLineComposer.swift in Sources */,
 				1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */,
 				ADC915B016A9F472F495DDBE /* TiledMapData.swift in Sources */,
 				8A6B15CAFECF11C35E89AB12 /* TiledVillageLayer.swift in Sources */,
