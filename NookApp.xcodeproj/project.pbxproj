@@ -74,6 +74,8 @@
 		DDF865642E6FD91ABB02BB39 /* DayPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 788FBB092E3C4F5AED11854B /* DayPhase.swift */; };
 		DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33EA76221916F3943152DFA /* VillageCamera.swift */; };
 		E82089414A5DC38949E1AA4B /* char_2.png in Resources */ = {isa = PBXBuildFile; fileRef = B4816423A377146702B472CB /* char_2.png */; };
+		ECCE607C39730E7179336813 /* ProjectRollup.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1961662C30E2AC5A0403174 /* ProjectRollup.swift */; };
+		EE2D74C75340DC2F8C28A06D /* ProjectRollupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FACF6566299AE4174BCB3D62 /* ProjectRollupTests.swift */; };
 		EE770D506B4A1C1403F79DD0 /* char_girl_walk.png in Resources */ = {isa = PBXBuildFile; fileRef = 6E36A33DFB7382F22F0AFB16 /* char_girl_walk.png */; };
 		F5E36C7DE04068DA979EA032 /* house_orange.png in Resources */ = {isa = PBXBuildFile; fileRef = BD6D25A0A25D4934393B5B01 /* house_orange.png */; };
 /* End PBXBuildFile section */
@@ -139,6 +141,7 @@
 		BD6D25A0A25D4934393B5B01 /* house_orange.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = house_orange.png; sourceTree = "<group>"; };
 		BE66F6FB5B2515F619C1CF3C /* house_pink.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = house_pink.png; sourceTree = "<group>"; };
 		BF08C230635E2A978BEA13E0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		C1961662C30E2AC5A0403174 /* ProjectRollup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRollup.swift; sourceTree = "<group>"; };
 		C2642CCD90C9895978862368 /* NookApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NookApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C451021251E55454B88470F1 /* char_boy_walk.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_boy_walk.png; sourceTree = "<group>"; };
 		D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDetectorTests.swift; sourceTree = "<group>"; };
@@ -162,6 +165,7 @@
 		EF61D9B40D49D8C02EC0A03C /* DaemonInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaemonInstaller.swift; sourceTree = "<group>"; };
 		F5725AD04028894F2D2FB3B7 /* TileMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileMap.swift; sourceTree = "<group>"; };
 		F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerModels.swift; sourceTree = "<group>"; };
+		FACF6566299AE4174BCB3D62 /* ProjectRollupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRollupTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -194,6 +198,7 @@
 				630141035B347B3B0E85E786 /* BondProgressTests.swift */,
 				DF6D1493B958601DA258FDD3 /* ClaudeProjectsWatcherTests.swift */,
 				053E331FF8EA56C017C547D1 /* LedgerStateAppDecodeTests.swift */,
+				FACF6566299AE4174BCB3D62 /* ProjectRollupTests.swift */,
 				D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */,
 			);
 			name = NookAppTests;
@@ -260,6 +265,7 @@
 				44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */,
 				DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */,
 				8FF945C762C4A512213149ED /* PixelNodeFactory.swift */,
+				C1961662C30E2AC5A0403174 /* ProjectRollup.swift */,
 				6E05A1A067EA6BDC3DC14404 /* SessionDetector.swift */,
 				E70DD5EA817B84A724ECDB75 /* TiledMapData.swift */,
 				969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */,
@@ -505,6 +511,7 @@
 				BA1EBCC3A90A87D6792FCEF6 /* BondProgressTests.swift in Sources */,
 				65C2A4FA71AF3AE9D1B2B462 /* ClaudeProjectsWatcherTests.swift in Sources */,
 				9290A0DB613709B0BD7C6990 /* LedgerStateAppDecodeTests.swift in Sources */,
+				EE2D74C75340DC2F8C28A06D /* ProjectRollupTests.swift in Sources */,
 				45E34D10576812F014FE8A0A /* SessionDetectorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -537,6 +544,7 @@
 				8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */,
 				8A7405584E29E43EC55F497B /* PixelAssetCatalog.swift in Sources */,
 				DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */,
+				ECCE607C39730E7179336813 /* ProjectRollup.swift in Sources */,
 				4AD242BCB114822653227105 /* SessionDetector.swift in Sources */,
 				1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */,
 				ADC915B016A9F472F495DDBE /* TiledMapData.swift in Sources */,
