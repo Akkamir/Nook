@@ -61,6 +61,14 @@ struct BitEvent: Codable {
     let seq: Int
 }
 
+struct SessionActivityEvent: Codable, Equatable {
+    let agentName: String?
+    let sessionId: String
+    let kind: String
+    let payload: String?
+    let seq: Int
+}
+
 struct SessionRecord: Codable, Equatable {
     let sessionId: String
     var project: String
@@ -72,8 +80,41 @@ struct SessionRecord: Codable, Equatable {
     var outputTokens: Int
     var totalBits: Double
 
+    // Subject signals (NPC voice)
+    var task: String?
+    var gitBranch: String?
+    var filesTouched: [String] = []
+    var editCount: Int = 0
+    var readCount: Int = 0
+    var bashCount: Int = 0
+    var firedKinds: [String] = []
+
     var totalTokens: Int { inputTokens + outputTokens }
     var duration: TimeInterval { lastActivityAt.timeIntervalSince(startedAt) }
+}
+
+extension SessionRecord {
+    // Backward-compatible decode: existing ledgers have records without the
+    // subject fields. Defined in an extension to preserve the memberwise init.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        sessionId = try c.decode(String.self, forKey: .sessionId)
+        project = try c.decode(String.self, forKey: .project)
+        projectPath = try c.decode(String.self, forKey: .projectPath)
+        agentName = try? c.decode(String.self, forKey: .agentName)
+        startedAt = try c.decode(Date.self, forKey: .startedAt)
+        lastActivityAt = try c.decode(Date.self, forKey: .lastActivityAt)
+        inputTokens = try c.decode(Int.self, forKey: .inputTokens)
+        outputTokens = try c.decode(Int.self, forKey: .outputTokens)
+        totalBits = try c.decode(Double.self, forKey: .totalBits)
+        task = try? c.decode(String.self, forKey: .task)
+        gitBranch = try? c.decode(String.self, forKey: .gitBranch)
+        filesTouched = (try? c.decode([String].self, forKey: .filesTouched)) ?? []
+        editCount = (try? c.decode(Int.self, forKey: .editCount)) ?? 0
+        readCount = (try? c.decode(Int.self, forKey: .readCount)) ?? 0
+        bashCount = (try? c.decode(Int.self, forKey: .bashCount)) ?? 0
+        firedKinds = (try? c.decode([String].self, forKey: .firedKinds)) ?? []
+    }
 }
 
 struct LedgerState: Codable {
@@ -84,8 +125,10 @@ struct LedgerState: Codable {
     var recentEvents: [BitEvent]
     var eventSeq: Int
     var sessions: [String: SessionRecord]
+    var recentActivity: [SessionActivityEvent]
+    var activitySeq: Int
 
-    init(totalBits: Double, pendingBits: Double, agents: [String: AgentRecord], lastUpdated: Date, recentEvents: [BitEvent], eventSeq: Int, sessions: [String: SessionRecord] = [:]) {
+    init(totalBits: Double, pendingBits: Double, agents: [String: AgentRecord], lastUpdated: Date, recentEvents: [BitEvent], eventSeq: Int, sessions: [String: SessionRecord] = [:], recentActivity: [SessionActivityEvent] = [], activitySeq: Int = 0) {
         self.totalBits = totalBits
         self.pendingBits = pendingBits
         self.agents = agents
@@ -93,6 +136,8 @@ struct LedgerState: Codable {
         self.recentEvents = recentEvents
         self.eventSeq = eventSeq
         self.sessions = sessions
+        self.recentActivity = recentActivity
+        self.activitySeq = activitySeq
     }
 
     static var empty: LedgerState {
@@ -108,5 +153,7 @@ struct LedgerState: Codable {
         recentEvents = (try? c.decode([BitEvent].self, forKey: .recentEvents)) ?? []
         eventSeq = (try? c.decode(Int.self, forKey: .eventSeq)) ?? 0
         sessions = (try? c.decode([String: SessionRecord].self, forKey: .sessions)) ?? [:]
+        recentActivity = (try? c.decode([SessionActivityEvent].self, forKey: .recentActivity)) ?? []
+        activitySeq = (try? c.decode(Int.self, forKey: .activitySeq)) ?? 0
     }
 }
