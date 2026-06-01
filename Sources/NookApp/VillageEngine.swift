@@ -7,6 +7,7 @@ final class VillageEngine {
     private(set) var totalBits: Double = 0
     private(set) var pendingBits: Double = 0
     private(set) var agents: [String: AgentRecord] = [:]
+    private(set) var sessions: [String: SessionRecord] = [:]
 
     private(set) var dayPhase: DayPhase = DayPhase.current()
     private(set) var activeSessions: Set<String> = []
@@ -134,6 +135,7 @@ final class VillageEngine {
         totalBits = state.totalBits
         pendingBits = state.pendingBits
         agents = state.agents
+        sessions = state.sessions
 
         if lastSeenEventSeq == -1 {
             // First load: anchor to current position, don't replay old events.

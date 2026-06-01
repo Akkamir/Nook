@@ -46,6 +46,7 @@
 		8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72085E2B91EB795E3BD3BA2D /* NookApp.swift */; };
 		8E80928ED42618A2EFA86460 /* house_purple.png in Resources */ = {isa = PBXBuildFile; fileRef = 851348E68B741BB3D500AD02 /* house_purple.png */; };
 		910C2637B0A78141214F79F9 /* DaemonInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF61D9B40D49D8C02EC0A03C /* DaemonInstaller.swift */; };
+		9290A0DB613709B0BD7C6990 /* LedgerStateAppDecodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 053E331FF8EA56C017C547D1 /* LedgerStateAppDecodeTests.swift */; };
 		945DC0F8A10BA13FEFDDD443 /* NPCSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2C24E5F764012190299A94 /* NPCSelection.swift */; };
 		97489219F25658622875FD92 /* ground.png in Resources */ = {isa = PBXBuildFile; fileRef = EABEF51855B0E13A491C8164 /* ground.png */; };
 		996F91939BAB8A4AE357E161 /* fountain.png in Resources */ = {isa = PBXBuildFile; fileRef = 6CAC0DDFA107430AF6EC3C63 /* fountain.png */; };
@@ -89,6 +90,7 @@
 
 /* Begin PBXFileReference section */
 		040C390DB14725661B2F8C5F /* NookAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NookAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		053E331FF8EA56C017C547D1 /* LedgerStateAppDecodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerStateAppDecodeTests.swift; sourceTree = "<group>"; };
 		05AA11784DE252A1864D7AD9 /* NPCModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCModel.swift; sourceTree = "<group>"; };
 		0632114E8E40B2CA04E37E28 /* NPCSprite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCSprite.swift; sourceTree = "<group>"; };
 		0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillagePersistence.swift; sourceTree = "<group>"; };
@@ -191,6 +193,7 @@
 			children = (
 				630141035B347B3B0E85E786 /* BondProgressTests.swift */,
 				DF6D1493B958601DA258FDD3 /* ClaudeProjectsWatcherTests.swift */,
+				053E331FF8EA56C017C547D1 /* LedgerStateAppDecodeTests.swift */,
 				D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */,
 			);
 			name = NookAppTests;
@@ -501,6 +504,7 @@
 			files = (
 				BA1EBCC3A90A87D6792FCEF6 /* BondProgressTests.swift in Sources */,
 				65C2A4FA71AF3AE9D1B2B462 /* ClaudeProjectsWatcherTests.swift in Sources */,
+				9290A0DB613709B0BD7C6990 /* LedgerStateAppDecodeTests.swift in Sources */,
 				45E34D10576812F014FE8A0A /* SessionDetectorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

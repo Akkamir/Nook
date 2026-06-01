@@ -7,6 +7,21 @@ struct TokenEvent {
     let timestamp: Date
 }
 
+struct SessionRecord: Codable, Equatable {
+    let sessionId: String
+    let project: String
+    let projectPath: String
+    let agentName: String?
+    let startedAt: Date
+    let lastActivityAt: Date
+    let inputTokens: Int
+    let outputTokens: Int
+    let totalBits: Double
+
+    var totalTokens: Int { inputTokens + outputTokens }
+    var duration: TimeInterval { lastActivityAt.timeIntervalSince(startedAt) }
+}
+
 struct AgentRecord: Codable {
     let name: String
     let totalTokens: Int
@@ -37,14 +52,16 @@ struct LedgerState: Codable {
     let lastUpdated: Date
     let recentEvents: [BitEvent]
     let eventSeq: Int
+    let sessions: [String: SessionRecord]
 
-    init(totalBits: Double, pendingBits: Double, agents: [String: AgentRecord], lastUpdated: Date, recentEvents: [BitEvent], eventSeq: Int) {
+    init(totalBits: Double, pendingBits: Double, agents: [String: AgentRecord], lastUpdated: Date, recentEvents: [BitEvent], eventSeq: Int, sessions: [String: SessionRecord] = [:]) {
         self.totalBits = totalBits
         self.pendingBits = pendingBits
         self.agents = agents
         self.lastUpdated = lastUpdated
         self.recentEvents = recentEvents
         self.eventSeq = eventSeq
+        self.sessions = sessions
     }
 
     static var empty: LedgerState {
@@ -59,5 +76,6 @@ struct LedgerState: Codable {
         lastUpdated = try c.decode(Date.self, forKey: .lastUpdated)
         recentEvents = (try? c.decode([BitEvent].self, forKey: .recentEvents)) ?? []
         eventSeq = (try? c.decode(Int.self, forKey: .eventSeq)) ?? 0
+        sessions = (try? c.decode([String: SessionRecord].self, forKey: .sessions)) ?? [:]
     }
 }
