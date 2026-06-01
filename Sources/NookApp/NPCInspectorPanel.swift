@@ -9,23 +9,25 @@ struct NPCInspectorPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            header
-            statusSection
-            statsSection
-            progressSection
-            Spacer(minLength: 0)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                header
+                liveStrip
+                statusSection
+                statsSection
+                progressSection
+                if !selection.projects.isEmpty { projectsSection }
+                if !selection.recentSessions.isEmpty { recentSessionsSection }
+                if !selection.moments.isEmpty { momentsSection }
+            }
+            .padding(16)
         }
         .font(.system(size: 12, weight: .regular, design: .monospaced))
         .foregroundStyle(.white)
-        .padding(16)
-        .frame(width: 304)
+        .frame(width: 340)
         .frame(maxHeight: .infinity, alignment: .topLeading)
         .background(.black.opacity(0.76))
-        .overlay(
-            Rectangle()
-                .stroke(.white.opacity(0.14), lineWidth: 1)
-        )
+        .overlay(Rectangle().stroke(.white.opacity(0.14), lineWidth: 1))
     }
 
     private var header: some View {
@@ -69,6 +71,28 @@ struct NPCInspectorPanel: View {
         }
     }
 
+    private var liveStrip: some View {
+        HStack(spacing: 8) {
+            if selection.currentStreakDays > 0 {
+                badge("🔥 \(selection.currentStreakDays)d")
+            }
+            if selection.longestSessionSeconds > 0 {
+                badge(formatDuration(selection.longestSessionSeconds) + " max")
+            }
+            badge(formatInt(selection.totalTokens))
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func badge(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(.white.opacity(0.10))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
     private var statsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Stats")
@@ -95,6 +119,75 @@ struct NPCInspectorPanel: View {
                 .font(.system(size: 11, weight: .regular, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.7))
         }
+    }
+
+    private var projectsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Projects")
+            ForEach(selection.projects, id: \.projectPath) { p in
+                HStack {
+                    Text(p.project).lineLimit(1)
+                    Spacer()
+                    Text("\(formatInt(p.totalTokens)) · \(p.sessionCount) sess.")
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+        }
+    }
+
+    private var recentSessionsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Recent Sessions")
+            ForEach(selection.recentSessions, id: \.sessionId) { s in
+                HStack {
+                    Text(shortDate(s.startedAt))
+                        .foregroundStyle(.white.opacity(0.7))
+                    Text(s.project).lineLimit(1)
+                    Spacer()
+                    Text("\(formatDuration(s.duration)) · \(formatInt(s.totalTokens))")
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+        }
+    }
+
+    private var momentsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Moments")
+            ForEach(Array(selection.moments.suffix(5).reversed().enumerated()), id: \.offset) { _, m in
+                HStack(alignment: .top, spacing: 6) {
+                    Text(icon(for: m.kind))
+                    Text(m.label).foregroundStyle(.white.opacity(0.85))
+                    Spacer(minLength: 0)
+                }
+            }
+        }
+    }
+
+    private func icon(for kind: Moment.Kind) -> String {
+        switch kind {
+        case .firstSession, .firstOnProject: return "✨"
+        case .anniversary: return "🎂"
+        case .bondPromotion: return "💛"
+        case .streakRecord: return "🔥"
+        case .tokenMilestone, .sessionMilestone, .hoursMilestone: return "🏁"
+        case .longestSession, .biggestSession, .mostProductiveDay: return "🏆"
+        case .nightSession: return "🌙"
+        case .returnAfterAbsence: return "👋"
+        }
+    }
+
+    private func shortDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        return f.string(from: date)
+    }
+
+    private func formatDuration(_ seconds: TimeInterval) -> String {
+        let total = Int(seconds)
+        let h = total / 3600
+        let m = (total % 3600) / 60
+        return h > 0 ? "\(h)h\(String(format: "%02d", m))" : "\(m)m"
     }
 
     private func sectionTitle(_ text: String) -> some View {
