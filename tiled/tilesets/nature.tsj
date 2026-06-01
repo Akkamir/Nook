@@ -1,0 +1,91 @@
+{
+  "columns": 0,
+  "margin": 0,
+  "name": "nature",
+  "spacing": 0,
+  "tilecount": 11,
+  "tiledversion": "1.10.2",
+  "tileheight": 16,
+  "tilewidth": 16,
+  "tiles": [
+    {
+      "id": 0,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_tree.png",
+      "imageheight": 80,
+      "imagewidth": 48,
+      "type": "tree"
+    },
+    {
+      "id": 1,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_pinetree.png",
+      "imageheight": 80,
+      "imagewidth": 48,
+      "type": "pinetree"
+    },
+    {
+      "id": 2,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_2tree.png",
+      "imageheight": 96,
+      "imagewidth": 48,
+      "type": "2tree"
+    },
+    {
+      "id": 3,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_bush2x2.png",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "type": "bush_s"
+    },
+    {
+      "id": 4,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_bush3x3.png",
+      "imageheight": 48,
+      "imagewidth": 48,
+      "type": "bush_m"
+    },
+    {
+      "id": 5,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_bush3x4.png",
+      "imageheight": 64,
+      "imagewidth": 48,
+      "type": "bush_l"
+    },
+    {
+      "id": 6,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_bush4x3.png",
+      "imageheight": 48,
+      "imagewidth": 64,
+      "type": "bush_xl"
+    },
+    {
+      "id": 7,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_bush2x3.png",
+      "imageheight": 48,
+      "imagewidth": 32,
+      "type": "bush_thin"
+    },
+    {
+      "id": 8,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_bush2x4.png",
+      "imageheight": 64,
+      "imagewidth": 32,
+      "type": "bush_tall"
+    },
+    {
+      "id": 9,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_bush3x2.png",
+      "imageheight": 32,
+      "imagewidth": 48,
+      "type": "bush_wide"
+    },
+    {
+      "id": 10,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Nature/cozytown_bush4x2.png",
+      "imageheight": 32,
+      "imagewidth": 64,
+      "type": "bush_xwide"
+    }
+  ],
+  "type": "tileset",
+  "version": "1.10"
+}

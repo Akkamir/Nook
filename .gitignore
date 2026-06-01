@@ -1,7 +1,10 @@
 .build/
+.build-app/
 *.xcodeproj
 .DS_Store
 .claude/
 .pixelvillage
 Assets.local/
 NookApp/GeneratedAssets.local/
+*.tiled-session
+/cozy-series-town-tileset-v1.0.zip

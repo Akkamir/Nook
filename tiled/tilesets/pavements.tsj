@@ -1,0 +1,15 @@
+{
+  "columns": 12,
+  "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Tileset/Structure/cozytown_structure_pavements.png",
+  "imageheight": 112,
+  "imagewidth": 192,
+  "margin": 0,
+  "name": "pavements",
+  "spacing": 0,
+  "tilecount": 84,
+  "tiledversion": "1.10.2",
+  "tileheight": 16,
+  "tilewidth": 16,
+  "type": "tileset",
+  "version": "1.10"
+}

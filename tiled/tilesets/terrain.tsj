@@ -1,0 +1,15 @@
+{
+  "columns": 12,
+  "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Tileset/Terrain/cozytown_terrain.png",
+  "imageheight": 240,
+  "imagewidth": 192,
+  "margin": 0,
+  "name": "terrain",
+  "spacing": 0,
+  "tilecount": 180,
+  "tiledversion": "1.10.2",
+  "tileheight": 16,
+  "tilewidth": 16,
+  "type": "tileset",
+  "version": "1.10"
+}

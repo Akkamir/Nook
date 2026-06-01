@@ -1,0 +1,119 @@
+{
+  "columns": 0,
+  "margin": 0,
+  "name": "building-parts",
+  "spacing": 0,
+  "tilecount": 15,
+  "tiledversion": "1.10.2",
+  "tileheight": 16,
+  "tilewidth": 16,
+  "tiles": [
+    {
+      "id": 0,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_chimney_blue.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "chimney_blue"
+    },
+    {
+      "id": 1,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_chimney_green.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "chimney_green"
+    },
+    {
+      "id": 2,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_chimney_orange.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "chimney_orange"
+    },
+    {
+      "id": 3,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_chimney_pink.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "chimney_pink"
+    },
+    {
+      "id": 4,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_chimney_purple.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "chimney_purple"
+    },
+    {
+      "id": 5,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_chimney_teal.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "chimney_teal"
+    },
+    {
+      "id": 6,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_chimney_yellow.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "chimney_yellow"
+    },
+    {
+      "id": 7,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_window_basic.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "window_basic"
+    },
+    {
+      "id": 8,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_window_single.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "window_single"
+    },
+    {
+      "id": 9,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_window_double.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "window_double"
+    },
+    {
+      "id": 10,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_window_heart.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "window_heart"
+    },
+    {
+      "id": 11,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_window_circle_blue.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "window_circle_b"
+    },
+    {
+      "id": 12,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_window_circle_pink.png",
+      "imageheight": 16,
+      "imagewidth": 16,
+      "type": "window_circle_p"
+    },
+    {
+      "id": 13,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_window_stone.png",
+      "imageheight": 32,
+      "imagewidth": 16,
+      "type": "window_stone"
+    },
+    {
+      "id": 14,
+      "image": "../../Assets.local/Maygetsu/source/CozyTown_AssetPack/Individual/Buildings/cozytown_buildings_window_yellow.png",
+      "imageheight": 32,
+      "imagewidth": 16,
+      "type": "window_yellow"
+    }
+  ],
+  "type": "tileset",
+  "version": "1.10"
+}
