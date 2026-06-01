@@ -45,7 +45,9 @@ final class Ledger {
             session.inputTokens += event.inputTokens
             session.outputTokens += event.outputTokens
             session.totalBits += bits
-            session.agentName = agentName
+            // Don't clobber a previously resolved agent if this event has none
+            // (e.g. .pixelvillage briefly unreadable) — attribution is load-bearing.
+            if let agentName { session.agentName = agentName }
             state.sessions[event.sessionId] = session
         } else {
             state.sessions[event.sessionId] = SessionRecord(

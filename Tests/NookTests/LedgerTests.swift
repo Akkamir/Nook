@@ -112,6 +112,17 @@ final class LedgerTests: XCTestCase {
         XCTAssertEqual(state.sessions.count, 2)
     }
 
+    func test_apply_nil_agent_does_not_clobber_prior_attribution() {
+        var state = LedgerState.empty
+        let e1 = TokenEvent(sessionId: "s1", projectPath: "/p", cwd: "/c/Nook",
+                            inputTokens: 100, outputTokens: 0, timestamp: date("2026-06-01T10:00:00Z"))
+        let e2 = TokenEvent(sessionId: "s1", projectPath: "/p", cwd: "/c/Nook",
+                            inputTokens: 100, outputTokens: 0, timestamp: date("2026-06-01T11:00:00Z"))
+        ledger.apply(event: e1, agentName: "Radion", to: &state)
+        ledger.apply(event: e2, agentName: nil, to: &state)
+        XCTAssertEqual(state.sessions["s1"]?.agentName, "Radion")
+    }
+
     private func date(_ s: String) -> Date {
         ISO8601DateFormatter().date(from: s)!
     }
