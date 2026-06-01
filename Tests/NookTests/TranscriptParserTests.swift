@@ -13,12 +13,18 @@ final class TranscriptParserTests: XCTestCase {
         XCTAssertEqual(result?.outputTokens, 312)
     }
 
-    func test_parse_line_without_usage_returns_nil() {
+    func test_parse_user_line_returns_entry_with_zero_tokens() {
+        // New contract: any message line parses. A user line carries no usage
+        // (0 tokens) but does carry role/userText for subject capture.
         let line = """
         {"type":"user","message":{"role":"user","content":"hello"}}
         """
         let result = TranscriptParser.parseLine(line)
-        XCTAssertNil(result)
+        XCTAssertNotNil(result)
+        XCTAssertEqual(result?.inputTokens, 0)
+        XCTAssertEqual(result?.outputTokens, 0)
+        XCTAssertEqual(result?.role, "user")
+        XCTAssertEqual(result?.userText, "hello")
     }
 
     func test_parse_empty_line_returns_nil() {
@@ -63,5 +69,38 @@ final class TranscriptParserTests: XCTestCase {
 
     func test_line_without_usage_returns_nil() {
         XCTAssertNil(TranscriptParser.parseLine("{}"))
+    }
+
+    func test_parses_user_task_text() throws {
+        let line = #"{"cwd":"/c/Nook","gitBranch":"main","timestamp":"2026-06-01T10:00:00Z","message":{"role":"user","content":"refactor the auth module"}}"#
+        let e = try XCTUnwrap(TranscriptParser.parseLine(line))
+        XCTAssertEqual(e.role, "user")
+        XCTAssertEqual(e.userText, "refactor the auth module")
+        XCTAssertEqual(e.gitBranch, "main")
+        XCTAssertTrue(e.toolUses.isEmpty)
+    }
+
+    func test_user_tool_result_only_has_no_task_text() throws {
+        let line = #"{"message":{"role":"user","content":[{"type":"tool_result","content":"ok"}]}}"#
+        let e = try XCTUnwrap(TranscriptParser.parseLine(line))
+        XCTAssertEqual(e.role, "user")
+        XCTAssertNil(e.userText)
+    }
+
+    func test_parses_assistant_tool_uses() throws {
+        let line = #"{"timestamp":"2026-06-01T10:05:00Z","message":{"role":"assistant","content":[{"type":"thinking","text":"hmm"},{"type":"tool_use","name":"Edit","input":{"file_path":"/c/Nook/Auth.swift"}},{"type":"tool_use","name":"Bash","input":{"command":"swift test"}}],"usage":{"input_tokens":10,"output_tokens":20}}}"#
+        let e = try XCTUnwrap(TranscriptParser.parseLine(line))
+        XCTAssertEqual(e.role, "assistant")
+        XCTAssertEqual(e.inputTokens, 10)
+        XCTAssertEqual(e.outputTokens, 20)
+        XCTAssertEqual(e.toolUses.count, 2)
+        XCTAssertEqual(e.toolUses[0].name, "Edit")
+        XCTAssertEqual(e.toolUses[0].filePath, "/c/Nook/Auth.swift")
+        XCTAssertEqual(e.toolUses[1].name, "Bash")
+        XCTAssertEqual(e.toolUses[1].command, "swift test")
+    }
+
+    func test_non_message_line_returns_nil() {
+        XCTAssertNil(TranscriptParser.parseLine(#"{"type":"summary","leafUuid":"x"}"#))
     }
 }
