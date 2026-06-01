@@ -4,6 +4,7 @@ final class ClaudeWatcher {
     private let projectsRoot: URL
     private let offsetsURL: URL
     private let onEvent: (TokenEvent, String?) -> Void
+    private let onSubject: (ParsedEntry, String, String, String?) -> Void  // entry, sessionId, projectPath, agentName
     private var fileOffsets: [String: UInt64] = [:]  // keyed by path string for JSON serialization
     private var dispatchSource: DispatchSourceProtocol?
 
@@ -12,11 +13,13 @@ final class ClaudeWatcher {
             .appendingPathComponent(".claude/projects"),
         offsetsURL: URL = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".pixelvillage/offsets.json"),
-        onEvent: @escaping (TokenEvent, String?) -> Void
+        onEvent: @escaping (TokenEvent, String?) -> Void,
+        onSubject: @escaping (ParsedEntry, String, String, String?) -> Void = { _, _, _, _ in }
     ) {
         self.projectsRoot = projectsRoot
         self.offsetsURL = offsetsURL
         self.onEvent = onEvent
+        self.onSubject = onSubject
         loadOffsets()
     }
 
@@ -80,8 +83,12 @@ final class ClaudeWatcher {
         var lastUsage: (Int, Int)? = nil
         for line in content.components(separatedBy: "\n") {
             guard let parsed = TranscriptParser.parseLine(line) else { continue }
+
+            // Subject ingestion runs for every message line (user prompts included).
+            onSubject(parsed, sessionId, projectPath, agentName)
+
+            // Token/bits emission only for usage-bearing lines (with consecutive-dup guard).
             let pair = (parsed.inputTokens, parsed.outputTokens)
-            // Skip zero-token streaming deltas and consecutive duplicate entries
             guard pair.0 > 0 || pair.1 > 0 else { continue }
             guard lastUsage.map({ $0 != pair }) ?? true else { continue }
             lastUsage = pair
