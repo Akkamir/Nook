@@ -202,6 +202,58 @@ final class NPCSprite: SKNode {
         ]))
     }
 
+    func showSpeech(_ text: String) {
+        // One bubble at a time.
+        childNode(withName: "speech")?.removeFromParent()
+
+        let display = text.count > 60 ? String(text.prefix(59)) + "…" : text
+
+        let label = SKLabelNode(fontNamed: "Monaco")
+        label.text = display
+        label.fontSize = 11
+        label.fontColor = .black
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        label.preferredMaxLayoutWidth = 180
+        label.numberOfLines = 2
+        label.lineBreakMode = .byTruncatingTail
+
+        let padding: CGFloat = 8
+        let textSize = label.frame.size
+        let bubbleW = min(max(textSize.width + padding * 2, 40), 200)
+        let bubbleH = textSize.height + padding * 2
+
+        let bubble = SKShapeNode(rectOf: CGSize(width: bubbleW, height: bubbleH), cornerRadius: 6)
+        bubble.name = "speech"
+        bubble.fillColor = NSColor(white: 0.97, alpha: 0.96)
+        bubble.strokeColor = NSColor(white: 0.2, alpha: 0.9)
+        bubble.lineWidth = 1
+        bubble.position = CGPoint(x: 0, y: Self.charH + 30)
+        bubble.zPosition = 40
+        bubble.addChild(label)
+
+        // Little tail.
+        let tail = SKShapeNode(rectOf: CGSize(width: 6, height: 6))
+        tail.fillColor = bubble.fillColor
+        tail.strokeColor = bubble.strokeColor
+        tail.lineWidth = 1
+        tail.zRotation = .pi / 4
+        tail.position = CGPoint(x: 0, y: -bubbleH / 2)
+        bubble.addChild(tail)
+
+        bubble.alpha = 0
+        bubble.setScale(0.9)
+        addChild(bubble)
+
+        let hold = max(2.5, min(5.0, Double(display.count) * 0.06))
+        bubble.run(.sequence([
+            .group([.fadeIn(withDuration: 0.12), .scale(to: 1.0, duration: 0.12)]),
+            .wait(forDuration: hold),
+            .group([.fadeOut(withDuration: 0.3)]),
+            .removeFromParent()
+        ]))
+    }
+
     func showBondPromotion(level: Int) {
         let ring = SKShapeNode(circleOfRadius: 28)
         ring.strokeColor = NSColor(red: 1.0, green: 0.88, blue: 0.30, alpha: 1)
