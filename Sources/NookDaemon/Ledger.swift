@@ -69,6 +69,103 @@ final class Ledger {
             state.recentEvents.removeFirst(state.recentEvents.count - 100)
         }
     }
+
+    func ingestSubject(entry: ParsedEntry, sessionId: String, projectPath: String, agentName: String?, to state: inout LedgerState) {
+        // Mirror apply()'s derivation so a session created here keys identically.
+        let project = entry.cwd.map { URL(fileURLWithPath: $0).lastPathComponent }
+            ?? URL(fileURLWithPath: projectPath).lastPathComponent
+
+        // Upsert the session (create if this line precedes any usage-bearing line).
+        var session = state.sessions[sessionId] ?? SessionRecord(
+            sessionId: sessionId, project: project, projectPath: projectPath,
+            agentName: agentName, startedAt: entry.timestamp, lastActivityAt: entry.timestamp,
+            inputTokens: 0, outputTokens: 0, totalBits: 0
+        )
+        session.lastActivityAt = entry.timestamp
+        if let agentName { session.agentName = agentName }
+        if let branch = entry.gitBranch { session.gitBranch = branch }
+
+        // Task: first real user prompt.
+        if session.task == nil, let text = entry.userText {
+            let snippet = Self.truncate(text, to: 120)
+            session.task = snippet
+            emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "task", payload: snippet)
+        }
+
+        // Tool uses: files + commands + counts.
+        for tool in entry.toolUses {
+            switch tool.name {
+            case "Edit", "Write", "MultiEdit":
+                session.editCount += 1
+                if let path = tool.filePath { newFile(&state, &session, path, agentName, sessionId) }
+            case "Read":
+                session.readCount += 1
+                if let path = tool.filePath { newFile(&state, &session, path, agentName, sessionId) }
+            case "Bash":
+                session.bashCount += 1
+                if let cmd = tool.command {
+                    let summary = Self.commandSummary(cmd)
+                    if cmd.contains("git commit") {
+                        fireOnce(&state, &session, kind: "committing", payload: "git commit", agentName, sessionId)
+                    } else if Self.looksLikeTests(cmd) {
+                        fireOnce(&state, &session, kind: "testing", payload: summary, agentName, sessionId)
+                    }
+                }
+            default:
+                break
+            }
+        }
+
+        // Deep work threshold.
+        if session.editCount >= 10 {
+            fireOnce(&state, &session, kind: "deepWork", payload: session.project, agentName, sessionId)
+        }
+
+        state.sessions[sessionId] = session
+    }
+
+    private func newFile(_ state: inout LedgerState, _ session: inout SessionRecord, _ path: String,
+                         _ agentName: String?, _ sessionId: String) {
+        guard !session.filesTouched.contains(path) else { return }
+        session.filesTouched.append(path)
+        if session.filesTouched.count > 20 { session.filesTouched.removeFirst(session.filesTouched.count - 20) }
+        emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "file",
+                     payload: URL(fileURLWithPath: path).lastPathComponent)
+    }
+
+    private func fireOnce(_ state: inout LedgerState, _ session: inout SessionRecord, kind: String,
+                          payload: String?, _ agentName: String?, _ sessionId: String) {
+        guard !session.firedKinds.contains(kind) else { return }
+        session.firedKinds.append(kind)
+        emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: kind, payload: payload)
+    }
+
+    private func emitActivity(_ state: inout LedgerState, agentName: String?, sessionId: String,
+                              kind: String, payload: String?) {
+        state.activitySeq += 1
+        state.recentActivity.append(SessionActivityEvent(
+            agentName: agentName, sessionId: sessionId, kind: kind, payload: payload, seq: state.activitySeq))
+        if state.recentActivity.count > 100 {
+            state.recentActivity.removeFirst(state.recentActivity.count - 100)
+        }
+    }
+
+    static func truncate(_ s: String, to n: Int) -> String {
+        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.count <= n ? t : String(t.prefix(n - 1)) + "…"
+    }
+
+    static func commandSummary(_ cmd: String) -> String {
+        let parts = cmd.trimmingCharacters(in: .whitespaces).split(separator: " ")
+        guard let first = parts.first.map(String.init) else { return "" }
+        if first == "git", parts.count > 1 { return "git \(parts[1])" }
+        return first
+    }
+
+    static func looksLikeTests(_ cmd: String) -> Bool {
+        let c = cmd.lowercased()
+        return c.contains("test") || c.contains("pytest")
+    }
 }
 
 extension Ledger {

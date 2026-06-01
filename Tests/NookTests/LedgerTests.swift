@@ -123,6 +123,51 @@ final class LedgerTests: XCTestCase {
         XCTAssertEqual(state.sessions["s1"]?.agentName, "Radion")
     }
 
+    private func entry(role: String? = nil, userText: String? = nil, tools: [ToolUse] = [],
+                       at: String = "2026-06-01T10:00:00Z") -> ParsedEntry {
+        ParsedEntry(inputTokens: 0, outputTokens: 0, timestamp: date(at), cwd: "/c/Nook",
+                    gitBranch: "main", role: role, userText: userText, toolUses: tools)
+    }
+
+    func test_ingest_first_user_prompt_sets_task_and_emits_once() {
+        var state = LedgerState.empty
+        ledger.ingestSubject(entry: entry(role: "user", userText: "refactor auth"), sessionId: "s1", projectPath: "/c/Nook", agentName: "Radion", to: &state)
+        XCTAssertEqual(state.sessions["s1"]?.task, "refactor auth")
+        XCTAssertEqual(state.recentActivity.filter { $0.kind == "task" }.count, 1)
+        ledger.ingestSubject(entry: entry(role: "user", userText: "now tests"), sessionId: "s1", projectPath: "/c/Nook", agentName: "Radion", to: &state)
+        XCTAssertEqual(state.recentActivity.filter { $0.kind == "task" }.count, 1)
+    }
+
+    func test_ingest_new_file_emits_file_event_once() {
+        var state = LedgerState.empty
+        let tool = ToolUse(name: "Edit", filePath: "/c/Nook/Auth.swift", command: nil)
+        ledger.ingestSubject(entry: entry(role: "assistant", tools: [tool]), sessionId: "s1", projectPath: "/c/Nook", agentName: "Radion", to: &state)
+        ledger.ingestSubject(entry: entry(role: "assistant", tools: [tool]), sessionId: "s1", projectPath: "/c/Nook", agentName: "Radion", to: &state)
+        let fileEvents = state.recentActivity.filter { $0.kind == "file" }
+        XCTAssertEqual(fileEvents.count, 1)
+        XCTAssertEqual(fileEvents.first?.payload, "Auth.swift")
+        XCTAssertEqual(state.sessions["s1"]?.editCount, 2)
+    }
+
+    func test_ingest_test_command_emits_testing_once_with_coarse_payload() {
+        var state = LedgerState.empty
+        let bash = ToolUse(name: "Bash", filePath: nil, command: "swift test --filter Foo")
+        ledger.ingestSubject(entry: entry(role: "assistant", tools: [bash]), sessionId: "s1", projectPath: "/c/Nook", agentName: "Radion", to: &state)
+        ledger.ingestSubject(entry: entry(role: "assistant", tools: [bash]), sessionId: "s1", projectPath: "/c/Nook", agentName: "Radion", to: &state)
+        let testing = state.recentActivity.filter { $0.kind == "testing" }
+        XCTAssertEqual(testing.count, 1)
+        XCTAssertEqual(testing.first?.payload, "swift")
+    }
+
+    func test_ingest_deepwork_fires_when_edit_count_crosses_ten() {
+        var state = LedgerState.empty
+        let tool = ToolUse(name: "Edit", filePath: nil, command: nil)
+        for _ in 0..<10 {
+            ledger.ingestSubject(entry: entry(role: "assistant", tools: [tool]), sessionId: "s1", projectPath: "/c/Nook", agentName: "Radion", to: &state)
+        }
+        XCTAssertEqual(state.recentActivity.filter { $0.kind == "deepWork" }.count, 1)
+    }
+
     private func date(_ s: String) -> Date {
         ISO8601DateFormatter().date(from: s)!
     }
