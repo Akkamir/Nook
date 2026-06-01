@@ -11,6 +11,10 @@ final class NPCManager {
     private var models:  [String: NPCModel]  = [:]
     private var activeAgents: Set<String> = []
 
+    private let speechComposer: SpeechLineComposing = HeuristicLineComposer()
+    private var lastSpokeAt: [String: Date] = [:]
+    private let speechCooldown: TimeInterval = 50
+
     struct TileBounds {
         let minX, minY, maxX, maxY: Int
         func contains(_ x: Int, _ y: Int) -> Bool {
@@ -127,6 +131,23 @@ final class NPCManager {
                     sprite?.showBitsGain(event.bits)
                 }
             }
+        }
+    }
+
+    func handleActivityEvents(_ events: [SessionActivityEvent]) {
+        let now = Date()
+        // Keep only the most recent event per agent with a live sprite.
+        var latestByAgent: [String: SessionActivityEvent] = [:]
+        for event in events {
+            guard let agent = event.agentName, sprites[agent] != nil else { continue }
+            if let existing = latestByAgent[agent], existing.seq > event.seq { continue }
+            latestByAgent[agent] = event
+        }
+        for (agent, event) in latestByAgent {
+            if let last = lastSpokeAt[agent], now.timeIntervalSince(last) < speechCooldown { continue }
+            guard let line = speechComposer.line(for: event, session: engine.sessions[event.sessionId]) else { continue }
+            sprites[agent]?.showSpeech(line)
+            lastSpokeAt[agent] = now
         }
     }
 

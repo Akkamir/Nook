@@ -214,5 +214,9 @@ final class VillageScene: SKScene {
             engine.newBitEvents = []
             refreshSelection()
         }
+        if let engine, !engine.newActivityEvents.isEmpty {
+            npcManager?.handleActivityEvents(engine.newActivityEvents)
+            engine.newActivityEvents = []
+        }
     }
 }
