@@ -28,7 +28,7 @@ final class DaemonInstaller {
         }
         do {
             try writePlist(binaryURL: binaryURL)
-            try bootstrapOrKickstart()
+            try reloadLaunchAgent()
             isDaemonRunning = true
             print("[DaemonInstaller] NookDaemon installed and running")
         } catch {
@@ -66,21 +66,22 @@ final class DaemonInstaller {
         try plistContent.write(to: plistURL, atomically: true, encoding: .utf8)
     }
 
-    private func bootstrapOrKickstart() throws {
+    private func reloadLaunchAgent() throws {
         let uid = getuid()
         let domain = "gui/\(uid)"
+        let serviceTarget = "\(domain)/\(launchAgentLabel)"
 
-        let checkResult = runLaunchctl(["list", launchAgentLabel])
-        if checkResult.status == 0 {
-            let result = runLaunchctl(["kickstart", "-k", "\(domain)/\(launchAgentLabel)"])
-            if result.status != 0 {
-                throw DaemonError.launchctlFailed(result.output)
-            }
-        } else {
-            let result = runLaunchctl(["bootstrap", domain, plistURL.path])
-            if result.status != 0 {
-                throw DaemonError.launchctlFailed(result.output)
-            }
+        // If a job is already registered, remove it before bootstrapping so the
+        // updated plist (current binary path) is reloaded. `kickstart -k` alone
+        // reuses launchd's in-memory definition and cannot recover a stale or
+        // failed (e.g. status 78) job after a rebuild.
+        if runLaunchctl(["list", launchAgentLabel]).status == 0 {
+            _ = runLaunchctl(["bootout", serviceTarget])
+        }
+
+        let result = runLaunchctl(["bootstrap", domain, plistURL.path])
+        if result.status != 0 {
+            throw DaemonError.launchctlFailed(result.output)
         }
     }
 
