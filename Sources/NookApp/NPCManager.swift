@@ -266,6 +266,7 @@ final class NPCManager {
             bond: model.bond,
             totalTokens: model.totalTokens,
             totalBits: model.totalBits,
+            availableBits: engine.availableBits(for: id),
             activeSessionCount: visualState.sessionCount,
             trait: visualState.trait,
             projects: Array(projects.prefix(5)),

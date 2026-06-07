@@ -6,6 +6,7 @@ struct NPCSelection: Equatable {
     let bond: Int
     let totalTokens: Int
     let totalBits: Double
+    let availableBits: Double
     let activeSessionCount: Int
     let trait: NPCWorkTrait
 

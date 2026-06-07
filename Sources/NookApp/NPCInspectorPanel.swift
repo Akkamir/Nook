@@ -99,9 +99,20 @@ struct NPCInspectorPanel: View {
     }
 
     private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let spent = selection.totalBits - selection.availableBits
+        return VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Stats")
-            statRow("Bits", formatBits(selection.totalBits))
+            VStack(alignment: .leading, spacing: 3) {
+                statRow("Bits", formatBits(selection.availableBits))
+                if spent > 0.01 {
+                    HStack {
+                        Spacer()
+                        Text("\(formatBits(spent)) spent on upgrades")
+                            .font(.system(size: 10, weight: .regular, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.42))
+                    }
+                }
+            }
             statRow("Tokens", formatInt(selection.totalTokens))
             statRow("Bond", "\(selection.bond)")
         }
