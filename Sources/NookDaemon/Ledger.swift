@@ -25,17 +25,19 @@ final class Ledger {
         try data.write(to: url, options: .atomic)
     }
 
-    func apply(event: TokenEvent, agentName: String?, multiplier: Double = 1.0, to state: inout LedgerState) {
-        let bits = event.bits * multiplier
-        guard bits > 0 else { return }
-        state.pendingBits += bits
-        state.totalBits += bits
+    func apply(event: TokenEvent, agentName: String?, to state: inout LedgerState) {
+        let rawBits = event.bits
+        guard rawBits > 0 else { return }
+        state.pendingBits += rawBits
+        state.totalBitsRaw += rawBits
         state.lastUpdated = Date()
 
         if let name = agentName {
             var record = state.agents[name] ?? AgentRecord(name: name, totalTokens: 0, bond: 1)
-            record.addTokens(event, bits: bits)
+            record.addTokens(event, rawBits: rawBits)
             state.agents[name] = record
+        } else {
+            state.globalBitsRaw += rawBits
         }
 
         let project = event.cwd.map { URL(fileURLWithPath: $0).lastPathComponent }
@@ -46,7 +48,7 @@ final class Ledger {
             session.outputTokens += event.outputTokens
             session.cacheCreationTokens += event.cacheCreationTokens
             session.cacheReadTokens += event.cacheReadTokens
-            session.totalBits += bits
+            session.totalBits += rawBits
             // Don't clobber a previously resolved agent if this event has none
             // (e.g. .pixelvillage briefly unreadable) — attribution is load-bearing.
             if let agentName { session.agentName = agentName }
@@ -63,12 +65,12 @@ final class Ledger {
                 outputTokens: event.outputTokens,
                 cacheCreationTokens: event.cacheCreationTokens,
                 cacheReadTokens: event.cacheReadTokens,
-                totalBits: bits
+                totalBits: rawBits
             )
         }
 
         state.eventSeq += 1
-        state.recentEvents.append(BitEvent(agentName: agentName, bits: bits, seq: state.eventSeq))
+        state.recentEvents.append(BitEvent(agentName: agentName, rawBits: rawBits, seq: state.eventSeq))
         if state.recentEvents.count > 100 {
             state.recentEvents.removeFirst(state.recentEvents.count - 100)
         }

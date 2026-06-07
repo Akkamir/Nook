@@ -47,4 +47,15 @@ final class LedgerStateDecodeTests: XCTestCase {
         let state = try decode(json)
         XCTAssertEqual(state.agents["Radion"]?.bond, 20)
     }
+
+    func test_legacy_ledger_without_global_bits_derives_global_bits_raw() throws {
+        let json = """
+        {"totalBits":100,"pendingBits":0,"agents":{"Radion":{"name":"Radion","totalTokens":7000,"bond":1,"totalBits":70}},
+         "lastUpdated":"2026-06-01T00:00:00Z","recentEvents":[],"eventSeq":0}
+        """
+        let state = try decode(json)
+        XCTAssertEqual(state.totalBitsRaw, 100, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(state.agents["Radion"]).totalBitsRaw, 70, accuracy: 0.001)
+        XCTAssertEqual(state.globalBitsRaw, 30, accuracy: 0.001)
+    }
 }

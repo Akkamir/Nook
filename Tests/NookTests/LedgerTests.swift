@@ -21,24 +21,29 @@ final class LedgerTests: XCTestCase {
 
     func test_load_returns_empty_state_when_no_file() {
         let state = ledger.load()
-        XCTAssertEqual(state.totalBits, 0)
+        XCTAssertEqual(state.totalBitsRaw, 0)
         XCTAssertEqual(state.pendingBits, 0)
+        XCTAssertEqual(state.globalBitsRaw, 0)
         XCTAssertTrue(state.agents.isEmpty)
     }
 
     func test_save_and_reload_preserves_state() throws {
         var state = LedgerState.empty
-        state.totalBits = 42.5
+        state.totalBitsRaw = 42.5
         state.pendingBits = 10.0
-        state.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 1_856_640, bond: 3)
+        state.globalBitsRaw = 7.5
+        state.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 1_856_640, bond: 3, totalBitsRaw: 35.0)
 
         try ledger.save(state)
         let loaded = ledger.load()
 
-        XCTAssertEqual(loaded.totalBits, 42.5, accuracy: 0.001)
+        XCTAssertEqual(loaded.totalBitsRaw, 42.5, accuracy: 0.001)
         XCTAssertEqual(loaded.pendingBits, 10.0, accuracy: 0.001)
-        XCTAssertEqual(loaded.agents["Radion"]?.totalTokens, 1_856_640)
-        XCTAssertEqual(loaded.agents["Radion"]?.bond, 5)
+        XCTAssertEqual(loaded.globalBitsRaw, 7.5, accuracy: 0.001)
+        let agent = try XCTUnwrap(loaded.agents["Radion"])
+        XCTAssertEqual(agent.totalTokens, 1_856_640)
+        XCTAssertEqual(agent.totalBitsRaw, 35.0, accuracy: 0.001)
+        XCTAssertEqual(agent.bond, 5)
     }
 
     func test_apply_event_global_pool_increases_bits() throws {
@@ -53,7 +58,8 @@ final class LedgerTests: XCTestCase {
 
         // 1000 input *5/1000 + 1000 output *5 *5/1000 = 5 + 25 = 30 Bits
         XCTAssertEqual(state.pendingBits, 30.0, accuracy: 0.001)
-        XCTAssertEqual(state.totalBits, 30.0, accuracy: 0.001)
+        XCTAssertEqual(state.totalBitsRaw, 30.0, accuracy: 0.001)
+        XCTAssertEqual(state.globalBitsRaw, 30.0, accuracy: 0.001)
         XCTAssertTrue(state.agents.isEmpty)
     }
 
