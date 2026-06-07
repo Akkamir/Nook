@@ -19,6 +19,7 @@ final class VillageScene: SKScene {
     private var lastTotalBits: Double = -1
     private var lastActiveSessions: Set<String> = []
     private var lastActiveSessionCounts: [String: Int] = [:]
+    private var lastUpgrades: UpgradeState = .empty
     private var lastDayPhase: DayPhase?
     private var initialZoomSet = false
     private var selectedNPCID: String?
@@ -204,6 +205,12 @@ final class VillageScene: SKScene {
             npcManager?.syncVisualStates()
             refreshSelection()
             lastActiveSessionCounts = engine.activeSessionCounts
+        }
+        if let engine, engine.upgrades != lastUpgrades {
+            // A purchase changes available bits / multiplier without moving totalBits.
+            npcManager?.syncVisualStates()
+            refreshSelection()
+            lastUpgrades = engine.upgrades
         }
         if let engine, engine.dayPhase != lastDayPhase {
             npcManager?.syncVisualStates()

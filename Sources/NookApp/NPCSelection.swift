@@ -7,6 +7,7 @@ struct NPCSelection: Equatable {
     let totalTokens: Int
     let totalBits: Double
     let availableBits: Double
+    let bitMultiplier: Double
     let activeSessionCount: Int
     let trait: NPCWorkTrait
 

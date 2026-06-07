@@ -70,6 +70,7 @@
 		A18C39FE0320400209DC9415 /* tree.png in Resources */ = {isa = PBXBuildFile; fileRef = 3938CD5B32CC406896BAE5E0 /* tree.png */; };
 		A2421EE7CA0FE95C5E95D7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF08C230635E2A978BEA13E0 /* ContentView.swift */; };
 		A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */; };
+		A63ABB0404CB74E93DB7E069 /* OpenAINarrationParsingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434818BE5657F0A545A99629 /* OpenAINarrationParsingTests.swift */; };
 		A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */; };
 		ADC915B016A9F472F495DDBE /* TiledMapData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E70DD5EA817B84A724ECDB75 /* TiledMapData.swift */; };
 		AEE5FB1A9217329A955198D4 /* char_0.png in Resources */ = {isa = PBXBuildFile; fileRef = E7DD7BEF7413F5080D9C32D4 /* char_0.png */; };
@@ -135,6 +136,7 @@
 		38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCManager.swift; sourceTree = "<group>"; };
 		3938CD5B32CC406896BAE5E0 /* tree.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tree.png; sourceTree = "<group>"; };
 		3CD79B8A5103B55BCE54DC26 /* Moment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Moment.swift; sourceTree = "<group>"; };
+		434818BE5657F0A545A99629 /* OpenAINarrationParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAINarrationParsingTests.swift; sourceTree = "<group>"; };
 		44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCVisualState.swift; sourceTree = "<group>"; };
 		48AFBE8E43E2FBD2CDAFF99E /* NPCMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCMemory.swift; sourceTree = "<group>"; };
 		4E343E29ED6016B9A4146F32 /* market.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = market.png; sourceTree = "<group>"; };
@@ -250,6 +252,7 @@
 				053E331FF8EA56C017C547D1 /* LedgerStateAppDecodeTests.swift */,
 				074408FE5EA9C38FF638D953 /* MomentTests.swift */,
 				AF0CA6A6A09DF3ADFFE3B89F /* NPCMemoryTests.swift */,
+				434818BE5657F0A545A99629 /* OpenAINarrationParsingTests.swift */,
 				FACF6566299AE4174BCB3D62 /* ProjectRollupTests.swift */,
 				D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */,
 				5954D78FBC27D98B3A12F53E /* SpeechLineComposerTests.swift */,
@@ -616,6 +619,7 @@
 				9290A0DB613709B0BD7C6990 /* LedgerStateAppDecodeTests.swift in Sources */,
 				DDCEE996C32E5E6C0FC211D1 /* MomentTests.swift in Sources */,
 				99D27FD439064D19CF69B9A1 /* NPCMemoryTests.swift in Sources */,
+				A63ABB0404CB74E93DB7E069 /* OpenAINarrationParsingTests.swift in Sources */,
 				EE2D74C75340DC2F8C28A06D /* ProjectRollupTests.swift in Sources */,
 				45E34D10576812F014FE8A0A /* SessionDetectorTests.swift in Sources */,
 				B6FC0F8C677450FB68EDD319 /* SpeechLineComposerTests.swift in Sources */,

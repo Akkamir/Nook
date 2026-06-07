@@ -159,6 +159,10 @@ final class VillageEngine {
         return UpgradeEconomy.availableBits(for: agentName, ledger: ledger, upgrades: upgrades)
     }
 
+    func bitMultiplier(for agentName: String) -> Double {
+        upgrades.agents[agentName]?.bitMultiplier ?? 1.0
+    }
+
     func nextBitMultiplierCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bitMultiplierLevel ?? 0
         return UpgradeEconomy.cost(for: .bitMultiplier, currentLevel: level)
@@ -255,10 +259,13 @@ final class VillageEngine {
         Self.backgroundSave(memory: updatedMemory, to: memoryURL)
 
         guard OpenAIAPIKeyStore.load() != nil else { return }
-        if let enriched = try? await narrationClient.enrich(sessionMemory: base, digest: digest, bond: bond) {
+        do {
+            let enriched = try await narrationClient.enrich(sessionMemory: base, digest: digest, bond: bond)
             updatedMemory.sessions[sessionId] = enriched
             npcMemory = updatedMemory
             Self.backgroundSave(memory: updatedMemory, to: memoryURL)
+        } catch {
+            print("[Nook] enrich error for session \(sessionId): \(error)")
         }
     }
 

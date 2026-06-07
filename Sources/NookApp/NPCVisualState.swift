@@ -19,6 +19,8 @@ struct NPCVisualState: Equatable {
     let bond: Int
     let totalTokens: Int
     let totalBits: Double
+    let availableBits: Double
+    let bitMultiplier: Double
     let activity: NPCActivityKind
     let trait: NPCWorkTrait
     let isNight: Bool
@@ -39,7 +41,9 @@ struct NPCVisualState: Equatable {
     static func derive(
         from model: NPCModel,
         activeSessionCount: Int,
-        dayPhase: DayPhase
+        dayPhase: DayPhase,
+        availableBits: Double? = nil,
+        bitMultiplier: Double = 1.0
     ) -> NPCVisualState {
         let activity: NPCActivityKind
         if activeSessionCount > 0 {
@@ -56,6 +60,8 @@ struct NPCVisualState: Equatable {
             bond: model.bond,
             totalTokens: model.totalTokens,
             totalBits: model.totalBits,
+            availableBits: availableBits ?? model.totalBits,
+            bitMultiplier: bitMultiplier,
             activity: activity,
             trait: NPCVisualState.trait(for: model),
             isNight: dayPhase == .night

@@ -79,7 +79,10 @@ struct NPCInspectorPanel: View {
             if selection.longestSessionSeconds > 0 {
                 badge(formatDuration(selection.longestSessionSeconds) + " max")
             }
-            badge(icon: .bit, formatInt(selection.totalTokens))
+            badge(icon: .bit, formatBits(selection.availableBits))
+            if selection.bitMultiplier > 1.0 {
+                badge(formatMultiplier(selection.bitMultiplier) + "x")
+            }
             Spacer(minLength: 0)
         }
     }
@@ -235,6 +238,10 @@ struct NPCInspectorPanel: View {
 
     private func formatInt(_ value: Int) -> String {
         value.formatted(.number)
+    }
+
+    private func formatMultiplier(_ value: Double) -> String {
+        value == value.rounded() ? String(format: "%.0f", value) : String(format: "%.2f", value)
     }
 
     private func formatBits(_ bits: Double) -> String {

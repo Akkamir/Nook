@@ -28,16 +28,26 @@ struct OpenAINarrationClient {
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model,
             "max_output_tokens": 350,
+            // json_object guarantees raw, parseable JSON — without it the model
+            // wraps output in a ```json fence that breaks JSONSerialization.
+            "text": ["format": ["type": "json_object"]],
             "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'.",
             "input": prompt(memory: sessionMemory, digest: digest, bond: bond)
         ])
 
         let (data, response) = try await session.data(for: request)
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw ClientError.invalidResponse }
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            let body = String(data: data, encoding: .utf8) ?? "<binary>"
+            print("[Nook] OpenAI enrich failed: status \((response as? HTTPURLResponse)?.statusCode ?? -1) — \(body.prefix(300))")
+            throw ClientError.invalidResponse
+        }
         guard let text = Self.outputText(from: data),
-              let jsonData = text.data(using: .utf8),
+              let jsonData = Self.stripCodeFence(text).data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
-        else { throw ClientError.invalidResponse }
+        else {
+            print("[Nook] OpenAI enrich: could not parse JSON from response")
+            throw ClientError.invalidResponse
+        }
 
         var enriched = sessionMemory
         enriched.title = object["title"] as? String ?? enriched.title
@@ -51,6 +61,7 @@ struct OpenAINarrationClient {
 
     private func prompt(memory: GeneratedSessionMemory, digest: SessionDigest, bond: Int) -> String {
         """
+        Respond as raw JSON only.
         Existing title: \(memory.title)
         Project: \(digest.project)
         Branch: \(digest.branch ?? "unknown")
@@ -60,6 +71,25 @@ struct OpenAINarrationClient {
         Commands: \(digest.commands.joined(separator: ", "))
         Tools: \(digest.tools.joined(separator: ", "))
         """
+    }
+
+    /// Defensively unwrap a ```json … ``` (or bare ```) fence the model may emit
+    /// despite json_object mode, returning the inner JSON text.
+    static func stripCodeFence(_ text: String) -> String {
+        var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard s.hasPrefix("```") else { return s }
+        s.removeFirst(3)
+        if let newline = s.firstIndex(of: "\n") {
+            // Drop an optional language tag on the first fence line (e.g. "json").
+            let firstLine = s[s.startIndex..<newline].trimmingCharacters(in: .whitespaces)
+            if firstLine.isEmpty || firstLine.allSatisfy({ $0.isLetter }) {
+                s = String(s[s.index(after: newline)...])
+            }
+        }
+        if let fenceEnd = s.range(of: "```", options: .backwards) {
+            s = String(s[s.startIndex..<fenceEnd.lowerBound])
+        }
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func outputText(from data: Data) -> String? {

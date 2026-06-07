@@ -176,7 +176,11 @@ final class NPCSprite: SKNode {
     func apply(visualState: NPCVisualState) {
         currentVisualState = visualState
         nameLabel.text = visualState.name
-        bondLabel.text = "Bond \(visualState.bond)  \(formatBits(visualState.totalBits))"
+        var bondText = "Bond \(visualState.bond)  \(formatBits(visualState.availableBits))"
+        if visualState.bitMultiplier > 1.0 {
+            bondText += "  \(formatMultiplier(visualState.bitMultiplier))x"
+        }
+        bondLabel.text = bondText
 
         statusBubble.removeAllChildren()
         if visualState.isWorking {
@@ -367,5 +371,10 @@ final class NPCSprite: SKNode {
         if bits >= 1_000    { return String(format: "%.1fk", bits / 1_000) }
         if bits >= 10        { return String(format: "%.0f", bits) }
         return String(format: "%.1f", bits)
+    }
+
+    private func formatMultiplier(_ value: Double) -> String {
+        // Drop the trailing ".00" for whole multipliers (e.g. 2x not 2.00x).
+        value == value.rounded() ? String(format: "%.0f", value) : String(format: "%.2f", value)
     }
 }

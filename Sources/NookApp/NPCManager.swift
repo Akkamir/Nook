@@ -77,7 +77,9 @@ final class NPCManager {
             let visualState = NPCVisualState.derive(
                 from: model,
                 activeSessionCount: engine.activeSessionCounts[id, default: 0],
-                dayPhase: engine.dayPhase
+                dayPhase: engine.dayPhase,
+                availableBits: engine.availableBits(for: id),
+                bitMultiplier: engine.bitMultiplier(for: id)
             )
             sprite.apply(visualState: visualState)
             behavior.apply(visualState)
@@ -230,10 +232,23 @@ final class NPCManager {
         }
         for (agent, event) in latestByAgent {
             if let last = lastSpokeAt[agent], now.timeIntervalSince(last) < speechCooldown { continue }
-            guard let line = speechComposer.line(for: event, session: engine.sessions[event.sessionId]) else { continue }
+            // Prefer an LLM-enriched cached line for this session when available;
+            // fall back to the deterministic heuristic composer.
+            let line = enrichedLine(for: event)
+                ?? speechComposer.line(for: event, session: engine.sessions[event.sessionId])
+            guard let line else { continue }
             sprites[agent]?.showSpeech(line)
             lastSpokeAt[agent] = now
         }
+    }
+
+    /// Picks one of the LLM-generated `cachedLines` for the event's session,
+    /// rotating by event seq so repeated activity doesn't always say the same thing.
+    private func enrichedLine(for event: SessionActivityEvent) -> String? {
+        let lines = engine.npcMemory.sessions[event.sessionId]?.cachedLines ?? []
+        let usable = lines.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !usable.isEmpty else { return nil }
+        return usable[abs(event.seq) % usable.count]
     }
 
     func npcID(at point: CGPoint) -> String? {
@@ -267,6 +282,7 @@ final class NPCManager {
             totalTokens: model.totalTokens,
             totalBits: model.totalBits,
             availableBits: engine.availableBits(for: id),
+            bitMultiplier: engine.bitMultiplier(for: id),
             activeSessionCount: visualState.sessionCount,
             trait: visualState.trait,
             projects: Array(projects.prefix(5)),
@@ -288,7 +304,9 @@ final class NPCManager {
             let visualState = NPCVisualState.derive(
                 from: model,
                 activeSessionCount: engine.activeSessionCounts[id, default: 0],
-                dayPhase: engine.dayPhase
+                dayPhase: engine.dayPhase,
+                availableBits: engine.availableBits(for: id),
+                bitMultiplier: engine.bitMultiplier(for: id)
             )
             sprite.apply(visualState: visualState)
             behavior.apply(visualState)
