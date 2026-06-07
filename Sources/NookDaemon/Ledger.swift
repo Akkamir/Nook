@@ -25,8 +25,8 @@ final class Ledger {
         try data.write(to: url, options: .atomic)
     }
 
-    func apply(event: TokenEvent, agentName: String?, upgrades: UpgradeState = .empty, to state: inout LedgerState) {
-        let bits = event.bits * UpgradeEconomy.multiplier(for: agentName, upgrades: upgrades)
+    func apply(event: TokenEvent, agentName: String?, multiplier: Double = 1.0, to state: inout LedgerState) {
+        let bits = event.bits * multiplier
         guard bits > 0 else { return }
         state.pendingBits += bits
         state.totalBits += bits
