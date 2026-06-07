@@ -257,7 +257,9 @@ final class NPCSprite: SKNode {
         // One bubble at a time.
         childNode(withName: "speech")?.removeFromParent()
 
-        let display = text.count > 60 ? String(text.prefix(59)) + "…" : text
+        // Lines are kept short at the source; this is only a last-resort cap so a
+        // rogue long line can't grow an unbounded bubble.
+        let display = text.count > 140 ? String(text.prefix(139)) + "…" : text
 
         let label = SKLabelNode(fontNamed: "Monaco")
         label.text = display
@@ -265,13 +267,13 @@ final class NPCSprite: SKNode {
         label.fontColor = .black
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .center
-        label.preferredMaxLayoutWidth = 180
-        label.numberOfLines = 2
+        label.preferredMaxLayoutWidth = 200
+        label.numberOfLines = 3
         label.lineBreakMode = .byTruncatingTail
 
         let padding: CGFloat = 8
         let textSize = label.frame.size
-        let bubbleW = min(max(textSize.width + padding * 2, 40), 200)
+        let bubbleW = min(max(textSize.width + padding * 2, 40), 216)
         let bubbleH = textSize.height + padding * 2
 
         let bubble = SKShapeNode(rectOf: CGSize(width: bubbleW, height: bubbleH), cornerRadius: 6)
@@ -296,7 +298,7 @@ final class NPCSprite: SKNode {
         bubble.setScale(0.9)
         addChild(bubble)
 
-        let hold = max(2.5, min(5.0, Double(display.count) * 0.06))
+        let hold = max(2.5, min(8.0, Double(display.count) * 0.07))
         bubble.run(.sequence([
             .group([.fadeIn(withDuration: 0.12), .scale(to: 1.0, duration: 0.12)]),
             .wait(forDuration: hold),

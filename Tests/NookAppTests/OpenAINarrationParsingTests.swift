@@ -21,4 +21,22 @@ final class OpenAINarrationParsingTests: XCTestCase {
         let fenced = "  ```json\n  {\"k\":true}\n  ```  "
         XCTAssertEqual(OpenAINarrationClient.stripCodeFence(fenced), "{\"k\":true}")
     }
+
+    func test_sanitizeSpokenLine_collapses_newlines_and_trims() {
+        let raw = "  We're getting\nsomewhere.  "
+        XCTAssertEqual(OpenAINarrationClient.sanitizeSpokenLine(raw), "We're getting somewhere.")
+    }
+
+    func test_sanitizeSpokenLine_keeps_short_line_unchanged() {
+        let raw = "On commit ?"
+        XCTAssertEqual(OpenAINarrationClient.sanitizeSpokenLine(raw), "On commit ?")
+    }
+
+    func test_sanitizeSpokenLine_truncates_on_word_boundary() {
+        let raw = String(repeating: "word ", count: 40) // 200 chars
+        let out = OpenAINarrationClient.sanitizeSpokenLine(raw, maxLength: 20)
+        XCTAssertTrue(out.hasSuffix("…"))
+        XCTAssertLessThanOrEqual(out.count, 21)
+        XCTAssertFalse(out.contains("  "))
+    }
 }

@@ -31,7 +31,7 @@ struct OpenAINarrationClient {
             // json_object guarantees raw, parseable JSON — without it the model
             // wraps output in a ```json fence that breaks JSONSerialization.
             "text": ["format": ["type": "json_object"]],
-            "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'.",
+            "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'. Each cachedLines entry must be a single spoken sentence under 80 characters, the kind of short line the NPC says aloud in a speech bubble.",
             "input": prompt(memory: sessionMemory, digest: digest, bond: bond)
         ])
 
@@ -54,7 +54,10 @@ struct OpenAINarrationClient {
         enriched.shortSummary = object["shortSummary"] as? String ?? enriched.shortSummary
         enriched.narrativeBeats = object["narrativeBeats"] as? [String] ?? enriched.narrativeBeats
         enriched.relationshipNote = object["relationshipNote"] as? String ?? enriched.relationshipNote
-        enriched.cachedLines = object["cachedLines"] as? [String] ?? enriched.cachedLines
+        if let lines = object["cachedLines"] as? [String] {
+            let sanitized = lines.map { Self.sanitizeSpokenLine($0) }.filter { !$0.isEmpty }
+            if !sanitized.isEmpty { enriched.cachedLines = sanitized }
+        }
         enriched.updatedAt = Date()
         return enriched
     }
@@ -71,6 +74,21 @@ struct OpenAINarrationClient {
         Commands: \(digest.commands.joined(separator: ", "))
         Tools: \(digest.tools.joined(separator: ", "))
         """
+    }
+
+    /// Keep spoken lines short and single-line so they fit a speech bubble even
+    /// if the model ignores the length instruction. Caps at ~90 chars on a word
+    /// boundary so the bubble's safety-net truncation rarely triggers.
+    static func sanitizeSpokenLine(_ raw: String, maxLength: Int = 90) -> String {
+        let collapsed = raw
+            .replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard collapsed.count > maxLength else { return collapsed }
+        let clipped = collapsed.prefix(maxLength)
+        if let lastSpace = clipped.lastIndex(of: " ") {
+            return clipped[clipped.startIndex..<lastSpace].trimmingCharacters(in: .whitespaces) + "…"
+        }
+        return clipped + "…"
     }
 
     /// Defensively unwrap a ```json … ``` (or bare ```) fence the model may emit
