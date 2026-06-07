@@ -47,10 +47,3 @@ private struct EconomySnapshot: Codable {
         agents = (try? c.decode([String: AgentEconomy].self, forKey: .agents)) ?? [:]
     }
 }
-
-// Kept for daemon use only — pure computation, no storage.
-enum UpgradeEconomy {
-    static func multiplier(for agentName: String?, economyReader: EconomyReader) -> Double {
-        economyReader.multiplier(for: agentName)
-    }
-}
