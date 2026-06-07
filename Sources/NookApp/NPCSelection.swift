@@ -12,6 +12,7 @@ struct NPCSelection: Equatable {
     // History (Task 8)
     let projects: [ProjectRollup]
     let recentSessions: [SessionRecord]
+    let sessionMemories: [String: GeneratedSessionMemory]
     let moments: [Moment]
     let currentStreakDays: Int
     let longestSessionSeconds: TimeInterval

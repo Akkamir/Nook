@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0332AC2225B80903DBC29633 /* DeskPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A58D3064A598256F207E585F /* DeskPolicyTests.swift */; };
 		049755B3A8F90DC3E0C352BC /* DeskPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB96EFD3B490563544318773 /* DeskPolicy.swift */; };
+		04B275C47E070A0981EC9782 /* NPCMemory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AFBE8E43E2FBD2CDAFF99E /* NPCMemory.swift */; };
 		05BF171F8F6147A7F945B4A4 /* NPCVisualState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */; };
 		08A5EF049CD5752D61DEEC62 /* BondScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C360329C7665B3838CF6312 /* BondScale.swift */; };
 		0E6F6D2C4163BFA6C3E9E175 /* CharIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5B239E4555BA58E4005EE2D /* CharIndexTests.swift */; };
@@ -23,6 +24,7 @@
 		1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5725AD04028894F2D2FB3B7 /* TileMap.swift */; };
 		240305E4D9361B4AF5E09613 /* plaza.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A622DAE1242B39AA1B078CD /* plaza.png */; };
 		24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AA11784DE252A1864D7AD9 /* NPCModel.swift */; };
+		24A53E3F936EF0A992760C20 /* UpgradeStateAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78CE38429E67297DD0E4256 /* UpgradeStateAppTests.swift */; };
 		25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EF6720CB18A402B6991A645 /* VillageEngine.swift */; };
 		273579AB62DD647DE59A3A22 /* flowerbed.png in Resources */ = {isa = PBXBuildFile; fileRef = EE5A1353BA48B62824498D5D /* flowerbed.png */; };
 		27D8FF885473695A134DE1F1 /* AssetVillageLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE36CEF1F5177D25A0CAE68 /* AssetVillageLayer.swift */; };
@@ -63,6 +65,7 @@
 		945DC0F8A10BA13FEFDDD443 /* NPCSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2C24E5F764012190299A94 /* NPCSelection.swift */; };
 		97489219F25658622875FD92 /* ground.png in Resources */ = {isa = PBXBuildFile; fileRef = EABEF51855B0E13A491C8164 /* ground.png */; };
 		996F91939BAB8A4AE357E161 /* fountain.png in Resources */ = {isa = PBXBuildFile; fileRef = 6CAC0DDFA107430AF6EC3C63 /* fountain.png */; };
+		99D27FD439064D19CF69B9A1 /* NPCMemoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF0CA6A6A09DF3ADFFE3B89F /* NPCMemoryTests.swift */; };
 		9C0687E98AA614190AC6F370 /* char_boy_idle.png in Resources */ = {isa = PBXBuildFile; fileRef = 31CECC7765565AD5167A288D /* char_boy_idle.png */; };
 		A18C39FE0320400209DC9415 /* tree.png in Resources */ = {isa = PBXBuildFile; fileRef = 3938CD5B32CC406896BAE5E0 /* tree.png */; };
 		A2421EE7CA0FE95C5E95D7DC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF08C230635E2A978BEA13E0 /* ContentView.swift */; };
@@ -84,7 +87,9 @@
 		D016BE883A8243F1B3B327B6 /* market.png in Resources */ = {isa = PBXBuildFile; fileRef = 4E343E29ED6016B9A4146F32 /* market.png */; };
 		D48158162A9D76019D4550FC /* AssetTileMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 893F6C4B86BCE2EC5C24A49B /* AssetTileMap.swift */; };
 		D6ABAE391D3E7E0704CBD90B /* path.png in Resources */ = {isa = PBXBuildFile; fileRef = 6BBEAC07E20C0244E43220A4 /* path.png */; };
+		D89F7E43383C15B95D49E584 /* UpgradeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DB6945A0EDF71C46E12CB6 /* UpgradeModels.swift */; };
 		DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FF945C762C4A512213149ED /* PixelNodeFactory.swift */; };
+		DB816E7F222DAFE8369C32AF /* OpenAINarrationClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF1900E78B995F73BEEDAD61 /* OpenAINarrationClient.swift */; };
 		DDCEE996C32E5E6C0FC211D1 /* MomentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 074408FE5EA9C38FF638D953 /* MomentTests.swift */; };
 		DDF865642E6FD91ABB02BB39 /* DayPhase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 788FBB092E3C4F5AED11854B /* DayPhase.swift */; };
 		DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33EA76221916F3943152DFA /* VillageCamera.swift */; };
@@ -131,6 +136,7 @@
 		3938CD5B32CC406896BAE5E0 /* tree.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tree.png; sourceTree = "<group>"; };
 		3CD79B8A5103B55BCE54DC26 /* Moment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Moment.swift; sourceTree = "<group>"; };
 		44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCVisualState.swift; sourceTree = "<group>"; };
+		48AFBE8E43E2FBD2CDAFF99E /* NPCMemory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCMemory.swift; sourceTree = "<group>"; };
 		4E343E29ED6016B9A4146F32 /* market.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = market.png; sourceTree = "<group>"; };
 		5247DA601A4F070C5449DF4C /* NookApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NookApp.entitlements; sourceTree = "<group>"; };
 		55D926F7793A8037D2ED36C5 /* NPCInspectorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCInspectorPanel.swift; sourceTree = "<group>"; };
@@ -158,12 +164,15 @@
 		8FF945C762C4A512213149ED /* PixelNodeFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixelNodeFactory.swift; sourceTree = "<group>"; };
 		967CC0617B8D0CBE0173F6D6 /* ClaudeHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookInstaller.swift; sourceTree = "<group>"; };
 		969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TiledVillageLayer.swift; sourceTree = "<group>"; };
+		96DB6945A0EDF71C46E12CB6 /* UpgradeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeModels.swift; sourceTree = "<group>"; };
 		98EF9E00876B80CB2878BF5F /* TABLE_FRONT.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = TABLE_FRONT.png; sourceTree = "<group>"; };
 		9A94036890799645DFA0A4E1 /* SpeechLineComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechLineComposer.swift; sourceTree = "<group>"; };
 		A4FB58B52DAE8B8CC9F78B8E /* lamp.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = lamp.png; sourceTree = "<group>"; };
 		A58D3064A598256F207E585F /* DeskPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPolicyTests.swift; sourceTree = "<group>"; };
+		A78CE38429E67297DD0E4256 /* UpgradeStateAppTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeStateAppTests.swift; sourceTree = "<group>"; };
 		A9716CBBC4718B4C10B97C53 /* ClaudeHookEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeHookEvent.swift; sourceTree = "<group>"; };
 		AA44C5033FD00C73EB140D2E /* BondProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BondProgress.swift; sourceTree = "<group>"; };
+		AF0CA6A6A09DF3ADFFE3B89F /* NPCMemoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCMemoryTests.swift; sourceTree = "<group>"; };
 		B4816423A377146702B472CB /* char_2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_2.png; sourceTree = "<group>"; };
 		B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageScene.swift; sourceTree = "<group>"; };
 		BA0CAD8A563129B1F2480903 /* bench.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bench.png; sourceTree = "<group>"; };
@@ -202,6 +211,7 @@
 		F5725AD04028894F2D2FB3B7 /* TileMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileMap.swift; sourceTree = "<group>"; };
 		F5AB3F950DC4B370DD97D77F /* LedgerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerModels.swift; sourceTree = "<group>"; };
 		FACF6566299AE4174BCB3D62 /* ProjectRollupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRollupTests.swift; sourceTree = "<group>"; };
+		FF1900E78B995F73BEEDAD61 /* OpenAINarrationClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAINarrationClient.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -239,9 +249,11 @@
 				A58D3064A598256F207E585F /* DeskPolicyTests.swift */,
 				053E331FF8EA56C017C547D1 /* LedgerStateAppDecodeTests.swift */,
 				074408FE5EA9C38FF638D953 /* MomentTests.swift */,
+				AF0CA6A6A09DF3ADFFE3B89F /* NPCMemoryTests.swift */,
 				FACF6566299AE4174BCB3D62 /* ProjectRollupTests.swift */,
 				D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */,
 				5954D78FBC27D98B3A12F53E /* SpeechLineComposerTests.swift */,
+				A78CE38429E67297DD0E4256 /* UpgradeStateAppTests.swift */,
 			);
 			name = NookAppTests;
 			path = Tests/NookAppTests;
@@ -315,10 +327,12 @@
 				ED98C3737B8E7A1B0FF79415 /* NPCBehavior.swift */,
 				55D926F7793A8037D2ED36C5 /* NPCInspectorPanel.swift */,
 				38F37E3BAFC47287FFFE8F58 /* NPCManager.swift */,
+				48AFBE8E43E2FBD2CDAFF99E /* NPCMemory.swift */,
 				05AA11784DE252A1864D7AD9 /* NPCModel.swift */,
 				ED2C24E5F764012190299A94 /* NPCSelection.swift */,
 				0632114E8E40B2CA04E37E28 /* NPCSprite.swift */,
 				44AF4DA20915D228CFDBB727 /* NPCVisualState.swift */,
+				FF1900E78B995F73BEEDAD61 /* OpenAINarrationClient.swift */,
 				DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */,
 				D97539C9195C785843703FF8 /* PixelIcon.swift */,
 				8FF945C762C4A512213149ED /* PixelNodeFactory.swift */,
@@ -328,6 +342,7 @@
 				E70DD5EA817B84A724ECDB75 /* TiledMapData.swift */,
 				969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */,
 				F5725AD04028894F2D2FB3B7 /* TileMap.swift */,
+				96DB6945A0EDF71C46E12CB6 /* UpgradeModels.swift */,
 				E33EA76221916F3943152DFA /* VillageCamera.swift */,
 				364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */,
 				7EF6720CB18A402B6991A645 /* VillageEngine.swift */,
@@ -600,9 +615,11 @@
 				0332AC2225B80903DBC29633 /* DeskPolicyTests.swift in Sources */,
 				9290A0DB613709B0BD7C6990 /* LedgerStateAppDecodeTests.swift in Sources */,
 				DDCEE996C32E5E6C0FC211D1 /* MomentTests.swift in Sources */,
+				99D27FD439064D19CF69B9A1 /* NPCMemoryTests.swift in Sources */,
 				EE2D74C75340DC2F8C28A06D /* ProjectRollupTests.swift in Sources */,
 				45E34D10576812F014FE8A0A /* SessionDetectorTests.swift in Sources */,
 				B6FC0F8C677450FB68EDD319 /* SpeechLineComposerTests.swift in Sources */,
+				24A53E3F936EF0A992760C20 /* UpgradeStateAppTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -631,11 +648,13 @@
 				0EAA348A8CD3E470C543E774 /* NPCBehavior.swift in Sources */,
 				89C467E6957F46E8274F5E63 /* NPCInspectorPanel.swift in Sources */,
 				B0FA9796D49CEA662676048F /* NPCManager.swift in Sources */,
+				04B275C47E070A0981EC9782 /* NPCMemory.swift in Sources */,
 				24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */,
 				945DC0F8A10BA13FEFDDD443 /* NPCSelection.swift in Sources */,
 				2BD0FCA6148783EA37F064B1 /* NPCSprite.swift in Sources */,
 				05BF171F8F6147A7F945B4A4 /* NPCVisualState.swift in Sources */,
 				8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */,
+				DB816E7F222DAFE8369C32AF /* OpenAINarrationClient.swift in Sources */,
 				8A7405584E29E43EC55F497B /* PixelAssetCatalog.swift in Sources */,
 				1A786941CEBC8F07E9E04CC5 /* PixelIcon.swift in Sources */,
 				DB14F993A187E3A9A99E0955 /* PixelNodeFactory.swift in Sources */,
@@ -645,6 +664,7 @@
 				1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */,
 				ADC915B016A9F472F495DDBE /* TiledMapData.swift in Sources */,
 				8A6B15CAFECF11C35E89AB12 /* TiledVillageLayer.swift in Sources */,
+				D89F7E43383C15B95D49E584 /* UpgradeModels.swift in Sources */,
 				DED9F89AEFA752179A2E1B82 /* VillageCamera.swift in Sources */,
 				A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */,
 				25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */,

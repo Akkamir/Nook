@@ -197,6 +197,17 @@ final class NPCSprite: SKNode {
     }
 
     func showBitsGain(_ delta: Double) {
+        let pulse = SKShapeNode(circleOfRadius: 24)
+        pulse.strokeColor = NSColor(red: 0.38, green: 1.0, blue: 0.72, alpha: 0.9)
+        pulse.lineWidth = 2
+        pulse.zPosition = 25
+        pulse.alpha = 0.7
+        addChild(pulse)
+        pulse.run(.sequence([
+            .group([.scale(to: 1.7, duration: 0.35), .fadeOut(withDuration: 0.35)]),
+            .removeFromParent()
+        ]))
+
         let root = SKNode()
         root.position = CGPoint(x: CGFloat.random(in: -10...10), y: Self.charH - 8)
         root.zPosition = 30
@@ -212,7 +223,7 @@ final class NPCSprite: SKNode {
         ] {
             let outline = SKLabelNode(fontNamed: "Monaco")
             outline.text = text
-            outline.fontSize = 16
+            outline.fontSize = 20
             outline.fontColor = NSColor.black.withAlphaComponent(0.88)
             outline.verticalAlignmentMode = .bottom
             outline.horizontalAlignmentMode = .center
@@ -223,7 +234,7 @@ final class NPCSprite: SKNode {
 
         let label = SKLabelNode(fontNamed: "Monaco")
         label.text = text
-        label.fontSize = 16
+        label.fontSize = 20
         label.fontColor = NSColor(red: 0.38, green: 1.0, blue: 0.72, alpha: 1)
         label.verticalAlignmentMode = .bottom
         label.horizontalAlignmentMode = .center
@@ -231,7 +242,7 @@ final class NPCSprite: SKNode {
         root.addChild(label)
 
         root.run(.sequence([
-            .group([.scale(to: 1.3, duration: 0.10)]),
+            .group([.scale(to: 1.45, duration: 0.10)]),
             .scale(to: 1.0, duration: 0.08),
             .group([.moveBy(x: 0, y: 46, duration: 0.9), .fadeOut(withDuration: 0.9)]),
             .removeFromParent()
@@ -336,9 +347,16 @@ final class NPCSprite: SKNode {
     private func startWorkingAnimation(loadTier: Int) {
         isWalking = false
         startTypingAnimation(loadTier: loadTier)
+        removeAction(forKey: "workMicro")
+        let lean = SKAction.scaleX(to: 1.04, y: 0.98, duration: 0.45)
+        let settle = SKAction.scaleX(to: 1.0, y: 1.0, duration: 0.35)
+        let pause = SKAction.wait(forDuration: 1.2, withRange: 0.8)
+        run(.repeatForever(.sequence([pause, lean, settle])), withKey: "workMicro")
     }
 
     private func stopWorkingAnimation() {
+        removeAction(forKey: "workMicro")
+        setScale(1.0)
         if !isWalking {
             showIdleFrame(direction: lastWalkDirection)
         }

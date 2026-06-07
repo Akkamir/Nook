@@ -207,20 +207,15 @@ final class NPCManager {
     }
 
     func handleBitEvents(_ events: [BitEvent]) {
-        // Group events by agent, then stagger animations 110ms apart
-        var grouped: [String: [BitEvent]] = [:]
+        // Group rapid gains into one readable burst per NPC.
+        var grouped: [String: Double] = [:]
         for event in events {
             let key = event.agentName ?? "__global__"
-            grouped[key, default: []].append(event)
+            grouped[key, default: 0] += event.bits
         }
-        for (agentName, agentEvents) in grouped {
+        for (agentName, bits) in grouped {
             guard let sprite = sprites[agentName] else { continue }
-            for (index, event) in agentEvents.enumerated() {
-                let delay = Double(index) * 0.11
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak sprite] in
-                    sprite?.showBitsGain(event.bits)
-                }
-            }
+            sprite.showBitsGain(bits)
         }
     }
 
@@ -275,6 +270,7 @@ final class NPCManager {
             trait: visualState.trait,
             projects: Array(projects.prefix(5)),
             recentSessions: Array(recent.prefix(5)),
+            sessionMemories: engine.npcMemory.sessions,
             moments: moments,
             currentStreakDays: summary.currentStreakDays,
             longestSessionSeconds: summary.longestSessionSeconds

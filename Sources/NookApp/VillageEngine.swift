@@ -8,6 +8,8 @@ final class VillageEngine {
     private(set) var pendingBits: Double = 0
     private(set) var agents: [String: AgentRecord] = [:]
     private(set) var sessions: [String: SessionRecord] = [:]
+    private(set) var upgrades: UpgradeState = .empty
+    private(set) var npcMemory: NPCMemoryState = .empty
 
     private(set) var dayPhase: DayPhase = DayPhase.current()
     private(set) var activeSessions: Set<String> = []
@@ -16,6 +18,9 @@ final class VillageEngine {
     var newActivityEvents: [SessionActivityEvent] = []
 
     private let ledgerURL: URL
+    private let upgradeStore: UpgradeFileStore
+    private let memoryStore: NPCMemoryStore
+    private let narrationClient: OpenAINarrationClient
     private let decoder: JSONDecoder
     private let watcher: LedgerWatcher
     private var isRunning = false
@@ -28,9 +33,17 @@ final class VillageEngine {
     private let hookInstaller = ClaudeHookInstaller()
     private let claudeProjectsWatcher = ClaudeProjectsWatcher()
 
-    init(ledgerURL: URL = FileManager.default.homeDirectoryForCurrentUser
-             .appendingPathComponent(".pixelvillage/ledger.json")) {
+    init(
+        ledgerURL: URL = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".pixelvillage/ledger.json"),
+        upgradeStore: UpgradeFileStore = .production,
+        memoryStore: NPCMemoryStore = NPCMemoryStore(),
+        narrationClient: OpenAINarrationClient = OpenAINarrationClient()
+    ) {
         self.ledgerURL = ledgerURL
+        self.upgradeStore = upgradeStore
+        self.memoryStore = memoryStore
+        self.narrationClient = narrationClient
         self.decoder = JSONDecoder()
         self.decoder.dateDecodingStrategy = .iso8601
         self.watcher = LedgerWatcher(ledgerURL: ledgerURL)
@@ -68,6 +81,7 @@ final class VillageEngine {
                 if changed {
                     await self.refreshActiveSessionCounts()
                 }
+                await self.updateMemoryFromHook(event)
             }
         }
 
@@ -130,6 +144,33 @@ final class VillageEngine {
         try? encoded.write(to: ledgerURL, options: .atomic)
     }
 
+    func availableBits(for agentName: String) -> Double {
+        let ledger = LedgerState(
+            totalBits: totalBits,
+            pendingBits: pendingBits,
+            agents: agents,
+            lastUpdated: Date(),
+            recentEvents: [],
+            eventSeq: 0,
+            sessions: sessions
+        )
+        return UpgradeEconomy.availableBits(for: agentName, ledger: ledger, upgrades: upgrades)
+    }
+
+    func nextBitMultiplierCost(for agentName: String) -> Double {
+        let level = upgrades.agents[agentName]?.bitMultiplierLevel ?? 0
+        return UpgradeEconomy.cost(for: .bitMultiplier, currentLevel: level)
+    }
+
+    func requestBitMultiplierPurchase(for agentName: String) {
+        let request = UpgradePurchaseRequest(agentName: agentName, upgrade: .bitMultiplier, requestedAt: Date())
+        do {
+            try upgradeStore.append(request)
+        } catch {
+            print("Nook upgrade purchase request failed: \(error)")
+        }
+    }
+
     private func reload() {
         guard let data = try? Data(contentsOf: ledgerURL),
               let state = try? decoder.decode(LedgerState.self, from: data)
@@ -138,6 +179,8 @@ final class VillageEngine {
         pendingBits = state.pendingBits
         agents = state.agents
         sessions = state.sessions
+        upgrades = upgradeStore.load()
+        refreshMemoryCache(for: state.sessions)
 
         if lastSeenEventSeq == -1 {
             // First load: anchor to current position, don't replay old events.
@@ -156,6 +199,47 @@ final class VillageEngine {
         if !freshActivity.isEmpty {
             newActivityEvents += freshActivity
             lastSeenActivitySeq = freshActivity.map(\.seq).max() ?? lastSeenActivitySeq
+        }
+    }
+
+    private func refreshMemoryCache(for sessions: [String: SessionRecord]) {
+        var memory = memoryStore.load()
+        var changed = false
+        for session in sessions.values where memory.sessions[session.sessionId] == nil {
+            memory.sessions[session.sessionId] = GeneratedSessionMemory.heuristic(for: session)
+            changed = true
+        }
+        if changed {
+            try? memoryStore.save(memory)
+        }
+        npcMemory = memory
+    }
+
+    private func updateMemoryFromHook(_ event: ClaudeHookEvent) async {
+        guard event.refreshesActivity,
+              let sessionId = event.sessionId,
+              let transcriptPath = event.transcriptPath,
+              let session = sessions[sessionId],
+              let content = try? String(contentsOfFile: transcriptPath, encoding: .utf8)
+        else { return }
+
+        let digest = SessionDigest.fromTranscript(content, project: session.project)
+        var memory = memoryStore.load()
+        let base = memory.sessions[sessionId] ?? GeneratedSessionMemory.heuristic(for: session)
+        memory.sessions[sessionId] = base
+        try? memoryStore.save(memory)
+        npcMemory = memory
+
+        guard OpenAIAPIKeyStore.load() != nil else { return }
+        if let enriched = try? await narrationClient.enrich(
+            sessionMemory: base,
+            digest: digest,
+            bond: BondScale.level(for: session.totalTokens)
+        ) {
+            var latest = memoryStore.load()
+            latest.sessions[sessionId] = enriched
+            try? memoryStore.save(latest)
+            npcMemory = latest
         }
     }
 }

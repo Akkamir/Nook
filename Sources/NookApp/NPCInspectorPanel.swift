@@ -144,13 +144,18 @@ struct NPCInspectorPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Recent Sessions")
             ForEach(selection.recentSessions, id: \.sessionId) { s in
-                HStack {
-                    Text(shortDate(s.startedAt))
-                        .foregroundStyle(.white.opacity(0.7))
-                    Text(s.project).lineLimit(1)
-                    Spacer()
-                    Text("\(formatDuration(s.duration)) · \(formatInt(s.totalTokens))")
-                        .foregroundStyle(.white.opacity(0.7))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(selection.sessionMemories[s.sessionId]?.title ?? s.project)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        Text(shortDate(s.startedAt))
+                            .foregroundStyle(.white.opacity(0.55))
+                        Spacer()
+                        Text("\(formatDuration(s.duration)) · \(formatInt(s.totalTokens))")
+                            .foregroundStyle(.white.opacity(0.55))
+                    }
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
                 }
             }
         }

@@ -39,9 +39,9 @@ struct AgentRecord: Codable {
         totalBits = decodedBits > 0 ? decodedBits : Double(decodedTokens) * 10.0 / 1000.0
     }
 
-    mutating func addTokens(_ event: TokenEvent) {
+    mutating func addTokens(_ event: TokenEvent, bits: Double) {
         totalTokens += event.inputTokens + event.outputTokens
-        totalBits += event.bits
+        totalBits += bits
         bond = BondScale.level(for: totalTokens)
     }
 }
