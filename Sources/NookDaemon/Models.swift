@@ -87,9 +87,10 @@ struct AgentRecord: Codable {
         totalTokens = try c.decode(Int.self, forKey: .totalTokens)
         _ = try? c.decode(Int.self, forKey: .bond)
         bond = BondScale.level(for: totalTokens)
-        let decodedBits = (try? c.decode(Double.self, forKey: .totalBitsRaw)) ?? 0
-        // One-time migration: estimate bits from tokens if field was absent
-        totalBitsRaw = decodedBits > 0 ? decodedBits : Double(totalTokens) * 10.0 / 1000.0
+        // One-time migration: estimate bits from tokens only if the legacy field is absent.
+        totalBitsRaw = try c.contains(.totalBitsRaw)
+            ? c.decode(Double.self, forKey: .totalBitsRaw)
+            : Double(totalTokens) * 10.0 / 1000.0
     }
 
     mutating func addTokens(_ event: TokenEvent, rawBits: Double) {
