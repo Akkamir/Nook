@@ -35,7 +35,7 @@ final class HUD: SKNode {
     func update(totalBits: Double) {
         guard totalBits != lastDisplayedBits else { return }
         lastDisplayedBits = totalBits
-        bitsLabel.text = "⬡ \(String(format: "%.1f", totalBits)) Bits"
+        bitsLabel.text = "\(String(format: "%.1f", totalBits)) Bits"
         // background width is fixed (see setupBackground), no resize needed here
     }
 

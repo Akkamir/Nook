@@ -122,17 +122,21 @@ final class PixelAssetCatalog {
     }
 
     func texture(for entry: PixelAssetEntry) -> SKTexture? {
-        if let cached = textureCache[entry.path] {
+        texture(relativePath: entry.path)
+    }
+
+    func texture(relativePath: String) -> SKTexture? {
+        if let cached = textureCache[relativePath] {
             return cached
         }
-        let url = fileURL(for: entry)
+        let url = rootURL.appendingPathComponent(relativePath)
         guard FileManager.default.fileExists(atPath: url.path),
               let image = NSImage(contentsOf: url) else {
             return nil
         }
         let texture = SKTexture(image: image)
         texture.filteringMode = .nearest
-        textureCache[entry.path] = texture
+        textureCache[relativePath] = texture
         return texture
     }
 

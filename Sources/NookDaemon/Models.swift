@@ -31,7 +31,8 @@ struct AgentRecord: Codable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         name = try c.decode(String.self, forKey: .name)
         totalTokens = try c.decode(Int.self, forKey: .totalTokens)
-        bond = try c.decode(Int.self, forKey: .bond)
+        _ = try? c.decode(Int.self, forKey: .bond)
+        bond = BondScale.level(for: totalTokens)
         let decodedBits = (try? c.decode(Double.self, forKey: .totalBits)) ?? 0
         let decodedTokens = try c.decode(Int.self, forKey: .totalTokens)
         // One-time migration: estimate bits from tokens if field was absent
@@ -41,17 +42,7 @@ struct AgentRecord: Codable {
     mutating func addTokens(_ event: TokenEvent) {
         totalTokens += event.inputTokens + event.outputTokens
         totalBits += event.bits
-        bond = bondLevel(for: totalTokens)
-    }
-
-    private func bondLevel(for tokens: Int) -> Int {
-        switch tokens {
-        case ..<10_000: return 1
-        case ..<50_000: return 2
-        case ..<200_000: return 3
-        case ..<1_000_000: return 4
-        default: return 5
-        }
+        bond = BondScale.level(for: totalTokens)
     }
 }
 

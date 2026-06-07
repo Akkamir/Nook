@@ -38,4 +38,13 @@ final class LedgerStateDecodeTests: XCTestCase {
         XCTAssertTrue(state.recentActivity.isEmpty)
         XCTAssertEqual(state.activitySeq, 0)
     }
+
+    func test_agent_bond_recomputes_from_tokens_when_decoding_existing_ledger() throws {
+        let json = """
+        {"totalBits":0,"pendingBits":0,"agents":{"Radion":{"name":"Radion","totalTokens":100000000,"bond":5,"totalBits":1}},
+         "lastUpdated":"2026-06-01T00:00:00Z","recentEvents":[],"eventSeq":0}
+        """
+        let state = try decode(json)
+        XCTAssertEqual(state.agents["Radion"]?.bond, 20)
+    }
 }

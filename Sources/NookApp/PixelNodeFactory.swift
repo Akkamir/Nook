@@ -48,4 +48,36 @@ enum PixelNodeFactory {
         root.addChild(label)
         return root
     }
+
+    static func workBubble(loadTier: Int, position: CGPoint) -> SKNode {
+        let root = SKNode()
+        root.position = position
+        root.zPosition = 80
+
+        let background = rect(
+            size: CGSize(width: 34, height: 20),
+            color: NSColor.black.withAlphaComponent(0.82),
+            z: 0
+        )
+        root.addChild(background)
+
+        let count = max(1, min(loadTier, 3))
+        let startX = CGFloat(1 - count) * 4
+        for index in 0..<count {
+            let height = CGFloat(5 + index * 2)
+            let bar = rect(
+                size: CGSize(width: 4, height: height),
+                color: NSColor(red: 0.42, green: 0.94, blue: 1.0, alpha: 1),
+                position: CGPoint(x: startX + CGFloat(index) * 8, y: 0),
+                z: 1
+            )
+            bar.run(.repeatForever(.sequence([
+                .fadeAlpha(to: 0.45, duration: 0.28 + Double(index) * 0.04),
+                .fadeAlpha(to: 1.0, duration: 0.28)
+            ])))
+            root.addChild(bar)
+        }
+
+        return root
+    }
 }

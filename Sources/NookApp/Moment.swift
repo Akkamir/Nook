@@ -26,25 +26,41 @@ struct Moment: Equatable {
     let date: Date
     let label: String
 
-    static let bondThresholds: [(level: Int, tokens: Int)] =
-        [(2, 10_000), (3, 50_000), (4, 200_000), (5, 1_000_000)]
+    static let bondThresholds = Array(BondScale.thresholds.dropFirst())
 
     static let tokenMilestones = [100_000, 250_000, 500_000, 1_000_000]
     static let sessionMilestones = [10, 50, 100]
     static let hoursMilestones = [10, 50, 100]
 
-    static func forAgent(_ sessions: [SessionRecord], now: Date = Date(),
+    static func forAgent(_ sessions: [SessionRecord],
+                         currentBond: Int? = nil,
+                         totalTokens: Int? = nil,
+                         now: Date = Date(),
                          calendar: Calendar = .current) -> [Moment] {
         let ordered = sessions.sorted { $0.startedAt < $1.startedAt }
         guard !ordered.isEmpty else { return [] }
 
         var moments: [Moment] = []
-        moments += anchorMoments(ordered, now: now, calendar: calendar)
+        moments += anchorMoments(
+            ordered,
+            currentBond: currentBond,
+            totalTokens: totalTokens,
+            now: now,
+            calendar: calendar
+        )
         moments += livingMoments(ordered, calendar: calendar)
         return moments.sorted { $0.date < $1.date }
     }
 
     private static func anchorMoments(_ ordered: [SessionRecord], now: Date,
+                                      calendar: Calendar) -> [Moment] {
+        anchorMoments(ordered, currentBond: nil, totalTokens: nil, now: now, calendar: calendar)
+    }
+
+    private static func anchorMoments(_ ordered: [SessionRecord],
+                                      currentBond: Int?,
+                                      totalTokens: Int?,
+                                      now: Date,
                                       calendar: Calendar) -> [Moment] {
         var out: [Moment] = []
 
@@ -60,16 +76,30 @@ struct Moment: Equatable {
                               label: "First day on \(session.project)"))
         }
 
-        var cumulative = 0
-        var awarded = Set<Int>()
-        for session in ordered {
-            cumulative += session.totalTokens
-            for threshold in bondThresholds
-                where cumulative >= threshold.tokens && !awarded.contains(threshold.level) {
-                awarded.insert(threshold.level)
-                out.append(Moment(kind: .bondPromotion(level: threshold.level),
-                                  date: session.lastActivityAt,
-                                  label: "Bond \(threshold.level) reached"))
+        let knownTokens = ordered.reduce(0) { $0 + $1.totalTokens }
+        let knownBond = BondScale.level(for: knownTokens)
+        let targetBond = currentBond ?? knownBond
+        let agentTokens = totalTokens ?? knownTokens
+        let hasIncompleteHistory = agentTokens > knownTokens || targetBond > knownBond
+
+        if hasIncompleteHistory {
+            if targetBond > 1, let first = ordered.first {
+                out.append(Moment(kind: .bondPromotion(level: targetBond),
+                                  date: first.startedAt,
+                                  label: "Bond \(targetBond) reached"))
+            }
+        } else {
+            var cumulative = 0
+            var awarded = Set<Int>()
+            for session in ordered {
+                cumulative += session.totalTokens
+                for threshold in bondThresholds
+                    where cumulative >= threshold.tokens && !awarded.contains(threshold.level) {
+                    awarded.insert(threshold.level)
+                    out.append(Moment(kind: .bondPromotion(level: threshold.level),
+                                      date: session.lastActivityAt,
+                                      label: "Bond \(threshold.level) reached"))
+                }
             }
         }
 
@@ -251,5 +281,12 @@ struct Moment: Equatable {
         let total = Int(seconds)
         let h = total / 3600, m = (total % 3600) / 60
         return h > 0 ? "\(h)h\(String(format: "%02d", m))" : "\(m)m"
+    }
+
+    static func displayDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: date)
     }
 }

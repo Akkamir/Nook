@@ -26,8 +26,20 @@ final class NPCSprite: SKNode {
 
     private let charIndex: Int
 
+    /// Stable across launches: String.hashValue is seeded per-process, so it
+    /// would re-roll the character every restart. FNV-1a over the id keeps the
+    /// same sprite for the same agent forever.
+    nonisolated static func charIndex(for id: String, count: Int = 6) -> Int {
+        var hash: UInt64 = 1469598103934665603  // FNV-1a offset basis
+        for byte in id.utf8 {
+            hash ^= UInt64(byte)
+            hash = hash &* 1099511628211         // FNV-1a prime
+        }
+        return Int(hash % UInt64(count))
+    }
+
     init(model: NPCModel) {
-        charIndex = abs(model.id.hashValue) % 6
+        charIndex = Self.charIndex(for: model.id)
 
         character = SKSpriteNode()
         character.size = CGSize(width: Self.charW, height: Self.charH)
@@ -45,7 +57,7 @@ final class NPCSprite: SKNode {
         bondLabel = PixelNodeFactory.label(
             "",
             size: 9,
-            color: NSColor(red: 1.0, green: 0.86, blue: 0.35, alpha: 1),
+            color: NSColor(red: 0.84, green: 0.96, blue: 1.0, alpha: 1),
             position: CGPoint(x: 0, y: labelBaseY + 14),
             z: 20
         )
@@ -138,12 +150,15 @@ final class NPCSprite: SKNode {
         showIdleFrame(direction: lastWalkDirection)
     }
 
-    private func startTypingAnimation() {
+    private func startTypingAnimation(loadTier: Int = 1) {
         guard !paFrames.isEmpty else { return }
         character.xScale = 1.0
         character.removeAction(forKey: "charAnim")
         let f = paFrames[0]
-        character.run(.repeatForever(.animate(with: [f[3], f[4]], timePerFrame: 0.25)),
+        // Frames 3-4 are the seated typing pose (feet together): only the arms
+        // move, so this reads as work rather than walking.
+        let timePerFrame = max(0.10, 0.24 - Double(loadTier) * 0.03)
+        character.run(.repeatForever(.animate(with: [f[3], f[4]], timePerFrame: timePerFrame)),
                       withKey: "charAnim")
     }
 
@@ -165,9 +180,8 @@ final class NPCSprite: SKNode {
 
         statusBubble.removeAllChildren()
         if visualState.isWorking {
-            let symbol = visualState.loadTier >= 3 ? "!!!" : String(repeating: ">", count: visualState.loadTier)
-            statusBubble.addChild(PixelNodeFactory.bubble(
-                text: symbol,
+            statusBubble.addChild(PixelNodeFactory.workBubble(
+                loadTier: visualState.loadTier,
                 position: CGPoint(x: 0, y: Self.charH + 42)
             ))
             startWorkingAnimation(loadTier: visualState.loadTier)
@@ -183,21 +197,43 @@ final class NPCSprite: SKNode {
     }
 
     func showBitsGain(_ delta: Double) {
+        let root = SKNode()
+        root.position = CGPoint(x: CGFloat.random(in: -10...10), y: Self.charH - 8)
+        root.zPosition = 30
+        root.setScale(0)
+        addChild(root)
+
+        let text = "+\(formatBits(delta))"
+        for offset in [
+            CGPoint(x: -1, y: 0),
+            CGPoint(x: 1, y: 0),
+            CGPoint(x: 0, y: -1),
+            CGPoint(x: 0, y: 1)
+        ] {
+            let outline = SKLabelNode(fontNamed: "Monaco")
+            outline.text = text
+            outline.fontSize = 16
+            outline.fontColor = NSColor.black.withAlphaComponent(0.88)
+            outline.verticalAlignmentMode = .bottom
+            outline.horizontalAlignmentMode = .center
+            outline.position = offset
+            outline.zPosition = 0
+            root.addChild(outline)
+        }
+
         let label = SKLabelNode(fontNamed: "Monaco")
-        label.text = "+\(formatBits(delta))"
-        label.fontSize = 13
-        label.fontColor = NSColor(red: 1.0, green: 0.85, blue: 0.25, alpha: 1)
+        label.text = text
+        label.fontSize = 16
+        label.fontColor = NSColor(red: 0.38, green: 1.0, blue: 0.72, alpha: 1)
         label.verticalAlignmentMode = .bottom
         label.horizontalAlignmentMode = .center
-        label.position = CGPoint(x: CGFloat.random(in: -10...10), y: Self.charH - 8)
-        label.zPosition = 30
-        label.setScale(0)
-        addChild(label)
+        label.zPosition = 1
+        root.addChild(label)
 
-        label.run(.sequence([
+        root.run(.sequence([
             .group([.scale(to: 1.3, duration: 0.10)]),
             .scale(to: 1.0, duration: 0.08),
-            .group([.moveBy(x: 0, y: 38, duration: 0.75), .fadeOut(withDuration: 0.75)]),
+            .group([.moveBy(x: 0, y: 46, duration: 0.9), .fadeOut(withDuration: 0.9)]),
             .removeFromParent()
         ]))
     }
@@ -289,22 +325,20 @@ final class NPCSprite: SKNode {
         }
     }
 
+    /// Restores the typing pose after a positional move (walk-to-desk or the
+    /// deskless back-and-forth) interrupted it with walk frames.
+    func resumeWorkPose() {
+        startWorkingAnimation(loadTier: max(currentVisualState?.loadTier ?? 1, 1))
+    }
+
     // MARK: - Private
 
     private func startWorkingAnimation(loadTier: Int) {
         isWalking = false
-        startTypingAnimation()
-        let duration = max(0.12, 0.34 - Double(loadTier) * 0.06)
-        if action(forKey: "workBob") == nil {
-            run(.repeatForever(.sequence([
-                .moveBy(x: 0, y: 2, duration: duration),
-                .moveBy(x: 0, y: -2, duration: duration)
-            ])), withKey: "workBob")
-        }
+        startTypingAnimation(loadTier: loadTier)
     }
 
     private func stopWorkingAnimation() {
-        removeAction(forKey: "workBob")
         if !isWalking {
             showIdleFrame(direction: lastWalkDirection)
         }

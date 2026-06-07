@@ -7,7 +7,9 @@ final class NPCBehavior {
     private let deskTile: TilePosition
     private var spawnBounds: NPCManager.TileBounds
     private var currentActivity: NPCActivityKind?
+    private var currentDeskEligibility: Bool?
     private var lastDirection: Int = 0
+    private var workAnchor: TilePosition?
 
     init(sprite: NPCSprite, model: NPCModel, deskTile: TilePosition, spawnBounds: NPCManager.TileBounds) {
         self.sprite = sprite
@@ -24,14 +26,23 @@ final class NPCBehavior {
     }
 
     func apply(_ visualState: NPCVisualState) {
-        guard visualState.activity != currentActivity else { return }
+        let hasDesk = DeskPolicy.hasDesk(bond: model.bond)
+        guard visualState.activity != currentActivity || hasDesk != currentDeskEligibility else { return }
         currentActivity = visualState.activity
+        currentDeskEligibility = hasDesk
         sprite.removeAction(forKey: "behavior")
         sprite.removeAction(forKey: "behaviorMove")
 
         switch visualState.activity {
         case .working:
-            moveTo(tile: deskTile, speed: 0.18, key: "behaviorMove")
+            if hasDesk {
+                // Earned a desk: walk to the fixed work tile and type there.
+                moveTo(tile: deskTile, speed: 0.18, key: "behaviorMove",
+                       walkAnim: true, onArrival: { [weak self] in self?.sprite.resumeWorkPose() })
+            } else {
+                // No desk yet: work near the current spot with a small back-and-forth.
+                startWorkWander()
+            }
         case .resting:
             startResting()
         case .wandering:
@@ -56,6 +67,33 @@ final class NPCBehavior {
         let wait = SKAction.wait(forDuration: 3.0, withRange: 2.0)
         let tinyMove = SKAction.run { [weak self] in self?.randomStep(maxOffset: 1) }
         sprite.run(.repeatForever(.sequence([wait, tinyMove])), withKey: "behavior")
+    }
+
+    private func startWorkWander() {
+        workAnchor = currentTile()
+        sprite.resumeWorkPose()
+        let wait = SKAction.wait(forDuration: 2.8, withRange: 1.8)
+        let step = SKAction.run { [weak self] in self?.workStep() }
+        sprite.run(.repeatForever(.sequence([wait, step])), withKey: "behavior")
+    }
+
+    private func workStep() {
+        guard let anchor = workAnchor else { return }
+        let radius = 2
+        let b = spawnBounds
+        let newTile = TilePosition(
+            tileX: (model.tileX + Int.random(in: -1...1))
+                .clamped(to: (anchor.tileX - radius)...(anchor.tileX + radius))
+                .clamped(to: b.minX...b.maxX),
+            tileY: (model.tileY + Int.random(in: -1...1))
+                .clamped(to: (anchor.tileY - radius)...(anchor.tileY + radius))
+                .clamped(to: b.minY...b.maxY)
+        )
+        let dx = newTile.tileX - model.tileX
+        let dy = newTile.tileY - model.tileY
+        guard dx != 0 || dy != 0 else { sprite.resumeWorkPose(); return }
+        moveTo(tile: newTile, speed: 0.26, key: "behaviorMove",
+               walkAnim: true, onArrival: { [weak self] in self?.sprite.resumeWorkPose() })
     }
 
     private func randomStep(maxOffset: Int = 2) {

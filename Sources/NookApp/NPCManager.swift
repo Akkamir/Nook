@@ -11,6 +11,11 @@ final class NPCManager {
     private var models:  [String: NPCModel]  = [:]
     private var activeAgents: Set<String> = []
 
+    // Visible desks for NPCs that have earned one (bond ≥ DeskPolicy.bondThreshold).
+    private var desks: [String: SKNode] = [:]
+    private var deskTiles: [String: TilePosition] = [:]
+    private let assetCatalog = PixelAssetCatalog.loadMaygetsu()
+
     private let speechComposer: SpeechLineComposing = HeuristicLineComposer()
     private var lastSpokeAt: [String: Date] = [:]
     private let speechCooldown: TimeInterval = 50
@@ -66,7 +71,9 @@ final class NPCManager {
             scene?.addChild(sprite)
 
             let slotIndex = sortedIDs.firstIndex(of: id) ?? sprites.count
-            let behavior = NPCBehavior(sprite: sprite, model: model, deskTile: deskTile(for: slotIndex), spawnBounds: spawnBounds)
+            let desk = deskTile(for: slotIndex)
+            deskTiles[id] = desk
+            let behavior = NPCBehavior(sprite: sprite, model: model, deskTile: desk, spawnBounds: spawnBounds)
             let visualState = NPCVisualState.derive(
                 from: model,
                 activeSessionCount: engine.activeSessionCounts[id, default: 0],
@@ -113,7 +120,90 @@ final class NPCManager {
             behaviors.removeValue(forKey: id)
             lastBondByAgent.removeValue(forKey: id)
             models.removeValue(forKey: id)
+            deskTiles.removeValue(forKey: id)
         }
+
+        syncDesks()
+    }
+
+    /// Places a permanent desk at each NPC's work tile once it reaches the bond
+    /// threshold, and removes it if the NPC loses its desk or leaves the village.
+    private func syncDesks() {
+        for (id, model) in models {
+            let shouldHaveDesk = DeskPolicy.hasDesk(bond: model.bond)
+            if shouldHaveDesk, desks[id] == nil, let tile = deskTiles[id] {
+                let desk = makeDesk(at: tile)
+                scene?.addChild(desk)
+                desks[id] = desk
+            } else if !shouldHaveDesk, let desk = desks[id] {
+                desk.removeFromParent()
+                desks.removeValue(forKey: id)
+            }
+        }
+        for id in Set(desks.keys).subtracting(models.keys) {
+            desks[id]?.removeFromParent()
+            desks.removeValue(forKey: id)
+        }
+    }
+
+    private func makeDesk(at tile: TilePosition) -> SKNode {
+        let ts = TileMap.tileSize
+        let scale: CGFloat = 2
+        let layout = DeskLayout.front(
+            tileSize: ts,
+            displayScale: scale,
+            characterHeight: 64,
+            deskPixelSize: CGSize(width: 48, height: 32),
+            pcPixelSize: CGSize(width: 16, height: 32)
+        )
+        let node = SKNode()
+        // Sit the desk in front of the NPC (lower on screen) and draw it above the
+        // agent (z > 200) so the NPC reads as seated behind it, working at the surface.
+        node.position = CGPoint(
+            x: CGFloat(tile.tileX) * ts + ts / 2,
+            y: CGFloat(tile.tileY) * ts + ts / 2 + layout.deskNodeYOffset
+        )
+        node.zPosition = 250
+
+        if let texture = assetCatalog?.texture(relativePath: "pixel-agents/furniture/DESK/DESK_FRONT.png") {
+            texture.filteringMode = .nearest
+            let sprite = SKSpriteNode(
+                texture: texture,
+                size: CGSize(width: 48 * scale, height: 32 * scale)
+            )
+            sprite.anchorPoint = CGPoint(x: 0.5, y: 0)
+            node.addChild(sprite)
+        } else {
+            node.addChild(PixelNodeFactory.rect(
+                size: CGSize(width: ts * 1.6, height: ts * 0.7),
+                color: NSColor(red: 0.45, green: 0.30, blue: 0.16, alpha: 1),
+                position: CGPoint(x: 0, y: ts * 0.2),
+                z: 1
+            ))
+        }
+        addComputer(to: node, layout: layout)
+        return node
+    }
+
+    private func addComputer(to node: SKNode, layout: DeskLayout) {
+        guard let texture = assetCatalog?.texture(relativePath: "pixel-agents/furniture/PC/PC_BACK.png") else {
+            node.addChild(PixelNodeFactory.rect(
+                size: CGSize(width: 18, height: 16),
+                color: NSColor(red: 0.10, green: 0.12, blue: 0.18, alpha: 1),
+                position: layout.pcPosition,
+                z: 3
+            ))
+            return
+        }
+
+        let computer = SKSpriteNode(
+            texture: texture,
+            size: CGSize(width: 16, height: 32)
+        )
+        computer.anchorPoint = CGPoint(x: 0.5, y: 0)
+        computer.position = layout.pcPosition
+        computer.zPosition = 3
+        node.addChild(computer)
     }
 
     func handleBitEvents(_ events: [BitEvent]) {
@@ -168,7 +258,11 @@ final class NPCManager {
         let agentSessions = engine.sessions.values.filter { $0.agentName == id }
         let projects = ProjectRollup.forAgent(Array(agentSessions))
         let recent = agentSessions.sorted { $0.lastActivityAt > $1.lastActivityAt }
-        let moments = Moment.forAgent(Array(agentSessions))
+        let moments = Moment.forAgent(
+            Array(agentSessions),
+            currentBond: model.bond,
+            totalTokens: model.totalTokens
+        )
         let summary = Moment.summary(Array(agentSessions))
 
         return NPCSelection(

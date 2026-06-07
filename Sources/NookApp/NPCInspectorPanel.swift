@@ -74,23 +74,28 @@ struct NPCInspectorPanel: View {
     private var liveStrip: some View {
         HStack(spacing: 8) {
             if selection.currentStreakDays > 0 {
-                badge("🔥 \(selection.currentStreakDays)d")
+                badge(icon: .streak, "\(selection.currentStreakDays)d")
             }
             if selection.longestSessionSeconds > 0 {
                 badge(formatDuration(selection.longestSessionSeconds) + " max")
             }
-            badge(formatInt(selection.totalTokens))
+            badge(icon: .bit, formatInt(selection.totalTokens))
             Spacer(minLength: 0)
         }
     }
 
-    private func badge(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 11, weight: .semibold, design: .monospaced))
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(.white.opacity(0.10))
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+    private func badge(icon: PixelIconKind? = nil, _ text: String) -> some View {
+        HStack(spacing: 4) {
+            if let icon {
+                PixelIcon(kind: icon, size: 11)
+            }
+            Text(text)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(.white.opacity(0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
     private var statsSection: some View {
@@ -155,25 +160,31 @@ struct NPCInspectorPanel: View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Moments")
             ForEach(Array(selection.moments.suffix(5).reversed().enumerated()), id: \.offset) { _, m in
-                HStack(alignment: .top, spacing: 6) {
-                    Text(icon(for: m.kind))
-                    Text(m.label).foregroundStyle(.white.opacity(0.85))
+                HStack(alignment: .top, spacing: 8) {
+                    PixelIcon(kind: icon(for: m.kind), size: 14)
+                        .padding(.top, 1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(m.label).foregroundStyle(.white.opacity(0.88))
+                        Text(Moment.displayDate(m.date))
+                            .font(.system(size: 10, weight: .regular, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.52))
+                    }
                     Spacer(minLength: 0)
                 }
             }
         }
     }
 
-    private func icon(for kind: Moment.Kind) -> String {
+    private func icon(for kind: Moment.Kind) -> PixelIconKind {
         switch kind {
-        case .firstSession, .firstOnProject: return "✨"
-        case .anniversary: return "🎂"
-        case .bondPromotion: return "💛"
-        case .streakRecord: return "🔥"
-        case .tokenMilestone, .sessionMilestone, .hoursMilestone: return "🏁"
-        case .longestSession, .biggestSession, .mostProductiveDay: return "🏆"
-        case .nightSession: return "🌙"
-        case .returnAfterAbsence: return "👋"
+        case .firstSession, .firstOnProject: return .spark
+        case .anniversary: return .cake
+        case .bondPromotion: return .bond
+        case .streakRecord: return .streak
+        case .tokenMilestone, .sessionMilestone, .hoursMilestone: return .milestone
+        case .longestSession, .biggestSession, .mostProductiveDay: return .trophy
+        case .nightSession: return .night
+        case .returnAfterAbsence: return .returnArrow
         }
     }
 

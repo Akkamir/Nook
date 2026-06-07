@@ -25,9 +25,12 @@ struct ContentView: View {
                 .animation(.easeInOut(duration: 30), value: engine.dayPhase)
 
             // HUD overlay — SwiftUI is more reliable than SKCameraNode children on macOS
-            Text("⬡ \(engine.totalBits, specifier: "%.1f") Bits")
-                .font(.system(size: 14, weight: .regular, design: .monospaced))
-                .foregroundStyle(.white)
+            HStack(spacing: 7) {
+                PixelIcon(kind: .bit, size: 14)
+                Text("\(engine.totalBits, specifier: "%.1f") Bits")
+                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white)
+            }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(.black.opacity(0.6))

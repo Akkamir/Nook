@@ -38,7 +38,7 @@ final class LedgerTests: XCTestCase {
         XCTAssertEqual(loaded.totalBits, 42.5, accuracy: 0.001)
         XCTAssertEqual(loaded.pendingBits, 10.0, accuracy: 0.001)
         XCTAssertEqual(loaded.agents["Radion"]?.totalTokens, 50_000)
-        XCTAssertEqual(loaded.agents["Radion"]?.bond, 3)
+        XCTAssertEqual(loaded.agents["Radion"]?.bond, 5)
     }
 
     func test_apply_event_global_pool_increases_bits() throws {
@@ -69,6 +69,19 @@ final class LedgerTests: XCTestCase {
 
         XCTAssertEqual(state.agents["Radion"]?.totalTokens, 10_000)
         XCTAssertEqual(state.agents["Radion"]?.bond, 2)
+    }
+
+    func test_apply_event_uses_twenty_level_bond_scale() throws {
+        let event = TokenEvent(
+            sessionId: "t", projectPath: "/some/project", cwd: nil,
+            inputTokens: 75_000,
+            outputTokens: 0,
+            timestamp: Date()
+        )
+        var state = LedgerState.empty
+        ledger.apply(event: event, agentName: "Radion", to: &state)
+
+        XCTAssertEqual(state.agents["Radion"]?.bond, 5)
     }
 
     func test_apply_creates_session_record_on_first_event() {

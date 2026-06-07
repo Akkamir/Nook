@@ -14,20 +14,14 @@ struct BondProgress: Equatable {
 
     static func forTokens(_ tokens: Int) -> BondProgress {
         let clampedTokens = max(tokens, 0)
-        let thresholds: [(bond: Int, tokens: Int)] = [
-            (1, 0),
-            (2, 10_000),
-            (3, 50_000),
-            (4, 200_000),
-            (5, 1_000_000)
-        ]
+        let thresholds = BondScale.thresholds
 
         let currentIndex = thresholds.lastIndex { clampedTokens >= $0.tokens } ?? 0
         let current = thresholds[currentIndex]
 
         guard currentIndex + 1 < thresholds.count else {
             return BondProgress(
-                currentBond: current.bond,
+                currentBond: current.level,
                 nextBond: nil,
                 currentThreshold: current.tokens,
                 nextThreshold: nil,
@@ -42,8 +36,8 @@ struct BondProgress: Equatable {
         let fraction = min(max(rawFraction, 0), 1)
 
         return BondProgress(
-            currentBond: current.bond,
-            nextBond: next.bond,
+            currentBond: current.level,
+            nextBond: next.level,
             currentThreshold: current.tokens,
             nextThreshold: next.tokens,
             fraction: fraction,

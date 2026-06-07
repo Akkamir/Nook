@@ -36,8 +36,26 @@ final class MomentTests: XCTestCase {
             session("a", input: 6_000, start: "2026-06-01T10:00:00Z"),
             session("b", input: 6_000, start: "2026-06-02T10:00:00Z"),
         ]
-        let moments = Moment.forAgent(s, now: iso("2026-06-03T10:00:00Z"))
+        let moments = Moment.forAgent(s, currentBond: 2, totalTokens: 12_000, now: iso("2026-06-03T10:00:00Z"))
         XCTAssertTrue(kinds(moments).contains(.bondPromotion(level: 2)))
+    }
+
+    func test_incomplete_history_shows_current_bond_without_intermediate_promotions() {
+        let s = [
+            session("a", input: 6_000, start: "2026-06-01T10:00:00Z"),
+            session("b", input: 6_000, start: "2026-06-02T10:00:00Z"),
+        ]
+        let moments = Moment.forAgent(s, currentBond: 5, totalTokens: 75_000, now: iso("2026-06-03T10:00:00Z"))
+        XCTAssertTrue(kinds(moments).contains(.bondPromotion(level: 5)))
+        XCTAssertFalse(kinds(moments).contains(.bondPromotion(level: 2)))
+        XCTAssertEqual(
+            moments.first { $0.kind == .bondPromotion(level: 5) }?.date,
+            iso("2026-06-01T10:00:00Z")
+        )
+    }
+
+    func test_display_date_uses_month_day_and_year() {
+        XCTAssertEqual(Moment.displayDate(iso("2026-06-07T12:00:00Z")), "Jun 7, 2026")
     }
 
     func test_moments_sorted_chronologically() {
@@ -70,8 +88,8 @@ final class MomentTests: XCTestCase {
     func test_token_milestone_does_not_duplicate_bond_at_1M() {
         // 1.2M tokens crosses both bond level 5 and the 1M token milestone — expect bond only.
         let s = [session("a", input: 1_200_000, start: "2026-06-01T10:00:00Z")]
-        let k = kinds(Moment.forAgent(s, now: iso("2026-06-02T10:00:00Z")))
-        XCTAssertTrue(k.contains(.bondPromotion(level: 5)))
+        let k = kinds(Moment.forAgent(s, currentBond: 11, totalTokens: 1_200_000, now: iso("2026-06-02T10:00:00Z")))
+        XCTAssertTrue(k.contains(.bondPromotion(level: 11)))
         XCTAssertFalse(k.contains(.tokenMilestone(1_000_000)))
         // 100k milestone (no bond there) still emitted
         XCTAssertTrue(k.contains(.tokenMilestone(100_000)))

@@ -71,7 +71,8 @@ struct AgentRecord: Codable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         name = try c.decode(String.self, forKey: .name)
         totalTokens = try c.decode(Int.self, forKey: .totalTokens)
-        bond = try c.decode(Int.self, forKey: .bond)
+        _ = try? c.decode(Int.self, forKey: .bond)
+        bond = BondScale.level(for: totalTokens)
         let decodedBits = (try? c.decode(Double.self, forKey: .totalBits)) ?? 0
         let decodedTokens = try c.decode(Int.self, forKey: .totalTokens)
         totalBits = decodedBits > 0 ? decodedBits : Double(decodedTokens) * 10.0 / 1000.0
