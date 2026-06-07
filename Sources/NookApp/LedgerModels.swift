@@ -16,6 +16,8 @@ struct SessionRecord: Codable, Equatable {
     let lastActivityAt: Date
     let inputTokens: Int
     let outputTokens: Int
+    var cacheCreationTokens: Int = 0
+    var cacheReadTokens: Int = 0
     let totalBits: Double
 
     // Subject signals (NPC voice) — decode-only mirror; the daemon owns dedup (firedKinds).
@@ -26,7 +28,14 @@ struct SessionRecord: Codable, Equatable {
     var readCount: Int = 0
     var bashCount: Int = 0
 
-    var totalTokens: Int { inputTokens + outputTokens }
+    var totalTokens: Int {
+        // Mirror NookDaemon BitRate bond weights (Sonnet 4.6 relative pricing).
+        let weighted = Double(inputTokens) * 1.0 +
+            Double(outputTokens) * 5.0 +
+            Double(cacheCreationTokens) * 1.25 +
+            Double(cacheReadTokens) * 0.1
+        return Int(weighted.rounded())
+    }
     var duration: TimeInterval { lastActivityAt.timeIntervalSince(startedAt) }
 }
 
@@ -43,6 +52,8 @@ extension SessionRecord {
         lastActivityAt = try c.decode(Date.self, forKey: .lastActivityAt)
         inputTokens = try c.decode(Int.self, forKey: .inputTokens)
         outputTokens = try c.decode(Int.self, forKey: .outputTokens)
+        cacheCreationTokens = (try? c.decode(Int.self, forKey: .cacheCreationTokens)) ?? 0
+        cacheReadTokens = (try? c.decode(Int.self, forKey: .cacheReadTokens)) ?? 0
         totalBits = try c.decode(Double.self, forKey: .totalBits)
         task = try? c.decode(String.self, forKey: .task)
         gitBranch = try? c.decode(String.self, forKey: .gitBranch)

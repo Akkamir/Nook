@@ -35,6 +35,12 @@ final class VillageScene: SKScene {
             let maxTile = min(map.width, map.height) - 3
             npcManager?.spawnBounds = NPCManager.TileBounds(minX: 2, minY: 2, maxX: maxTile, maxY: maxTile)
         }
+        engine.onTrickleGain = { [weak self] agentName, bits in
+            self?.npcManager?.showTrickleGain(agentName: agentName, bits: bits)
+        }
+        engine.onLiveComment = { [weak self] agentName, line in
+            self?.npcManager?.showLiveComment(agentName: agentName, line: line)
+        }
         npcManager?.sync()
         npcManager?.syncActiveStates(engine.activeSessions)
         lastAgentCount = engine.agents.count

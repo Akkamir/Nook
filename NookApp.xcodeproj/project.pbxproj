@@ -46,6 +46,7 @@
 		65C2A4FA71AF3AE9D1B2B462 /* ClaudeProjectsWatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF6D1493B958601DA258FDD3 /* ClaudeProjectsWatcherTests.swift */; };
 		707E07897B3DE72BE0ED6FD7 /* char_3.png in Resources */ = {isa = PBXBuildFile; fileRef = EA4D97BD59346C2941FFED8A /* char_3.png */; };
 		707F4B624676BBB1B61CB45E /* char_4.png in Resources */ = {isa = PBXBuildFile; fileRef = D463EFBEE7462698FAC44776 /* char_4.png */; };
+		73B3FC36D9BF4704B0AEA1BF /* BitShowerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C072F08A44402E5564A8FE75 /* BitShowerTests.swift */; };
 		7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */; };
 		7DF91E42682B6C0FFEEA9DBE /* PC_FRONT_ON_3.png in Resources */ = {isa = PBXBuildFile; fileRef = 7396BC014E95ED9836FB848D /* PC_FRONT_ON_3.png */; };
 		80BEAC4BB9FB8ADD39320529 /* desk.png in Resources */ = {isa = PBXBuildFile; fileRef = 57FE6EF0BD8E8703B04122C2 /* desk.png */; };
@@ -181,6 +182,7 @@
 		BD6D25A0A25D4934393B5B01 /* house_orange.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = house_orange.png; sourceTree = "<group>"; };
 		BE66F6FB5B2515F619C1CF3C /* house_pink.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = house_pink.png; sourceTree = "<group>"; };
 		BF08C230635E2A978BEA13E0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		C072F08A44402E5564A8FE75 /* BitShowerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitShowerTests.swift; sourceTree = "<group>"; };
 		C1961662C30E2AC5A0403174 /* ProjectRollup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRollup.swift; sourceTree = "<group>"; };
 		C2642CCD90C9895978862368 /* NookApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NookApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C451021251E55454B88470F1 /* char_boy_walk.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = char_boy_walk.png; sourceTree = "<group>"; };
@@ -244,6 +246,7 @@
 		205798E690A5666280F124E7 /* NookAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				C072F08A44402E5564A8FE75 /* BitShowerTests.swift */,
 				630141035B347B3B0E85E786 /* BondProgressTests.swift */,
 				D5B239E4555BA58E4005EE2D /* CharIndexTests.swift */,
 				DF6D1493B958601DA258FDD3 /* ClaudeProjectsWatcherTests.swift */,
@@ -611,6 +614,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				73B3FC36D9BF4704B0AEA1BF /* BitShowerTests.swift in Sources */,
 				BA1EBCC3A90A87D6792FCEF6 /* BondProgressTests.swift in Sources */,
 				0E6F6D2C4163BFA6C3E9E175 /* CharIndexTests.swift in Sources */,
 				65C2A4FA71AF3AE9D1B2B462 /* ClaudeProjectsWatcherTests.swift in Sources */,

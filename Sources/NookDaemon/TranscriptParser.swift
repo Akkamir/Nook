@@ -9,6 +9,8 @@ struct ToolUse: Equatable {
 struct ParsedEntry {
     let inputTokens: Int
     let outputTokens: Int
+    let cacheCreationTokens: Int
+    let cacheReadTokens: Int
     let timestamp: Date
     let cwd: String?
     let gitBranch: String?
@@ -33,6 +35,8 @@ enum TranscriptParser {
         struct Usage: Decodable {
             let input_tokens: Int
             let output_tokens: Int
+            let cache_creation_input_tokens: Int?
+            let cache_read_input_tokens: Int?
         }
 
         struct Block: Decodable {
@@ -95,6 +99,8 @@ enum TranscriptParser {
         return ParsedEntry(
             inputTokens: message.usage?.input_tokens ?? 0,
             outputTokens: message.usage?.output_tokens ?? 0,
+            cacheCreationTokens: message.usage?.cache_creation_input_tokens ?? 0,
+            cacheReadTokens: message.usage?.cache_read_input_tokens ?? 0,
             timestamp: timestamp,
             cwd: raw.cwd,
             gitBranch: raw.gitBranch,

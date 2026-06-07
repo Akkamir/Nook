@@ -1,16 +1,63 @@
 import Foundation
 
+/// Bit rates derived from Sonnet 4.6 relative pricing, anchored at 5 bits / 1k input tokens.
+///   cache read $0.30 · input $3.00 · cache write $3.75 · output $15.00 (per 1M tokens)
+/// → weights, normalized on input: 0.1 / 1.0 / 1.25 / 5.0
+enum BitRate {
+    static let bitsPerKInput = 5.0
+    static let inputWeight = 1.0
+    static let outputWeight = 5.0
+    static let cacheWriteWeight = 1.25
+    static let cacheReadWeight = 0.1
+
+    static func bits(input: Int, output: Int, cacheCreation: Int, cacheRead: Int) -> Double {
+        weightedTokens(input: input, output: output, cacheCreation: cacheCreation, cacheRead: cacheRead)
+            / 1000.0 * bitsPerKInput
+    }
+
+    /// Same Sonnet 4.6 weights as bits, rounded — used for bond progression and session totals.
+    static func bondTokens(input: Int, output: Int, cacheCreation: Int, cacheRead: Int) -> Int {
+        Int(weightedTokens(input: input, output: output, cacheCreation: cacheCreation, cacheRead: cacheRead).rounded())
+    }
+
+    private static func weightedTokens(input: Int, output: Int, cacheCreation: Int, cacheRead: Int) -> Double {
+        Double(input) * inputWeight +
+        Double(output) * outputWeight +
+        Double(cacheCreation) * cacheWriteWeight +
+        Double(cacheRead) * cacheReadWeight
+    }
+}
+
 struct TokenEvent {
     let sessionId: String
     let projectPath: String
     let cwd: String?
     let inputTokens: Int
     let outputTokens: Int
+    let cacheCreationTokens: Int
+    let cacheReadTokens: Int
     let timestamp: Date
 
+    init(sessionId: String, projectPath: String, cwd: String?, inputTokens: Int, outputTokens: Int,
+         cacheCreationTokens: Int = 0, cacheReadTokens: Int = 0, timestamp: Date) {
+        self.sessionId = sessionId
+        self.projectPath = projectPath
+        self.cwd = cwd
+        self.inputTokens = inputTokens
+        self.outputTokens = outputTokens
+        self.cacheCreationTokens = cacheCreationTokens
+        self.cacheReadTokens = cacheReadTokens
+        self.timestamp = timestamp
+    }
+
     var bits: Double {
-        Double(inputTokens) / 1000.0 * 5.0 +
-        Double(outputTokens) / 1000.0 * 15.0
+        BitRate.bits(input: inputTokens, output: outputTokens,
+                     cacheCreation: cacheCreationTokens, cacheRead: cacheReadTokens)
+    }
+
+    var bondTokens: Int {
+        BitRate.bondTokens(input: inputTokens, output: outputTokens,
+                           cacheCreation: cacheCreationTokens, cacheRead: cacheReadTokens)
     }
 }
 
@@ -40,7 +87,7 @@ struct AgentRecord: Codable {
     }
 
     mutating func addTokens(_ event: TokenEvent, bits: Double) {
-        totalTokens += event.inputTokens + event.outputTokens
+        totalTokens += event.bondTokens
         totalBits += bits
         bond = BondScale.level(for: totalTokens)
     }
@@ -69,6 +116,8 @@ struct SessionRecord: Codable, Equatable {
     var lastActivityAt: Date
     var inputTokens: Int
     var outputTokens: Int
+    var cacheCreationTokens: Int = 0
+    var cacheReadTokens: Int = 0
     var totalBits: Double
 
     // Subject signals (NPC voice)
@@ -80,7 +129,10 @@ struct SessionRecord: Codable, Equatable {
     var bashCount: Int = 0
     var firedKinds: [String] = []
 
-    var totalTokens: Int { inputTokens + outputTokens }
+    var totalTokens: Int {
+        BitRate.bondTokens(input: inputTokens, output: outputTokens,
+                           cacheCreation: cacheCreationTokens, cacheRead: cacheReadTokens)
+    }
     var duration: TimeInterval { lastActivityAt.timeIntervalSince(startedAt) }
 }
 
@@ -97,6 +149,8 @@ extension SessionRecord {
         lastActivityAt = try c.decode(Date.self, forKey: .lastActivityAt)
         inputTokens = try c.decode(Int.self, forKey: .inputTokens)
         outputTokens = try c.decode(Int.self, forKey: .outputTokens)
+        cacheCreationTokens = (try? c.decode(Int.self, forKey: .cacheCreationTokens)) ?? 0
+        cacheReadTokens = (try? c.decode(Int.self, forKey: .cacheReadTokens)) ?? 0
         totalBits = try c.decode(Double.self, forKey: .totalBits)
         task = try? c.decode(String.self, forKey: .task)
         gitBranch = try? c.decode(String.self, forKey: .gitBranch)

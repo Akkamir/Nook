@@ -28,11 +28,11 @@ final class UpgradeTests: XCTestCase {
             inputTokens: 1000, outputTokens: 1000,
             timestamp: date("2026-06-07T10:05:00Z")
         )
-        // Base bits = 1000/1000*5 + 1000/1000*15 = 20. With 1.25x → 25.
+        // Base bits = 1000*1.0 + 1000*5.0 = 6000 weighted → 30 bits. With 1.25x → 37.5.
         ledger.apply(event: event, agentName: "Radion", multiplier: 1.25, to: &state)
 
-        XCTAssertEqual(try XCTUnwrap(state.agents["Radion"]).totalBits, 145, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(state.recentEvents.last).bits, 25, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(state.agents["Radion"]).totalBits, 157.5, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(state.recentEvents.last).bits, 37.5, accuracy: 0.001)
     }
 
     func test_apply_multiplier_does_not_affect_other_agents() throws {
@@ -46,8 +46,8 @@ final class UpgradeTests: XCTestCase {
         ledger.apply(event: event, agentName: "Other", multiplier: 1.25, to: &state)
         ledger.apply(event: event, agentName: "Radion", multiplier: 1.0, to: &state)
 
-        XCTAssertEqual(try XCTUnwrap(state.agents["Other"]).totalBits, 25, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(state.agents["Radion"]).totalBits, 20, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(state.agents["Other"]).totalBits, 37.5, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(state.agents["Radion"]).totalBits, 30, accuracy: 0.001)
     }
 
     func test_apply_defaults_to_1x_when_no_multiplier_given() throws {

@@ -27,6 +27,11 @@ final class VillageEngine {
     private var lastSeenActivitySeq: Int = -1
     private var dayNightTimer: DispatchSourceTimer?
     private var sessionTimer: DispatchSourceTimer?
+    private var trickleTimer: DispatchSourceTimer?
+    private var trickleInitialized = false
+    private var lastLiveCommentAt: [String: Date] = [:]
+    var onTrickleGain: ((String, Double) -> Void)?
+    var onLiveComment: ((String, String) -> Void)?
     private let sessionDetector = SessionDetector()
     private let hookServer = ClaudeHookServer()
     private let hookInstaller = ClaudeHookInstaller()
@@ -57,6 +62,7 @@ final class VillageEngine {
         startHookServer()
         startClaudeProjectsWatcher()
         startSessionTimer()
+        startTrickleTimer()
     }
 
     func stop() {
@@ -65,6 +71,8 @@ final class VillageEngine {
         dayNightTimer = nil
         sessionTimer?.cancel()
         sessionTimer = nil
+        trickleTimer?.cancel()
+        trickleTimer = nil
         claudeProjectsWatcher.stop()
         hookServer.stop()
         isRunning = false
@@ -146,6 +154,81 @@ final class VillageEngine {
         }
     }
 
+    var totalAvailableBits: Double {
+        agents.reduce(0) { sum, pair in
+            let state = upgrades.agents[pair.key]
+            let spent = state?.spentBits ?? 0
+            let trickle = state?.trickleBitsAccumulated ?? 0
+            let bonus = state?.bonusAccumulated ?? 0
+            return sum + max(0, pair.value.totalBits + bonus + trickle - spent)
+        }
+    }
+
+    func effectiveMultiplier(for agentName: String) -> Double {
+        UpgradeEconomy.effectiveMultiplier(
+            bitMultiplier: upgrades.agents[agentName]?.bitMultiplier ?? 1.0,
+            bdLevel: upgrades.agents[agentName]?.bondDividendLevel ?? 0,
+            bond: agents[agentName]?.bond ?? 0
+        )
+    }
+
+    // Runs every launch: ensures bonusAccumulated ≥ totalBits × (mult − 1).
+    // Guards against migration gaps where bonusAccumulated was seeded with stale
+    // totalBits, which would leave agents with negative available bits.
+    private func refreshBonusFloor() {
+        var updated = upgrades
+        var changed = false
+        for (agentName, agent) in agents {
+            var state = updated.agents[agentName] ?? AgentUpgradeState()
+            guard state.bitMultiplierLevel > 0 || state.bondDividendLevel > 0 else { continue }
+            let mult = UpgradeEconomy.effectiveMultiplier(
+                bitMultiplier: state.bitMultiplier,
+                bdLevel: state.bondDividendLevel,
+                bond: agent.bond
+            )
+            let floor = agent.totalBits * (mult - 1.0)
+            guard state.bonusAccumulated < floor else { continue }
+            state.bonusAccumulated = floor
+            updated.agents[agentName] = state
+            changed = true
+        }
+        guard changed else { return }
+        upgrades = updated
+        backgroundSaveUpgrades(updated)
+    }
+
+    // Credits multiplier bonus for each incoming daemon bit event.
+    private func creditMultiplierBonus(for events: [BitEvent]) {
+        var updated = upgrades
+        var changed = false
+        for event in events {
+            guard let agentName = event.agentName,
+                  let agent = agents[agentName] else { continue }
+            var state = updated.agents[agentName] ?? AgentUpgradeState()
+            let mult = UpgradeEconomy.effectiveMultiplier(
+                bitMultiplier: state.bitMultiplier,
+                bdLevel: state.bondDividendLevel,
+                bond: agent.bond
+            )
+            let bonus = event.bits * (mult - 1.0)
+            guard bonus > 0 else { continue }
+            state.bonusAccumulated += bonus
+            updated.agents[agentName] = state
+            changed = true
+        }
+        guard changed else { return }
+        upgrades = updated
+        backgroundSaveUpgrades(updated)
+    }
+
+    private func backgroundSaveUpgrades(_ state: UpgradeState) {
+        let url = economyStore.url
+        Task.detached(priority: .utility) {
+            let store = EconomyStore(url: url)
+            try? store.save(state)
+        }
+    }
+
     func availableBits(for agentName: String) -> Double {
         let ledger = LedgerState(
             totalBits: totalBits,
@@ -168,6 +251,16 @@ final class VillageEngine {
         return UpgradeEconomy.cost(for: .bitMultiplier, currentLevel: level)
     }
 
+    func nextBondDividendCost(for agentName: String) -> Double {
+        let level = upgrades.agents[agentName]?.bondDividendLevel ?? 0
+        return UpgradeEconomy.cost(for: .bondDividend, currentLevel: level)
+    }
+
+    func nextTrickleCost(for agentName: String) -> Double {
+        let level = upgrades.agents[agentName]?.trickleLevel ?? 0
+        return UpgradeEconomy.cost(for: .trickle, currentLevel: level)
+    }
+
     func requestBitMultiplierPurchase(for agentName: String) {
         let ledger = LedgerState(
             totalBits: totalBits,
@@ -184,6 +277,98 @@ final class VillageEngine {
         upgrades = updatedUpgrades
         let stateToSave = updatedUpgrades
         let url = economyStore.url
+        Task.detached(priority: .utility) {
+            let store = EconomyStore(url: url)
+            try? store.save(stateToSave)
+        }
+    }
+
+    func requestBondDividendPurchase(for agentName: String) {
+        let ledger = LedgerState(
+            totalBits: totalBits, pendingBits: pendingBits, agents: agents,
+            lastUpdated: Date(), recentEvents: [], eventSeq: 0, sessions: sessions
+        )
+        var updatedUpgrades = upgrades
+        let applied = UpgradeEconomy.apply(.bondDividend, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
+        guard applied else { return }
+        upgrades = updatedUpgrades
+        let url = economyStore.url
+        let stateToSave = updatedUpgrades
+        Task.detached(priority: .utility) {
+            let store = EconomyStore(url: url)
+            try? store.save(stateToSave)
+        }
+    }
+
+    func requestTricklePurchase(for agentName: String) {
+        let ledger = LedgerState(
+            totalBits: totalBits, pendingBits: pendingBits, agents: agents,
+            lastUpdated: Date(), recentEvents: [], eventSeq: 0, sessions: sessions
+        )
+        var updatedUpgrades = upgrades
+        let applied = UpgradeEconomy.apply(.trickle, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
+        guard applied else { return }
+        upgrades = updatedUpgrades
+        let url = economyStore.url
+        let stateToSave = updatedUpgrades
+        Task.detached(priority: .utility) {
+            let store = EconomyStore(url: url)
+            try? store.save(stateToSave)
+        }
+    }
+
+    private func startTrickleTimer() {
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now() + 10, repeating: .seconds(10))
+        timer.setEventHandler { [weak self] in self?.tickTrickle() }
+        timer.resume()
+        trickleTimer = timer
+    }
+
+    // animate: false during startup catchup (sprites may not be ready yet)
+    private func tickTrickle(animate: Bool = true) {
+        let now = Date()
+        var updatedUpgrades = upgrades
+        var changed = false
+
+        for (agentName, _) in agents {
+            var state = updatedUpgrades.agents[agentName] ?? AgentUpgradeState()
+            guard state.trickleLevel > 0 else {
+                if state.lastTrickleAt == nil {
+                    state.lastTrickleAt = now
+                    updatedUpgrades.agents[agentName] = state
+                    changed = true
+                }
+                continue
+            }
+
+            let elapsed: TimeInterval
+            if let last = state.lastTrickleAt {
+                // 1h offline cap: prevents dumping 24h of trickle on first open.
+                elapsed = min(now.timeIntervalSince(last), 3600)
+            } else {
+                elapsed = 0
+            }
+
+            // Rate is bits per 10s; compute proportionally over elapsed seconds.
+            let rate = UpgradeEconomy.trickleRate(count: state.trickleLevel)
+            let gained = rate * elapsed / 10.0
+            state.trickleBitsAccumulated += gained
+
+            state.lastTrickleAt = now
+            updatedUpgrades.agents[agentName] = state
+            changed = true
+
+            // Skip animation for sub-bit gains and for offline catchup.
+            if animate && gained >= 0.5 {
+                onTrickleGain?(agentName, gained)
+            }
+        }
+
+        guard changed else { return }
+        upgrades = updatedUpgrades
+        let url = economyStore.url
+        let stateToSave = updatedUpgrades
         Task.detached(priority: .utility) {
             let store = EconomyStore(url: url)
             try? store.save(stateToSave)
@@ -218,6 +403,11 @@ final class VillageEngine {
         if anchor {
             lastSeenEventSeq = ledger.eventSeq
             lastSeenActivitySeq = ledger.activitySeq
+            if !trickleInitialized {
+                trickleInitialized = true
+                tickTrickle(animate: false)
+            }
+            refreshBonusFloor()
             return
         }
 
@@ -225,6 +415,7 @@ final class VillageEngine {
         if !fresh.isEmpty {
             newBitEvents += fresh
             lastSeenEventSeq = fresh.map(\.seq).max() ?? lastSeenEventSeq
+            creditMultiplierBonus(for: fresh)
         }
 
         let freshActivity = ledger.recentActivity.filter { $0.seq > lastSeenActivitySeq }
@@ -259,13 +450,40 @@ final class VillageEngine {
         Self.backgroundSave(memory: updatedMemory, to: memoryURL)
 
         guard OpenAIAPIKeyStore.load() != nil else { return }
+
+        let agentName = session.agentName
+        let totalTokens = session.totalTokens
+        let pastSessions = agentName.map { name in
+            existingMemory.sessions.values.filter { $0.agentName == name }
+                .sorted { $0.updatedAt < $1.updatedAt }
+        } ?? []
+
+        // Enrich stored memory with richer personality-aware prompt.
         do {
-            let enriched = try await narrationClient.enrich(sessionMemory: base, digest: digest, bond: bond)
+            let enriched = try await narrationClient.enrich(
+                sessionMemory: base, digest: digest,
+                bond: bond, totalTokens: totalTokens,
+                pastSessions: Array(pastSessions.suffix(5))
+            )
             updatedMemory.sessions[sessionId] = enriched
             npcMemory = updatedMemory
             Self.backgroundSave(memory: updatedMemory, to: memoryURL)
         } catch {
             print("[Nook] enrich error for session \(sessionId): \(error)")
+        }
+
+        // Live spoken line: reacts to what the user is doing right now.
+        // Throttled to once per 2 minutes per NPC.
+        guard let agentName else { return }
+        let now = Date()
+        guard lastLiveCommentAt[agentName].map({ now.timeIntervalSince($0) > 120 }) ?? true else { return }
+        do {
+            let line = try await narrationClient.liveComment(digest: digest, bond: bond, totalTokens: totalTokens)
+            guard !line.isEmpty else { return }
+            lastLiveCommentAt[agentName] = now
+            onLiveComment?(agentName, line)
+        } catch {
+            print("[Nook] liveComment error for \(agentName): \(error)")
         }
     }
 

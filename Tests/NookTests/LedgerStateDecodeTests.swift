@@ -24,7 +24,7 @@ final class LedgerStateDecodeTests: XCTestCase {
         """
         let state = try decode(json)
         XCTAssertEqual(state.sessions["s1"]?.project, "Nook")
-        XCTAssertEqual(state.sessions["s1"]?.totalTokens, 300)
+        XCTAssertEqual(state.sessions["s1"]?.totalTokens, 1_100)
     }
 
     func test_legacy_session_without_subject_fields_decodes_with_defaults() throws {
@@ -41,7 +41,7 @@ final class LedgerStateDecodeTests: XCTestCase {
 
     func test_agent_bond_recomputes_from_tokens_when_decoding_existing_ledger() throws {
         let json = """
-        {"totalBits":0,"pendingBits":0,"agents":{"Radion":{"name":"Radion","totalTokens":100000000,"bond":5,"totalBits":1}},
+        {"totalBits":0,"pendingBits":0,"agents":{"Radion":{"name":"Radion","totalTokens":4000000000,"bond":5,"totalBits":1}},
          "lastUpdated":"2026-06-01T00:00:00Z","recentEvents":[],"eventSeq":0}
         """
         let state = try decode(json)

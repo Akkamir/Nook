@@ -33,10 +33,10 @@ final class MomentTests: XCTestCase {
 
     func test_bond_promotion_on_crossing_session() {
         let s = [
-            session("a", input: 6_000, start: "2026-06-01T10:00:00Z"),
-            session("b", input: 6_000, start: "2026-06-02T10:00:00Z"),
+            session("a", input: 200_000, start: "2026-06-01T10:00:00Z"),
+            session("b", input: 200_000, start: "2026-06-02T10:00:00Z"),
         ]
-        let moments = Moment.forAgent(s, currentBond: 2, totalTokens: 12_000, now: iso("2026-06-03T10:00:00Z"))
+        let moments = Moment.forAgent(s, currentBond: 2, totalTokens: 400_000, now: iso("2026-06-03T10:00:00Z"))
         XCTAssertTrue(kinds(moments).contains(.bondPromotion(level: 2)))
     }
 
@@ -45,7 +45,7 @@ final class MomentTests: XCTestCase {
             session("a", input: 6_000, start: "2026-06-01T10:00:00Z"),
             session("b", input: 6_000, start: "2026-06-02T10:00:00Z"),
         ]
-        let moments = Moment.forAgent(s, currentBond: 5, totalTokens: 75_000, now: iso("2026-06-03T10:00:00Z"))
+        let moments = Moment.forAgent(s, currentBond: 5, totalTokens: 1_900_000, now: iso("2026-06-03T10:00:00Z"))
         XCTAssertTrue(kinds(moments).contains(.bondPromotion(level: 5)))
         XCTAssertFalse(kinds(moments).contains(.bondPromotion(level: 2)))
         XCTAssertEqual(
@@ -85,14 +85,14 @@ final class MomentTests: XCTestCase {
         XCTAssertFalse(k.contains { if case .anniversary = $0 { return true } else { return false } })
     }
 
-    func test_token_milestone_does_not_duplicate_bond_at_1M() {
-        // 1.2M tokens crosses both bond level 5 and the 1M token milestone — expect bond only.
-        let s = [session("a", input: 1_200_000, start: "2026-06-01T10:00:00Z")]
-        let k = kinds(Moment.forAgent(s, currentBond: 11, totalTokens: 1_200_000, now: iso("2026-06-02T10:00:00Z")))
+    func test_token_milestone_does_not_duplicate_bond_at_40M() {
+        // 50M tokens crosses both bond level 11 and the 40M token milestone — expect bond only.
+        let s = [session("a", input: 50_000_000, start: "2026-06-01T10:00:00Z")]
+        let k = kinds(Moment.forAgent(s, currentBond: 11, totalTokens: 50_000_000, now: iso("2026-06-02T10:00:00Z")))
         XCTAssertTrue(k.contains(.bondPromotion(level: 11)))
-        XCTAssertFalse(k.contains(.tokenMilestone(1_000_000)))
-        // 100k milestone (no bond there) still emitted
-        XCTAssertTrue(k.contains(.tokenMilestone(100_000)))
+        XCTAssertFalse(k.contains(.tokenMilestone(40_000_000)))
+        // 4M milestone (no bond there) still emitted
+        XCTAssertTrue(k.contains(.tokenMilestone(4_000_000)))
     }
 
     func test_session_count_milestone_at_ten() {

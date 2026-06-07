@@ -17,8 +17,16 @@ struct OpenAINarrationClient {
         self.model = model
     }
 
+    // Enriches stored session memory with LLM-generated title, summary, and cachedLines.
+    // pastSessions: recent memories for this agent, used for character continuity.
     @MainActor
-    func enrich(sessionMemory: GeneratedSessionMemory, digest: SessionDigest, bond: Int) async throws -> GeneratedSessionMemory {
+    func enrich(
+        sessionMemory: GeneratedSessionMemory,
+        digest: SessionDigest,
+        bond: Int,
+        totalTokens: Int,
+        pastSessions: [GeneratedSessionMemory]
+    ) async throws -> GeneratedSessionMemory {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -27,12 +35,10 @@ struct OpenAINarrationClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model,
-            "max_output_tokens": 350,
-            // json_object guarantees raw, parseable JSON — without it the model
-            // wraps output in a ```json fence that breaks JSONSerialization.
+            "max_output_tokens": 400,
             "text": ["format": ["type": "json_object"]],
-            "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'. Each cachedLines entry must be a single spoken sentence under 80 characters, the kind of short line the NPC says aloud in a speech bubble.",
-            "input": prompt(memory: sessionMemory, digest: digest, bond: bond)
+            "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'. Each cachedLines entry must be a single spoken sentence under 80 characters — short, specific, in-character. Reference the actual project or files when possible.",
+            "input": enrichPrompt(memory: sessionMemory, digest: digest, bond: bond, totalTokens: totalTokens, pastSessions: pastSessions)
         ])
 
         let (data, response) = try await session.data(for: request)
@@ -62,23 +68,91 @@ struct OpenAINarrationClient {
         return enriched
     }
 
-    private func prompt(memory: GeneratedSessionMemory, digest: SessionDigest, bond: Int) -> String {
-        """
-        Respond as raw JSON only.
-        Existing title: \(memory.title)
-        Project: \(digest.project)
-        Branch: \(digest.branch ?? "unknown")
-        Bond: \(bond)
-        Recent asks: \(digest.recentUserAsks.joined(separator: " | "))
-        Files: \(digest.files.joined(separator: ", "))
-        Commands: \(digest.commands.joined(separator: ", "))
-        Tools: \(digest.tools.joined(separator: ", "))
-        """
+    // Generates one short spoken line reacting to what the user is doing right now.
+    // Used for live display during active sessions, independent of stored cachedLines.
+    @MainActor
+    func liveComment(digest: SessionDigest, bond: Int, totalTokens: Int) async throws -> String {
+        guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
+
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "max_output_tokens": 60,
+            "text": ["format": ["type": "text"]],
+            "instructions": "You are an NPC in a pixel village game. Write ONE short spoken line (max 75 chars). Be specific to the player's current work. No quotes, no explanation, just the line.",
+            "input": livePrompt(digest: digest, bond: bond, totalTokens: totalTokens)
+        ])
+
+        let (data, response) = try await session.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw ClientError.invalidResponse }
+        guard let text = Self.outputText(from: data) else { throw ClientError.invalidResponse }
+
+        return Self.sanitizeSpokenLine(text.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
-    /// Keep spoken lines short and single-line so they fit a speech bubble even
-    /// if the model ignores the length instruction. Caps at ~90 chars on a word
-    /// boundary so the bubble's safety-net truncation rarely triggers.
+    private func enrichPrompt(
+        memory: GeneratedSessionMemory,
+        digest: SessionDigest,
+        bond: Int,
+        totalTokens: Int,
+        pastSessions: [GeneratedSessionMemory]
+    ) -> String {
+        let personality = Self.traitDescription(for: totalTokens)
+        let bondText = Self.bondDescription(bond)
+        let pastBeats = pastSessions.flatMap { $0.narrativeBeats }.suffix(4).joined(separator: " | ")
+        let relationshipNote = pastSessions.compactMap { $0.relationshipNote }.last ?? ""
+
+        var parts: [String] = [
+            "NPC personality: \(personality)",
+            "Bond \(bond)/10 — \(bondText)",
+        ]
+        if !relationshipNote.isEmpty { parts.append("Relationship: \(relationshipNote)") }
+        if !pastBeats.isEmpty { parts.append("Past themes: \(pastBeats)") }
+        parts.append("Project: \(digest.project)")
+        if let branch = digest.branch { parts.append("Branch: \(branch)") }
+        if !digest.recentUserAsks.isEmpty { parts.append("Recent asks: \(digest.recentUserAsks.joined(separator: " | "))") }
+        if !digest.files.isEmpty { parts.append("Files: \(digest.files.joined(separator: ", "))") }
+        if !digest.commands.isEmpty { parts.append("Commands: \(digest.commands.joined(separator: ", "))") }
+        return parts.joined(separator: "\n")
+    }
+
+    private func livePrompt(digest: SessionDigest, bond: Int, totalTokens: Int) -> String {
+        let personality = Self.traitDescription(for: totalTokens)
+        let bondText = Self.bondDescription(bond)
+        var parts: [String] = [
+            "You are: \(personality), \(bondText) with the player.",
+            "Project: \(digest.project)\(digest.branch.map { " (\($0))" } ?? "")",
+        ]
+        if let ask = digest.recentUserAsks.first, !ask.isEmpty {
+            parts.append("Player just asked: \"\(ask)\"")
+        }
+        if let file = digest.files.first {
+            parts.append("Current file: \(file)")
+        }
+        return parts.joined(separator: "\n")
+    }
+
+    static func traitDescription(for totalTokens: Int) -> String {
+        switch totalTokens {
+        case ..<10_000:  return "a fresh, curious newcomer"
+        case ..<50_000:  return "steady and reliable, growing in confidence"
+        case ..<200_000: return "a deep thinker, intensely focused and methodical"
+        default:         return "a seasoned expert, powerful and efficient"
+        }
+    }
+
+    static func bondDescription(_ bond: Int) -> String {
+        switch bond {
+        case 0...2: return "barely knows you"
+        case 3...5: return "warming up, trust is forming"
+        case 6...8: return "genuinely familiar, emotionally connected"
+        default:    return "deeply bonded, feels like a true collaborator"
+        }
+    }
+
     static func sanitizeSpokenLine(_ raw: String, maxLength: Int = 90) -> String {
         let collapsed = raw
             .replacingOccurrences(of: "\n", with: " ")
@@ -91,14 +165,11 @@ struct OpenAINarrationClient {
         return clipped + "…"
     }
 
-    /// Defensively unwrap a ```json … ``` (or bare ```) fence the model may emit
-    /// despite json_object mode, returning the inner JSON text.
     static func stripCodeFence(_ text: String) -> String {
         var s = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard s.hasPrefix("```") else { return s }
         s.removeFirst(3)
         if let newline = s.firstIndex(of: "\n") {
-            // Drop an optional language tag on the first fence line (e.g. "json").
             let firstLine = s[s.startIndex..<newline].trimmingCharacters(in: .whitespaces)
             if firstLine.isEmpty || firstLine.allSatisfy({ $0.isLetter }) {
                 s = String(s[s.index(after: newline)...])

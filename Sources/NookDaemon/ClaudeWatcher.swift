@@ -80,7 +80,7 @@ final class ClaudeWatcher {
 
         let sessionId = file.deletingPathExtension().lastPathComponent
         let content = String(data: data, encoding: .utf8) ?? ""
-        var lastUsage: (Int, Int)? = nil
+        var lastUsage: [Int]? = nil
         for line in content.components(separatedBy: "\n") {
             guard let parsed = TranscriptParser.parseLine(line) else { continue }
 
@@ -88,16 +88,19 @@ final class ClaudeWatcher {
             onSubject(parsed, sessionId, projectPath, agentName)
 
             // Token/bits emission only for usage-bearing lines (with consecutive-dup guard).
-            let pair = (parsed.inputTokens, parsed.outputTokens)
-            guard pair.0 > 0 || pair.1 > 0 else { continue }
-            guard lastUsage.map({ $0 != pair }) ?? true else { continue }
-            lastUsage = pair
+            let usage = [parsed.inputTokens, parsed.outputTokens,
+                         parsed.cacheCreationTokens, parsed.cacheReadTokens]
+            guard usage.contains(where: { $0 > 0 }) else { continue }
+            guard lastUsage.map({ $0 != usage }) ?? true else { continue }
+            lastUsage = usage
             let event = TokenEvent(
                 sessionId: sessionId,
                 projectPath: projectPath,
                 cwd: parsed.cwd,
                 inputTokens: parsed.inputTokens,
                 outputTokens: parsed.outputTokens,
+                cacheCreationTokens: parsed.cacheCreationTokens,
+                cacheReadTokens: parsed.cacheReadTokens,
                 timestamp: parsed.timestamp
             )
             onEvent(event, agentName)

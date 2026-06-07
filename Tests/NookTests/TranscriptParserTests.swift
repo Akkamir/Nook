@@ -40,9 +40,53 @@ final class TranscriptParserTests: XCTestCase {
         {"type":"assistant","message":{"role":"assistant","usage":{"input_tokens":1000,"output_tokens":1000}}}
         """
         let parsed = try XCTUnwrap(TranscriptParser.parseLine(line))
-        let event = TokenEvent(sessionId: "t", projectPath: "", cwd: nil, inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens, timestamp: parsed.timestamp)
-        // 1000 input * 5/1000 + 1000 output * 15/1000 = 5 + 15 = 20
-        XCTAssertEqual(event.bits, 20.0, accuracy: 0.001)
+        let event = TokenEvent(sessionId: "t", projectPath: "", cwd: nil,
+                               inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens,
+                               cacheCreationTokens: parsed.cacheCreationTokens,
+                               cacheReadTokens: parsed.cacheReadTokens,
+                               timestamp: parsed.timestamp)
+        // 1000 input * (1.0 * 5/1000) + 1000 output * (5.0 * 5/1000) = 5 + 25 = 30
+        XCTAssertEqual(event.bits, 30.0, accuracy: 0.001)
+    }
+
+    func test_parses_and_weights_cache_tokens() throws {
+        let line = """
+        {"type":"assistant","message":{"role":"assistant","usage":{"input_tokens":1000,"output_tokens":0,"cache_creation_input_tokens":1000,"cache_read_input_tokens":10000}}}
+        """
+        let parsed = try XCTUnwrap(TranscriptParser.parseLine(line))
+        XCTAssertEqual(parsed.cacheCreationTokens, 1000)
+        XCTAssertEqual(parsed.cacheReadTokens, 10000)
+        let event = TokenEvent(sessionId: "t", projectPath: "", cwd: nil,
+                               inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens,
+                               cacheCreationTokens: parsed.cacheCreationTokens,
+                               cacheReadTokens: parsed.cacheReadTokens,
+                               timestamp: parsed.timestamp)
+        // weighted tokens = 1000*1.0 + 0*5.0 + 1000*1.25 + 10000*0.1 = 3250
+        // bits = 3250/1000 * 5 = 16.25
+        XCTAssertEqual(event.bits, 16.25, accuracy: 0.001)
+    }
+
+    func test_bond_tokens_match_sonnet_weights() throws {
+        let line = """
+        {"type":"assistant","message":{"role":"assistant","usage":{"input_tokens":1000,"output_tokens":1000,"cache_creation_input_tokens":1000,"cache_read_input_tokens":10000}}}
+        """
+        let parsed = try XCTUnwrap(TranscriptParser.parseLine(line))
+        let event = TokenEvent(sessionId: "t", projectPath: "", cwd: nil,
+                               inputTokens: parsed.inputTokens, outputTokens: parsed.outputTokens,
+                               cacheCreationTokens: parsed.cacheCreationTokens,
+                               cacheReadTokens: parsed.cacheReadTokens,
+                               timestamp: parsed.timestamp)
+        // weighted = 1000*1 + 1000*5 + 1000*1.25 + 10000*0.1 = 8250
+        XCTAssertEqual(event.bondTokens, 8_250)
+    }
+
+    func test_parse_line_without_cache_fields_defaults_to_zero() throws {
+        let line = """
+        {"type":"assistant","message":{"role":"assistant","usage":{"input_tokens":100,"output_tokens":200}}}
+        """
+        let parsed = try XCTUnwrap(TranscriptParser.parseLine(line))
+        XCTAssertEqual(parsed.cacheCreationTokens, 0)
+        XCTAssertEqual(parsed.cacheReadTokens, 0)
     }
 
     func test_parses_tokens_real_timestamp_and_cwd() throws {

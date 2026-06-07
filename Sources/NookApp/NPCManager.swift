@@ -210,15 +210,29 @@ final class NPCManager {
 
     func handleBitEvents(_ events: [BitEvent]) {
         // Group rapid gains into one readable burst per NPC.
+        // Display the effective amount (raw bits × multiplier) so the animation
+        // reflects what was actually credited to the player's balance.
         var grouped: [String: Double] = [:]
         for event in events {
             let key = event.agentName ?? "__global__"
-            grouped[key, default: 0] += event.bits
+            let mult = engine.effectiveMultiplier(for: key)
+            grouped[key, default: 0] += event.bits * mult
         }
         for (agentName, bits) in grouped {
             guard let sprite = sprites[agentName] else { continue }
             sprite.showBitsGain(bits)
         }
+    }
+
+    func showTrickleGain(agentName: String, bits: Double) {
+        sprites[agentName]?.showBitsGain(bits)
+    }
+
+    func showLiveComment(agentName: String, line: String) {
+        let now = Date()
+        guard lastSpokeAt[agentName].map({ now.timeIntervalSince($0) >= speechCooldown }) ?? true else { return }
+        sprites[agentName]?.showSpeech(line)
+        lastSpokeAt[agentName] = now
     }
 
     func handleActivityEvents(_ events: [SessionActivityEvent]) {

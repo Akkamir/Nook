@@ -30,14 +30,14 @@ final class LedgerTests: XCTestCase {
         var state = LedgerState.empty
         state.totalBits = 42.5
         state.pendingBits = 10.0
-        state.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 50_000, bond: 3)
+        state.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 1_856_640, bond: 3)
 
         try ledger.save(state)
         let loaded = ledger.load()
 
         XCTAssertEqual(loaded.totalBits, 42.5, accuracy: 0.001)
         XCTAssertEqual(loaded.pendingBits, 10.0, accuracy: 0.001)
-        XCTAssertEqual(loaded.agents["Radion"]?.totalTokens, 50_000)
+        XCTAssertEqual(loaded.agents["Radion"]?.totalTokens, 1_856_640)
         XCTAssertEqual(loaded.agents["Radion"]?.bond, 5)
     }
 
@@ -51,30 +51,30 @@ final class LedgerTests: XCTestCase {
         var state = LedgerState.empty
         ledger.apply(event: event, agentName: nil, to: &state)
 
-        // 1000*5/1000 + 1000*15/1000 = 20 Bits
-        XCTAssertEqual(state.pendingBits, 20.0, accuracy: 0.001)
-        XCTAssertEqual(state.totalBits, 20.0, accuracy: 0.001)
+        // 1000 input *5/1000 + 1000 output *5 *5/1000 = 5 + 25 = 30 Bits
+        XCTAssertEqual(state.pendingBits, 30.0, accuracy: 0.001)
+        XCTAssertEqual(state.totalBits, 30.0, accuracy: 0.001)
         XCTAssertTrue(state.agents.isEmpty)
     }
 
     func test_apply_event_with_agent_updates_bond() throws {
         let event = TokenEvent(
             sessionId: "t", projectPath: "/some/project", cwd: nil,
-            inputTokens: 10_000,
+            inputTokens: 400_000,
             outputTokens: 0,
             timestamp: Date()
         )
         var state = LedgerState.empty
         ledger.apply(event: event, agentName: "Radion", to: &state)
 
-        XCTAssertEqual(state.agents["Radion"]?.totalTokens, 10_000)
+        XCTAssertEqual(state.agents["Radion"]?.totalTokens, 400_000)
         XCTAssertEqual(state.agents["Radion"]?.bond, 2)
     }
 
     func test_apply_event_uses_twenty_level_bond_scale() throws {
         let event = TokenEvent(
             sessionId: "t", projectPath: "/some/project", cwd: nil,
-            inputTokens: 75_000,
+            inputTokens: 1_856_640,
             outputTokens: 0,
             timestamp: Date()
         )
@@ -93,7 +93,7 @@ final class LedgerTests: XCTestCase {
         let s = state.sessions["s1"]
         XCTAssertEqual(s?.project, "Nook")
         XCTAssertEqual(s?.agentName, "Radion")
-        XCTAssertEqual(s?.totalTokens, 300)
+        XCTAssertEqual(s?.totalTokens, 1_100)
         XCTAssertEqual(s?.startedAt, date("2026-06-01T10:00:00Z"))
         XCTAssertEqual(s?.lastActivityAt, date("2026-06-01T10:00:00Z"))
     }
@@ -108,7 +108,7 @@ final class LedgerTests: XCTestCase {
         ledger.apply(event: e2, agentName: "Radion", to: &state)
 
         let s = state.sessions["s1"]
-        XCTAssertEqual(s?.totalTokens, 400)
+        XCTAssertEqual(s?.totalTokens, 1_400)
         XCTAssertEqual(s?.startedAt, date("2026-06-01T10:00:00Z"))
         XCTAssertEqual(s?.lastActivityAt, date("2026-06-01T11:00:00Z"))
         XCTAssertEqual(state.sessions.count, 1)
@@ -138,7 +138,8 @@ final class LedgerTests: XCTestCase {
 
     private func entry(role: String? = nil, userText: String? = nil, tools: [ToolUse] = [],
                        at: String = "2026-06-01T10:00:00Z") -> ParsedEntry {
-        ParsedEntry(inputTokens: 0, outputTokens: 0, timestamp: date(at), cwd: "/c/Nook",
+        ParsedEntry(inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0,
+                    timestamp: date(at), cwd: "/c/Nook",
                     gitBranch: "main", role: role, userText: userText, toolUses: tools)
     }
 

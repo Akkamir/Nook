@@ -44,6 +44,8 @@ final class Ledger {
             session.lastActivityAt = event.timestamp
             session.inputTokens += event.inputTokens
             session.outputTokens += event.outputTokens
+            session.cacheCreationTokens += event.cacheCreationTokens
+            session.cacheReadTokens += event.cacheReadTokens
             session.totalBits += bits
             // Don't clobber a previously resolved agent if this event has none
             // (e.g. .pixelvillage briefly unreadable) — attribution is load-bearing.
@@ -59,6 +61,8 @@ final class Ledger {
                 lastActivityAt: event.timestamp,
                 inputTokens: event.inputTokens,
                 outputTokens: event.outputTokens,
+                cacheCreationTokens: event.cacheCreationTokens,
+                cacheReadTokens: event.cacheReadTokens,
                 totalBits: bits
             )
         }

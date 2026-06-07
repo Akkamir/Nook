@@ -200,7 +200,31 @@ final class NPCSprite: SKNode {
         }
     }
 
+    /// Splits a bit gain into a few substantial chunks so a gain rains down as a
+    /// short "+N +N" shower (idle-clicker feel) — never a spray of weak +1s, so
+    /// the magnitude (and the bit multiplier behind it) stays legible.
+    nonisolated static func bitShowerChunks(_ total: Double, minChunk: Double = 5, maxPops: Int = 6) -> [Double] {
+        guard total > 0 else { return [] }
+        // Too small to split without producing weak pops → show it whole.
+        guard total >= minChunk * 2 else { return [total] }
+        let n = min(maxPops, max(2, Int((total / minChunk).rounded(.down))))
+        return Array(repeating: total / Double(n), count: n)
+    }
+
     func showBitsGain(_ delta: Double) {
+        guard delta > 0 else { return }
+        ringPulse()
+        let chunks = Self.bitShowerChunks(delta)
+        let stagger = 0.11
+        for (index, chunk) in chunks.enumerated() {
+            run(.sequence([
+                .wait(forDuration: Double(index) * stagger),
+                .run { [weak self] in self?.spawnFloatingBits(chunk) }
+            ]))
+        }
+    }
+
+    private func ringPulse() {
         let pulse = SKShapeNode(circleOfRadius: 24)
         pulse.strokeColor = NSColor(red: 0.38, green: 1.0, blue: 0.72, alpha: 0.9)
         pulse.lineWidth = 2
@@ -211,14 +235,18 @@ final class NPCSprite: SKNode {
             .group([.scale(to: 1.7, duration: 0.35), .fadeOut(withDuration: 0.35)]),
             .removeFromParent()
         ]))
+    }
 
+    private func spawnFloatingBits(_ amount: Double) {
         let root = SKNode()
-        root.position = CGPoint(x: CGFloat.random(in: -10...10), y: Self.charH - 8)
+        root.position = CGPoint(x: CGFloat.random(in: -14...14), y: Self.charH - 8)
         root.zPosition = 30
         root.setScale(0)
         addChild(root)
 
-        let text = "+\(formatBits(delta))"
+        // Bigger chunk → bigger number, so a high multiplier reads as heavier pops.
+        let fontSize = min(30, max(16, 15 + CGFloat(amount) * 0.32))
+        let text = "+\(formatBits(amount))"
         for offset in [
             CGPoint(x: -1, y: 0),
             CGPoint(x: 1, y: 0),
@@ -227,7 +255,7 @@ final class NPCSprite: SKNode {
         ] {
             let outline = SKLabelNode(fontNamed: "Monaco")
             outline.text = text
-            outline.fontSize = 20
+            outline.fontSize = fontSize
             outline.fontColor = NSColor.black.withAlphaComponent(0.88)
             outline.verticalAlignmentMode = .bottom
             outline.horizontalAlignmentMode = .center
@@ -238,7 +266,7 @@ final class NPCSprite: SKNode {
 
         let label = SKLabelNode(fontNamed: "Monaco")
         label.text = text
-        label.fontSize = 20
+        label.fontSize = fontSize
         label.fontColor = NSColor(red: 0.38, green: 1.0, blue: 0.72, alpha: 1)
         label.verticalAlignmentMode = .bottom
         label.horizontalAlignmentMode = .center

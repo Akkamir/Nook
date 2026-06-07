@@ -12,10 +12,8 @@ struct NPCInspectorPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 header
-                liveStrip
-                statusSection
-                statsSection
-                progressSection
+                heroCard
+                detailsStrip
                 if !selection.projects.isEmpty { projectsSection }
                 if !selection.recentSessions.isEmpty { recentSessionsSection }
                 if !selection.moments.isEmpty { momentsSection }
@@ -54,90 +52,91 @@ struct NPCInspectorPanel: View {
         }
     }
 
-    private var statusSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("Status")
-            HStack {
+    private var heroCard: some View {
+        let spent = selection.totalBits - selection.availableBits
+        return VStack(alignment: .leading, spacing: 12) {
+            // Status
+            HStack(spacing: 6) {
                 Circle()
-                    .fill(selection.activeSessionCount > 0 ? Color.green : Color.white.opacity(0.35))
+                    .fill(selection.activeSessionCount > 0 ? Color.green : Color.white.opacity(0.32))
                     .frame(width: 8, height: 8)
                 Text(selection.activeSessionCount > 0 ? "Working" : "Idle")
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
                 Spacer()
                 if selection.activeSessionCount > 0 {
                     Text("\(selection.activeSessionCount) session\(selection.activeSessionCount == 1 ? "" : "s")")
-                        .foregroundStyle(.white.opacity(0.7))
+                        .font(.system(size: 11, weight: .regular, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+
+            // Bond + barre de progression inline
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 8) {
+                    Text("Bond \(selection.bond)")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(.white.opacity(0.12))
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color(red: 1.0, green: 0.82, blue: 0.24))
+                                .frame(width: geo.size.width * progress.fraction)
+                        }
+                    }
+                    .frame(height: 6)
+                }
+                Text(progress.label)
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.48))
+            }
+
+            // Bits
+            HStack(spacing: 5) {
+                PixelIcon(kind: .bit, size: 12)
+                Text(formatBits(selection.availableBits))
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                if spent > 0.01 {
+                    Text("· \(formatBits(spent)) spent")
+                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.45))
                 }
             }
         }
+        .padding(12)
+        .background(.white.opacity(0.06))
+        .overlay(Rectangle().stroke(.white.opacity(0.10), lineWidth: 1))
     }
 
-    private var liveStrip: some View {
-        HStack(spacing: 8) {
+    private var detailsStrip: some View {
+        HStack(spacing: 0) {
+            detailCell(icon: .milestone, formatInt(selection.totalTokens), label: "tokens")
+            if selection.bitMultiplier > 1.0 {
+                detailCell(icon: .bond, formatMultiplier(selection.bitMultiplier) + "×", label: "mult")
+            }
             if selection.currentStreakDays > 0 {
-                badge(icon: .streak, "\(selection.currentStreakDays)d")
+                detailCell(icon: .streak, "\(selection.currentStreakDays)d", label: "streak")
             }
             if selection.longestSessionSeconds > 0 {
-                badge(formatDuration(selection.longestSessionSeconds) + " max")
-            }
-            badge(icon: .bit, formatBits(selection.availableBits))
-            if selection.bitMultiplier > 1.0 {
-                badge(formatMultiplier(selection.bitMultiplier) + "x")
+                detailCell(icon: .trophy, formatDuration(selection.longestSessionSeconds), label: "longest")
             }
             Spacer(minLength: 0)
         }
     }
 
-    private func badge(icon: PixelIconKind? = nil, _ text: String) -> some View {
-        HStack(spacing: 4) {
-            if let icon {
-                PixelIcon(kind: icon, size: 11)
+    private func detailCell(icon: PixelIconKind, _ value: String, label: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            PixelIcon(kind: icon, size: 11)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(value)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                Text(label)
+                    .font(.system(size: 9, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.42))
             }
-            Text(text)
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 3)
-        .background(.white.opacity(0.10))
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-    }
-
-    private var statsSection: some View {
-        let spent = selection.totalBits - selection.availableBits
-        return VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("Stats")
-            VStack(alignment: .leading, spacing: 3) {
-                statRow("Bits", formatBits(selection.availableBits))
-                if spent > 0.01 {
-                    HStack {
-                        Spacer()
-                        Text("\(formatBits(spent)) spent on upgrades")
-                            .font(.system(size: 10, weight: .regular, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.42))
-                    }
-                }
-            }
-            statRow("Tokens", formatInt(selection.totalTokens))
-            statRow("Bond", "\(selection.bond)")
-        }
-    }
-
-    private var progressSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("Bond Progress")
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(.white.opacity(0.12))
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(red: 1.0, green: 0.82, blue: 0.24))
-                        .frame(width: max(0, proxy.size.width * progress.fraction))
-                }
-            }
-            .frame(height: 8)
-            Text(progress.label)
-                .font(.system(size: 11, weight: .regular, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.7))
-        }
+        .frame(minWidth: 68, alignment: .leading)
     }
 
     private var projectsSection: some View {
@@ -224,16 +223,6 @@ struct NPCInspectorPanel: View {
         Text(text.uppercased())
             .font(.system(size: 10, weight: .semibold, design: .monospaced))
             .foregroundStyle(.white.opacity(0.48))
-    }
-
-    private func statRow(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label)
-                .foregroundStyle(.white.opacity(0.68))
-            Spacer()
-            Text(value)
-                .foregroundStyle(.white)
-        }
     }
 
     private func formatInt(_ value: Int) -> String {

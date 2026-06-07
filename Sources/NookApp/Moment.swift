@@ -28,7 +28,7 @@ struct Moment: Equatable {
 
     static let bondThresholds = Array(BondScale.thresholds.dropFirst())
 
-    static let tokenMilestones = [100_000, 250_000, 500_000, 1_000_000]
+    static let tokenMilestones = [4_000_000, 10_000_000, 20_000_000, 40_000_000]
     static let sessionMilestones = [10, 50, 100]
     static let hoursMilestones = [10, 50, 100]
 

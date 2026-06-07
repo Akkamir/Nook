@@ -32,7 +32,7 @@ struct ContentView: View {
             HStack(spacing: 10) {
                 HStack(spacing: 7) {
                     PixelIcon(kind: .bit, size: 14)
-                    Text("\(engine.totalBits, specifier: "%.1f") Bits")
+                    Text("\(engine.totalAvailableBits, specifier: "%.1f") Bits")
                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
                         .foregroundStyle(.white)
                 }
@@ -81,8 +81,12 @@ struct ContentView: View {
                         activeAgentIDs: activeShopAgentIDs,
                         onSelectAgent: { shopAgentID = $0 },
                         onPurchase: { id in engine.requestBitMultiplierPurchase(for: id) },
+                        onPurchaseBondDividend: { id in engine.requestBondDividendPurchase(for: id) },
+                        onPurchaseTrickle: { id in engine.requestTricklePurchase(for: id) },
                         availableBits: { engine.availableBits(for: $0) },
                         nextCost: { engine.nextBitMultiplierCost(for: $0) },
+                        nextBondDividendCost: { engine.nextBondDividendCost(for: $0) },
+                        nextTrickleCost: { engine.nextTrickleCost(for: $0) },
                         upgradeState: engine.upgrades,
                         agents: engine.agents,
                         onClose: { isShopOpen = false }
@@ -236,12 +240,17 @@ private struct UpgradeShopPanel: View {
     let activeAgentIDs: [String]
     let onSelectAgent: (String) -> Void
     let onPurchase: (String) -> Void
+    let onPurchaseBondDividend: (String) -> Void
+    let onPurchaseTrickle: (String) -> Void
     let availableBits: (String) -> Double
     let nextCost: (String) -> Double
+    let nextBondDividendCost: (String) -> Double
+    let nextTrickleCost: (String) -> Double
     let upgradeState: UpgradeState
     let agents: [String: AgentRecord]
     let onClose: () -> Void
-    @State private var purchaseFlash = false
+
+    @State private var purchaseFlash: UpgradeKind? = nil
 
     private var allAgentIDs: [String] { agents.keys.sorted() }
 
@@ -268,96 +277,81 @@ private struct UpgradeShopPanel: View {
                 .contentShape(Rectangle())
             }
 
-            if allAgentIDs.count > 1 {
-                npcSelector
-            }
+            if allAgentIDs.count > 1 { npcSelector }
 
             if let id = currentID, let agent = agents[id] {
                 let state = upgradeState.agents[id] ?? AgentUpgradeState()
-                let cost = nextCost(id)
                 let balance = availableBits(id)
                 let isActive = activeAgentIDs.contains(id)
-                let canBuy = balance >= cost && !purchaseFlash
-                VStack(alignment: .leading, spacing: 10) {
-                    // NPC header
-                    HStack(spacing: 6) {
-                        Text(agent.name)
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        if isActive {
-                            Circle().fill(Color.green).frame(width: 6, height: 6)
-                        }
-                    }
 
-                    // Bit balance block
-                    VStack(alignment: .leading, spacing: 4) {
-                        captionLabel("Bits earned by this NPC")
-                        HStack {
-                            PixelIcon(kind: .bit, size: 11)
-                            Text(formatBits(balance))
-                                .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                            Spacer()
-                            if balance < cost {
-                                Text("Not enough")
-                                    .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                    .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.35))
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        // NPC header
+                        HStack(spacing: 6) {
+                            Text(agent.name)
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            if isActive { Circle().fill(Color.green).frame(width: 6, height: 6) }
+                        }
+
+                        // Balance block
+                        VStack(alignment: .leading, spacing: 4) {
+                            captionLabel("Available bits")
+                            HStack {
+                                PixelIcon(kind: .bit, size: 11)
+                                Text(formatBits(balance))
+                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                                Spacer()
                             }
                         }
-                    }
-                    .padding(8)
-                    .background(.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                    // Multiplier block
-                    VStack(alignment: .leading, spacing: 4) {
-                        captionLabel("Bit multiplier")
-                        HStack(spacing: 8) {
-                            Text(String(format: "%.2fx", state.bitMultiplier))
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.white.opacity(0.45))
-                            Text(String(format: "%.2fx", state.bitMultiplier + 0.25))
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                                .foregroundStyle(canBuy ? Color(red: 0.52, green: 0.92, blue: 0.62) : .white.opacity(0.35))
-                            Spacer()
-                        }
-                    }
-                    .padding(8)
-                    .background(.white.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-
-                    // Buy button with cost + remaining
-                    VStack(spacing: 5) {
-                        Button {
-                            onPurchase(id)
-                            purchaseFlash = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                purchaseFlash = false
-                            }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: purchaseFlash ? "checkmark.circle.fill" : "arrow.up.circle")
-                                Text(purchaseFlash ? "Purchased!" : "Buy +0.25x — \(formatBits(cost)) Bits")
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.vertical, 8)
-                        .foregroundStyle(canBuy ? .black : .white.opacity(0.35))
-                        .background(canBuy ? Color(red: 0.52, green: 0.92, blue: 0.62) : (purchaseFlash ? Color(red: 0.38, green: 0.80, blue: 0.48) : .white.opacity(0.06)))
+                        .padding(8)
+                        .background(.white.opacity(0.06))
                         .clipShape(RoundedRectangle(cornerRadius: 4))
-                        .contentShape(Rectangle())
-                        .disabled(!canBuy)
-                        .animation(.easeOut(duration: 0.15), value: purchaseFlash)
 
-                        if canBuy {
-                            Text("\(formatBits(balance - cost)) Bits remaining after purchase")
-                                .font(.system(size: 10, weight: .regular, design: .monospaced))
-                                .foregroundStyle(.white.opacity(0.45))
-                                .frame(maxWidth: .infinity, alignment: .center)
-                        }
+                        // ── Bit Multiplier ──
+                        upgradeSection(
+                            title: "Bit multiplier",
+                            subtitle: nil,
+                            currentValue: String(format: "%.2fx", state.bitMultiplier),
+                            nextValue: String(format: "%.2fx", state.bitMultiplier + 0.25),
+                            cost: nextCost(id),
+                            balance: balance,
+                            kind: .bitMultiplier,
+                            buyLabel: "Buy +0.25×"
+                        ) { onPurchase(id) }
+
+                        // ── Bond Dividend ──
+                        let bdCost = nextBondDividendCost(id)
+                        let bdMult = UpgradeEconomy.bondDividendMultiplier(level: state.bondDividendLevel, bond: agent.bond)
+                        let bdNextMult = UpgradeEconomy.bondDividendMultiplier(level: state.bondDividendLevel + 1, bond: agent.bond)
+                        upgradeSection(
+                            title: "Bond dividend",
+                            subtitle: "Bond \(agent.bond) · scales with bond",
+                            currentValue: state.bondDividendLevel == 0 ? "Locked" : formatMultiplier(bdMult),
+                            nextValue: bdCost < .infinity ? formatMultiplier(bdNextMult) : nil,
+                            cost: bdCost,
+                            balance: balance,
+                            kind: .bondDividend,
+                            buyLabel: state.bondDividendLevel == 0 ? "Unlock" : "Upgrade"
+                        ) { onPurchaseBondDividend(id) }
+
+                        // ── Bit Trickle ──
+                        let tCount = state.trickleLevel
+                        let tCost = nextTrickleCost(id)
+                        let tRate = UpgradeEconomy.trickleRate(count: tCount)
+                        let tNextRate = UpgradeEconomy.trickleRate(count: tCount + 1)
+                        upgradeSection(
+                            title: "Bit trickle",
+                            subtitle: tCount == 0 ? "×0 units" : "×\(tCount) unit\(tCount == 1 ? "" : "s") · \(formatTrickleRate(tRate))",
+                            currentValue: tCount == 0 ? "Locked" : formatTrickleRate(tRate),
+                            nextValue: formatTrickleRate(tNextRate),
+                            cost: tCost,
+                            balance: balance,
+                            kind: .trickle,
+                            buyLabel: "+1 trickle"
+                        ) { onPurchaseTrickle(id) }
                     }
                 }
+                .frame(maxHeight: 420)
             } else {
                 Text("No NPCs")
                     .foregroundStyle(.white.opacity(0.65))
@@ -366,16 +360,98 @@ private struct UpgradeShopPanel: View {
         .font(.system(size: 12, weight: .regular, design: .monospaced))
         .foregroundStyle(.white)
         .padding(14)
-        .frame(width: 260)
+        .frame(width: 268)
         .background(.black.opacity(0.78))
         .overlay(Rectangle().stroke(.white.opacity(0.14), lineWidth: 1))
     }
 
+    private func upgradeSection(
+        title: String,
+        subtitle: String?,
+        currentValue: String,
+        nextValue: String?,
+        cost: Double,
+        balance: Double,
+        kind: UpgradeKind,
+        buyLabel: String,
+        onBuy: @escaping () -> Void
+    ) -> some View {
+        let isMaxed = cost == .infinity
+        let isFlashing = purchaseFlash == kind
+        let canBuy = !isMaxed && balance >= cost && !isFlashing
+
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 0) {
+                captionLabel(title)
+                Spacer()
+                if let sub = subtitle {
+                    Text(sub)
+                        .font(.system(size: 9, weight: .regular, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.30))
+                }
+            }
+
+            HStack(spacing: 8) {
+                Text(currentValue)
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                if let nv = nextValue {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.40))
+                    Text(nv)
+                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(canBuy ? Color(red: 0.52, green: 0.92, blue: 0.62) : .white.opacity(0.30))
+                }
+                Spacer()
+            }
+
+            if isMaxed {
+                Text("Max level")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.38))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 6)
+                    .background(.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            } else {
+                Button {
+                    onBuy()
+                    purchaseFlash = kind
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        if purchaseFlash == kind { purchaseFlash = nil }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: isFlashing ? "checkmark.circle.fill" : "arrow.up.circle")
+                        Text(isFlashing ? "Purchased!" : "\(buyLabel) — \(formatBits(cost)) Bits")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+                .padding(.vertical, 8)
+                .foregroundStyle(canBuy ? .black : .white.opacity(0.35))
+                .background(canBuy ? Color(red: 0.52, green: 0.92, blue: 0.62) : .white.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .contentShape(Rectangle())
+                .disabled(!canBuy)
+                .animation(.easeOut(duration: 0.15), value: isFlashing)
+
+                if balance < cost && !isFlashing {
+                    Text("Need \(formatBits(cost - balance)) more bits")
+                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.35).opacity(0.85))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+        }
+        .padding(8)
+        .background(.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
     private var npcSelector: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("NPC")
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.48))
+            captionLabel("NPC")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(allAgentIDs, id: \.self) { id in
@@ -383,18 +459,16 @@ private struct UpgradeShopPanel: View {
                         let isActive = activeAgentIDs.contains(id)
                         Button { onSelectAgent(id) } label: {
                             HStack(spacing: 4) {
-                                if isActive {
-                                    Circle().fill(Color.green).frame(width: 5, height: 5)
-                                }
+                                if isActive { Circle().fill(Color.green).frame(width: 5, height: 5) }
                                 Text(agents[id]?.name ?? id)
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(isSelected ? Color(red: 0.52, green: 0.92, blue: 0.62).opacity(0.25) : .white.opacity(0.08))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(isSelected ? Color(red: 0.52, green: 0.92, blue: 0.62).opacity(0.6) : Color.clear, lineWidth: 1)
-                            )
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(
+                                isSelected ? Color(red: 0.52, green: 0.92, blue: 0.62).opacity(0.6) : Color.clear,
+                                lineWidth: 1
+                            ))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                             .foregroundStyle(isSelected ? Color(red: 0.52, green: 0.92, blue: 0.62) : .white)
                         }
@@ -417,5 +491,22 @@ private struct UpgradeShopPanel: View {
         if bits >= 1_000 { return String(format: "%.1fk", bits / 1_000) }
         if bits >= 10 { return String(format: "%.0f", bits) }
         return String(format: "%.1f", bits)
+    }
+
+    private func formatRate(_ rate: Double) -> String {
+        if rate == 0 { return "0 b/hr" }
+        if rate >= 10 { return String(format: "%.0f b/hr", rate) }
+        return String(format: "%.1f b/hr", rate)
+    }
+
+    private func formatMultiplier(_ value: Double) -> String {
+        String(format: "%.2fx", value)
+    }
+
+    private func formatTrickleRate(_ rate: Double) -> String {
+        if rate == rate.rounded(), rate >= 1 {
+            return "\(Int(rate)) b/10s"
+        }
+        return String(format: "%.1f b/10s", rate)
     }
 }
