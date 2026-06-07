@@ -275,43 +275,88 @@ private struct UpgradeShopPanel: View {
             if let id = currentID, let agent = agents[id] {
                 let state = upgradeState.agents[id] ?? AgentUpgradeState()
                 let cost = nextCost(id)
-                let available = availableBits(id)
+                let balance = availableBits(id)
                 let isActive = activeAgentIDs.contains(id)
-                let canBuy = available >= cost && !purchaseFlash
-                VStack(alignment: .leading, spacing: 7) {
+                let canBuy = balance >= cost && !purchaseFlash
+                VStack(alignment: .leading, spacing: 10) {
+                    // NPC header
                     HStack(spacing: 6) {
                         Text(agent.name)
                             .font(.system(size: 12, weight: .semibold, design: .monospaced))
                         if isActive {
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 6, height: 6)
+                            Circle().fill(Color.green).frame(width: 6, height: 6)
                         }
                     }
-                    row("Available", formatBits(available))
-                    row("Multiplier", String(format: "%.2fx", state.bitMultiplier))
-                    row("Next", "+0.25x · \(formatBits(cost))")
-                    Button {
-                        onPurchase(id)
-                        purchaseFlash = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            purchaseFlash = false
+
+                    // Bit balance block
+                    VStack(alignment: .leading, spacing: 4) {
+                        captionLabel("Bits earned by this NPC")
+                        HStack {
+                            PixelIcon(kind: .bit, size: 11)
+                            Text(formatBits(balance))
+                                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                            Spacer()
+                            if balance < cost {
+                                Text("Not enough")
+                                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                    .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.35))
+                            }
                         }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: purchaseFlash ? "checkmark.circle.fill" : "arrow.up.circle")
-                            Text(purchaseFlash ? "Requested" : "Buy")
-                        }
-                        .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.vertical, 7)
-                    .foregroundStyle(canBuy ? .black : .white.opacity(0.42))
-                    .background(canBuy ? Color(red: 0.52, green: 0.92, blue: 0.62) : (purchaseFlash ? Color(red: 0.38, green: 0.80, blue: 0.48) : .white.opacity(0.08)))
+                    .padding(8)
+                    .background(.white.opacity(0.06))
                     .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .contentShape(Rectangle())
-                    .disabled(!canBuy)
-                    .animation(.easeOut(duration: 0.15), value: purchaseFlash)
+
+                    // Multiplier block
+                    VStack(alignment: .leading, spacing: 4) {
+                        captionLabel("Bit multiplier")
+                        HStack(spacing: 8) {
+                            Text(String(format: "%.2fx", state.bitMultiplier))
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.white.opacity(0.45))
+                            Text(String(format: "%.2fx", state.bitMultiplier + 0.25))
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(canBuy ? Color(red: 0.52, green: 0.92, blue: 0.62) : .white.opacity(0.35))
+                            Spacer()
+                        }
+                    }
+                    .padding(8)
+                    .background(.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+
+                    // Buy button with cost + remaining
+                    VStack(spacing: 5) {
+                        Button {
+                            onPurchase(id)
+                            purchaseFlash = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                purchaseFlash = false
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: purchaseFlash ? "checkmark.circle.fill" : "arrow.up.circle")
+                                Text(purchaseFlash ? "Purchased!" : "Buy +0.25x — \(formatBits(cost)) Bits")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.vertical, 8)
+                        .foregroundStyle(canBuy ? .black : .white.opacity(0.35))
+                        .background(canBuy ? Color(red: 0.52, green: 0.92, blue: 0.62) : (purchaseFlash ? Color(red: 0.38, green: 0.80, blue: 0.48) : .white.opacity(0.06)))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .contentShape(Rectangle())
+                        .disabled(!canBuy)
+                        .animation(.easeOut(duration: 0.15), value: purchaseFlash)
+
+                        if canBuy {
+                            Text("\(formatBits(balance - cost)) Bits remaining after purchase")
+                                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.45))
+                                .frame(maxWidth: .infinity, alignment: .center)
+                        }
+                    }
                 }
             } else {
                 Text("No NPCs")
@@ -361,12 +406,10 @@ private struct UpgradeShopPanel: View {
         }
     }
 
-    private func row(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).foregroundStyle(.white.opacity(0.65))
-            Spacer()
-            Text(value)
-        }
+    private func captionLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+            .foregroundStyle(.white.opacity(0.40))
     }
 
     private func formatBits(_ bits: Double) -> String {

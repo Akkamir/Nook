@@ -165,12 +165,20 @@ final class VillageEngine {
     }
 
     func requestBitMultiplierPurchase(for agentName: String) {
+        let cost = nextBitMultiplierCost(for: agentName)
         let request = UpgradePurchaseRequest(agentName: agentName, upgrade: .bitMultiplier, requestedAt: Date())
         do {
             try upgradeStore.append(request)
         } catch {
             print("Nook upgrade purchase request failed: \(error)")
+            return
         }
+        // Optimistic update — daemon will confirm on next reload
+        var agentState = upgrades.agents[agentName] ?? AgentUpgradeState()
+        agentState.bitMultiplierLevel += 1
+        agentState.spentBits += cost
+        agentState.lastPurchasedAt = Date()
+        upgrades.agents[agentName] = agentState
     }
 
     private func reload() {
