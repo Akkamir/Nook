@@ -18,7 +18,7 @@ final class VillageEngine {
     var newActivityEvents: [SessionActivityEvent] = []
 
     private let ledgerURL: URL
-    private let upgradeStore: UpgradeFileStore
+    private let economyStore: EconomyStore
     private let memoryStore: NPCMemoryStore
     private let narrationClient: OpenAINarrationClient
     private let watcher: LedgerWatcher
@@ -35,12 +35,12 @@ final class VillageEngine {
     init(
         ledgerURL: URL = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".pixelvillage/ledger.json"),
-        upgradeStore: UpgradeFileStore = .production,
+        economyStore: EconomyStore = .production,
         memoryStore: NPCMemoryStore = NPCMemoryStore(),
         narrationClient: OpenAINarrationClient = OpenAINarrationClient()
     ) {
         self.ledgerURL = ledgerURL
-        self.upgradeStore = upgradeStore
+        self.economyStore = economyStore
         self.memoryStore = memoryStore
         self.narrationClient = narrationClient
         self.watcher = LedgerWatcher(ledgerURL: ledgerURL)
@@ -165,25 +165,30 @@ final class VillageEngine {
     }
 
     func requestBitMultiplierPurchase(for agentName: String) {
-        let cost = nextBitMultiplierCost(for: agentName)
-        let request = UpgradePurchaseRequest(agentName: agentName, upgrade: .bitMultiplier, requestedAt: Date())
-        do {
-            try upgradeStore.append(request)
-        } catch {
-            print("Nook upgrade purchase request failed: \(error)")
-            return
+        let ledger = LedgerState(
+            totalBits: totalBits,
+            pendingBits: pendingBits,
+            agents: agents,
+            lastUpdated: Date(),
+            recentEvents: [],
+            eventSeq: 0,
+            sessions: sessions
+        )
+        var updatedUpgrades = upgrades
+        let applied = UpgradeEconomy.apply(.bitMultiplier, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
+        guard applied else { return }
+        upgrades = updatedUpgrades
+        let stateToSave = updatedUpgrades
+        let url = economyStore.url
+        Task.detached(priority: .utility) {
+            let store = EconomyStore(url: url)
+            try? store.save(stateToSave)
         }
-        // Optimistic update — daemon will confirm on next reload
-        var agentState = upgrades.agents[agentName] ?? AgentUpgradeState()
-        agentState.bitMultiplierLevel += 1
-        agentState.spentBits += cost
-        agentState.lastPurchasedAt = Date()
-        upgrades.agents[agentName] = agentState
     }
 
     private func reload() {
         let ledgerURL = self.ledgerURL
-        let upgradeStateURL = upgradeStore.stateURL
+        let economyURL = economyStore.url
         let memoryURL = memoryStore.url
         let anchored = lastSeenEventSeq == -1
 
@@ -191,7 +196,7 @@ final class VillageEngine {
             guard let self else { return }
             guard let snapshot = await Self.loadAll(
                 ledgerURL: ledgerURL,
-                upgradeStateURL: upgradeStateURL,
+                economyURL: economyURL,
                 memoryURL: memoryURL
             ) else { return }
             self.applyReload(ledger: snapshot.ledger, upgrades: snapshot.upgrades, memory: snapshot.memory, anchor: anchored)
@@ -266,7 +271,7 @@ final class VillageEngine {
     }
 
     nonisolated private static func loadAll(
-        ledgerURL: URL, upgradeStateURL: URL, memoryURL: URL
+        ledgerURL: URL, economyURL: URL, memoryURL: URL
     ) async -> LoadAllSnapshot? {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -275,12 +280,25 @@ final class VillageEngine {
               let ledger = try? decoder.decode(LedgerState.self, from: data)
         else { return nil }
 
-        let upgrades: UpgradeState
-        if let uData = try? Data(contentsOf: upgradeStateURL),
-           let u = try? decoder.decode(UpgradeState.self, from: uData) {
-            upgrades = u
+        // Load economy, with migration from old upgrades.json if needed
+        var upgrades: UpgradeState = .empty
+        if let eData = try? Data(contentsOf: economyURL),
+           let e = try? decoder.decode(UpgradeState.self, from: eData) {
+            upgrades = e
         } else {
-            upgrades = .empty
+            // Migration: try old upgrades.json
+            let oldURL = economyURL.deletingLastPathComponent().appendingPathComponent("upgrades.json")
+            if let oldData = try? Data(contentsOf: oldURL),
+               let old = try? decoder.decode(UpgradeState.self, from: oldData) {
+                upgrades = old
+                // Write to economy.json so next load picks it up
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                if let migrated = try? encoder.encode(upgrades) {
+                    try? FileManager.default.createDirectory(at: economyURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try? migrated.write(to: economyURL, options: .atomic)
+                }
+            }
         }
 
         var memory: NPCMemoryState
