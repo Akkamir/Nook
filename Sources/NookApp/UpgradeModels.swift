@@ -4,12 +4,6 @@ enum UpgradeKind: String, Codable, Equatable {
     case bitMultiplier
 }
 
-struct UpgradePurchaseRequest: Codable, Equatable {
-    let agentName: String
-    let upgrade: UpgradeKind
-    let requestedAt: Date
-}
-
 struct AgentUpgradeState: Codable, Equatable {
     var bitMultiplierLevel: Int
     var spentBits: Double
@@ -28,23 +22,20 @@ struct AgentUpgradeState: Codable, Equatable {
 
 struct UpgradeState: Codable, Equatable {
     var agents: [String: AgentUpgradeState]
-    var processedRequestCount: Int
     var lastUpdated: Date
 
-    init(agents: [String: AgentUpgradeState], processedRequestCount: Int, lastUpdated: Date) {
+    init(agents: [String: AgentUpgradeState] = [:], lastUpdated: Date = Date(timeIntervalSince1970: 0)) {
         self.agents = agents
-        self.processedRequestCount = processedRequestCount
         self.lastUpdated = lastUpdated
     }
 
     static var empty: UpgradeState {
-        UpgradeState(agents: [:], processedRequestCount: 0, lastUpdated: Date(timeIntervalSince1970: 0))
+        UpgradeState()
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         agents = (try? c.decode([String: AgentUpgradeState].self, forKey: .agents)) ?? [:]
-        processedRequestCount = (try? c.decode(Int.self, forKey: .processedRequestCount)) ?? 0
         lastUpdated = (try? c.decode(Date.self, forKey: .lastUpdated)) ?? Date(timeIntervalSince1970: 0)
     }
 }
@@ -65,50 +56,47 @@ enum UpgradeEconomy {
         let spent = upgrades.agents[agentName]?.spentBits ?? 0
         return max(0, agent.totalBits - spent)
     }
+
+    @discardableResult
+    static func apply(_ upgrade: UpgradeKind, for agentName: String, ledger: LedgerState, upgrades: inout UpgradeState) -> Bool {
+        let currentLevel = upgrades.agents[agentName]?.bitMultiplierLevel ?? 0
+        let upgradeCost = cost(for: upgrade, currentLevel: currentLevel)
+        guard availableBits(for: agentName, ledger: ledger, upgrades: upgrades) >= upgradeCost else { return false }
+        var agentState = upgrades.agents[agentName] ?? AgentUpgradeState()
+        agentState.bitMultiplierLevel += 1
+        agentState.spentBits += upgradeCost
+        agentState.lastPurchasedAt = Date()
+        upgrades.agents[agentName] = agentState
+        return true
+    }
 }
 
-final class UpgradeFileStore {
-    let stateURL: URL
-    private let requestsURL: URL
+final class EconomyStore {
+    let url: URL
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init(stateURL: URL, requestsURL: URL) {
-        self.stateURL = stateURL
-        self.requestsURL = requestsURL
+    init(url: URL) {
+        self.url = url
         encoder.dateEncodingStrategy = .iso8601
         decoder.dateDecodingStrategy = .iso8601
     }
 
     func load() -> UpgradeState {
-        guard let data = try? Data(contentsOf: stateURL),
+        guard let data = try? Data(contentsOf: url),
               let state = try? decoder.decode(UpgradeState.self, from: data)
         else { return .empty }
         return state
     }
 
-    func append(_ request: UpgradePurchaseRequest) throws {
-        try FileManager.default.createDirectory(at: requestsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let data = try encoder.encode(request)
-        var line = data
-        line.append(0x0A)
-        if FileManager.default.fileExists(atPath: requestsURL.path) {
-            let handle = try FileHandle(forWritingTo: requestsURL)
-            defer { try? handle.close() }
-            try handle.seekToEnd()
-            try handle.write(contentsOf: line)
-        } else {
-            try line.write(to: requestsURL, options: .atomic)
-        }
+    func save(_ state: UpgradeState) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let data = try encoder.encode(state)
+        try data.write(to: url, options: .atomic)
     }
-}
 
-extension UpgradeFileStore {
-    static var production: UpgradeFileStore {
+    static var production: EconomyStore {
         let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".pixelvillage")
-        return UpgradeFileStore(
-            stateURL: dir.appendingPathComponent("upgrades.json"),
-            requestsURL: dir.appendingPathComponent("upgrade-requests.jsonl")
-        )
+        return EconomyStore(url: dir.appendingPathComponent("economy.json"))
     }
 }
