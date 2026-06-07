@@ -8,6 +8,7 @@ final class UpgradeTests: XCTestCase {
     override func setUp() {
         super.setUp()
         tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         ledger = Ledger(url: tempDir.appendingPathComponent("ledger.json"))
     }
 
@@ -16,88 +17,86 @@ final class UpgradeTests: XCTestCase {
         super.tearDown()
     }
 
-    func test_purchase_request_accepted_when_agent_has_available_bits() throws {
-        var ledgerState = LedgerState.empty
-        ledgerState.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 0, bond: 1, totalBits: 120)
-        var upgrades = UpgradeState.empty
-        let request = UpgradePurchaseRequest(agentName: "Radion", upgrade: .bitMultiplier, requestedAt: date("2026-06-07T10:00:00Z"))
+    // MARK: - Ledger.apply with multiplier
 
-        let result = UpgradeEconomy.apply(request: request, ledger: ledgerState, upgrades: &upgrades)
-
-        XCTAssertEqual(result, .accepted)
-        let agentUpgrades = try XCTUnwrap(upgrades.agents["Radion"])
-        XCTAssertEqual(agentUpgrades.bitMultiplierLevel, 1)
-        XCTAssertEqual(agentUpgrades.spentBits, 50, accuracy: 0.001)
-        XCTAssertEqual(agentUpgrades.bitMultiplier, 1.25, accuracy: 0.001)
-    }
-
-    func test_purchase_rejected_when_agent_has_insufficient_available_bits() throws {
-        var ledgerState = LedgerState.empty
-        ledgerState.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 0, bond: 1, totalBits: 49)
-        var upgrades = UpgradeState.empty
-        let request = UpgradePurchaseRequest(agentName: "Radion", upgrade: .bitMultiplier, requestedAt: date("2026-06-07T10:00:00Z"))
-
-        let result = UpgradeEconomy.apply(request: request, ledger: ledgerState, upgrades: &upgrades)
-
-        XCTAssertEqual(result, .rejectedInsufficientBits)
-        XCTAssertNil(upgrades.agents["Radion"])
-    }
-
-    func test_purchase_rejected_for_unknown_agent() throws {
-        let ledgerState = LedgerState.empty
-        var upgrades = UpgradeState.empty
-        let request = UpgradePurchaseRequest(agentName: "Radion", upgrade: .bitMultiplier, requestedAt: date("2026-06-07T10:00:00Z"))
-
-        let result = UpgradeEconomy.apply(request: request, ledger: ledgerState, upgrades: &upgrades)
-
-        XCTAssertEqual(result, .rejectedUnknownAgent)
-        XCTAssertTrue(upgrades.agents.isEmpty)
-    }
-
-    func test_spent_bits_reduce_available_without_mutating_cumulative_ledger() throws {
-        var ledgerState = LedgerState.empty
-        ledgerState.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 0, bond: 1, totalBits: 120)
-        var upgrades = UpgradeState.empty
-
-        _ = UpgradeEconomy.apply(
-            request: UpgradePurchaseRequest(agentName: "Radion", upgrade: .bitMultiplier, requestedAt: date("2026-06-07T10:00:00Z")),
-            ledger: ledgerState,
-            upgrades: &upgrades
-        )
-
-        XCTAssertEqual(try XCTUnwrap(ledgerState.agents["Radion"]).totalBits, 120, accuracy: 0.001)
-        XCTAssertEqual(UpgradeEconomy.availableBits(for: "Radion", ledger: ledgerState, upgrades: upgrades), 70, accuracy: 0.001)
-    }
-
-    func test_multiplier_applies_only_to_future_attributed_events_for_that_agent() throws {
+    func test_apply_uses_given_multiplier_for_attributed_agent() throws {
         var state = LedgerState.empty
         state.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 0, bond: 1, totalBits: 120)
-        var upgrades = UpgradeState.empty
-        _ = UpgradeEconomy.apply(
-            request: UpgradePurchaseRequest(agentName: "Radion", upgrade: .bitMultiplier, requestedAt: date("2026-06-07T10:00:00Z")),
-            ledger: state,
-            upgrades: &upgrades
-        )
 
         let event = TokenEvent(
-            sessionId: "s1",
-            projectPath: "/p",
-            cwd: "/p",
-            inputTokens: 1000,
-            outputTokens: 1000,
+            sessionId: "s1", projectPath: "/p", cwd: "/p",
+            inputTokens: 1000, outputTokens: 1000,
             timestamp: date("2026-06-07T10:05:00Z")
         )
-        ledger.apply(event: event, agentName: "Radion", upgrades: upgrades, to: &state)
-        ledger.apply(event: event, agentName: "Other", upgrades: upgrades, to: &state)
-        ledger.apply(event: event, agentName: nil, upgrades: upgrades, to: &state)
+        // Base bits = 1000/1000*5 + 1000/1000*15 = 20. With 1.25x → 25.
+        ledger.apply(event: event, agentName: "Radion", multiplier: 1.25, to: &state)
 
         XCTAssertEqual(try XCTUnwrap(state.agents["Radion"]).totalBits, 145, accuracy: 0.001)
-        XCTAssertEqual(try XCTUnwrap(state.agents["Other"]).totalBits, 20, accuracy: 0.001)
-        XCTAssertEqual(state.totalBits, 65, accuracy: 0.001)
-        XCTAssertEqual(state.recentEvents.map(\.bits), [25, 20, 20])
+        XCTAssertEqual(try XCTUnwrap(state.recentEvents.last).bits, 25, accuracy: 0.001)
     }
 
-    private func date(_ s: String) -> Date {
-        ISO8601DateFormatter().date(from: s)!
+    func test_apply_multiplier_does_not_affect_other_agents() throws {
+        var state = LedgerState.empty
+        let event = TokenEvent(
+            sessionId: "s2", projectPath: "/p", cwd: "/p",
+            inputTokens: 1000, outputTokens: 1000,
+            timestamp: date("2026-06-07T10:05:00Z")
+        )
+        // "Other" gets a 1.25x multiplier; "Radion" gets 1.0x
+        ledger.apply(event: event, agentName: "Other", multiplier: 1.25, to: &state)
+        ledger.apply(event: event, agentName: "Radion", multiplier: 1.0, to: &state)
+
+        XCTAssertEqual(try XCTUnwrap(state.agents["Other"]).totalBits, 25, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(state.agents["Radion"]).totalBits, 20, accuracy: 0.001)
     }
+
+    func test_apply_defaults_to_1x_when_no_multiplier_given() throws {
+        var state = LedgerState.empty
+        let event = TokenEvent(
+            sessionId: "s3", projectPath: "/p", cwd: "/p",
+            inputTokens: 1000, outputTokens: 0,
+            timestamp: date("2026-06-07T10:05:00Z")
+        )
+        // inputTokens/1000 * 5 = 5 bits, no multiplier
+        ledger.apply(event: event, agentName: "Radion", to: &state)
+
+        XCTAssertEqual(try XCTUnwrap(state.agents["Radion"]).totalBits, 5, accuracy: 0.001)
+    }
+
+    // MARK: - EconomyReader
+
+    func test_economy_reader_returns_correct_multiplier_from_file() throws {
+        let economyURL = tempDir.appendingPathComponent("economy.json")
+        let json = """
+        {"agents":{"Radion":{"bitMultiplierLevel":2,"spentBits":140}}}
+        """
+        try Data(json.utf8).write(to: economyURL)
+
+        let reader = EconomyReader(url: economyURL)
+        // Level 2 → 1.0 + 2*0.25 = 1.5
+        XCTAssertEqual(reader.multiplier(for: "Radion"), 1.5, accuracy: 0.001)
+    }
+
+    func test_economy_reader_returns_1x_for_unknown_agent() throws {
+        let economyURL = tempDir.appendingPathComponent("economy.json")
+        let json = """
+        {"agents":{"Radion":{"bitMultiplierLevel":1,"spentBits":50}}}
+        """
+        try Data(json.utf8).write(to: economyURL)
+
+        let reader = EconomyReader(url: economyURL)
+        XCTAssertEqual(reader.multiplier(for: "Other"), 1.0, accuracy: 0.001)
+    }
+
+    func test_economy_reader_returns_1x_when_file_missing() throws {
+        let reader = EconomyReader(url: tempDir.appendingPathComponent("missing.json"))
+        XCTAssertEqual(reader.multiplier(for: "Radion"), 1.0, accuracy: 0.001)
+    }
+
+    func test_economy_reader_returns_1x_for_nil_agent() throws {
+        let reader = EconomyReader(url: tempDir.appendingPathComponent("missing.json"))
+        XCTAssertEqual(reader.multiplier(for: nil), 1.0, accuracy: 0.001)
+    }
+
+    private func date(_ s: String) -> Date { ISO8601DateFormatter().date(from: s)! }
 }
