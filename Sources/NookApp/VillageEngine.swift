@@ -21,7 +21,6 @@ final class VillageEngine {
     private let upgradeStore: UpgradeFileStore
     private let memoryStore: NPCMemoryStore
     private let narrationClient: OpenAINarrationClient
-    private let decoder: JSONDecoder
     private let watcher: LedgerWatcher
     private var isRunning = false
     private var lastSeenEventSeq: Int = -1
@@ -44,8 +43,6 @@ final class VillageEngine {
         self.upgradeStore = upgradeStore
         self.memoryStore = memoryStore
         self.narrationClient = narrationClient
-        self.decoder = JSONDecoder()
-        self.decoder.dateDecodingStrategy = .iso8601
         self.watcher = LedgerWatcher(ledgerURL: ledgerURL)
     }
 
@@ -134,14 +131,19 @@ final class VillageEngine {
 
     func consumePendingBits() {
         pendingBits = 0
-        guard let data = try? Data(contentsOf: ledgerURL),
-              var state = try? decoder.decode(LedgerState.self, from: data)
-        else { return }
-        state.pendingBits = 0
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        guard let encoded = try? encoder.encode(state) else { return }
-        try? encoded.write(to: ledgerURL, options: .atomic)
+        let url = ledgerURL
+        Task.detached(priority: .utility) {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            guard let data = try? Data(contentsOf: url),
+                  var state = try? decoder.decode(LedgerState.self, from: data)
+            else { return }
+            state.pendingBits = 0
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            guard let encoded = try? encoder.encode(state) else { return }
+            try? encoded.write(to: url, options: .atomic)
+        }
     }
 
     func availableBits(for agentName: String) -> Double {
@@ -172,74 +174,160 @@ final class VillageEngine {
     }
 
     private func reload() {
-        guard let data = try? Data(contentsOf: ledgerURL),
-              let state = try? decoder.decode(LedgerState.self, from: data)
-        else { return }
-        totalBits = state.totalBits
-        pendingBits = state.pendingBits
-        agents = state.agents
-        sessions = state.sessions
-        upgrades = upgradeStore.load()
-        refreshMemoryCache(for: state.sessions)
+        let ledgerURL = self.ledgerURL
+        let upgradeStateURL = upgradeStore.stateURL
+        let memoryURL = memoryStore.url
+        let anchored = lastSeenEventSeq == -1
 
-        if lastSeenEventSeq == -1 {
-            // First load: anchor to current position, don't replay old events.
-            lastSeenEventSeq = state.eventSeq
-            lastSeenActivitySeq = state.activitySeq
+        Task { [weak self] in
+            guard let self else { return }
+            guard let snapshot = await Self.loadAll(
+                ledgerURL: ledgerURL,
+                upgradeStateURL: upgradeStateURL,
+                memoryURL: memoryURL
+            ) else { return }
+            self.applyReload(ledger: snapshot.ledger, upgrades: snapshot.upgrades, memory: snapshot.memory, anchor: anchored)
+        }
+    }
+
+    private func applyReload(ledger: LedgerState, upgrades: UpgradeState, memory: NPCMemoryState, anchor: Bool) {
+        totalBits = ledger.totalBits
+        pendingBits = ledger.pendingBits
+        agents = ledger.agents
+        sessions = ledger.sessions
+        self.upgrades = upgrades
+        npcMemory = memory
+
+        if anchor {
+            lastSeenEventSeq = ledger.eventSeq
+            lastSeenActivitySeq = ledger.activitySeq
             return
         }
 
-        let fresh = state.recentEvents.filter { $0.seq > lastSeenEventSeq }
+        let fresh = ledger.recentEvents.filter { $0.seq > lastSeenEventSeq }
         if !fresh.isEmpty {
             newBitEvents += fresh
             lastSeenEventSeq = fresh.map(\.seq).max() ?? lastSeenEventSeq
         }
 
-        let freshActivity = state.recentActivity.filter { $0.seq > lastSeenActivitySeq }
+        let freshActivity = ledger.recentActivity.filter { $0.seq > lastSeenActivitySeq }
         if !freshActivity.isEmpty {
             newActivityEvents += freshActivity
             lastSeenActivitySeq = freshActivity.map(\.seq).max() ?? lastSeenActivitySeq
         }
     }
 
-    private func refreshMemoryCache(for sessions: [String: SessionRecord]) {
-        var memory = memoryStore.load()
-        var changed = false
-        for session in sessions.values where memory.sessions[session.sessionId] == nil {
-            memory.sessions[session.sessionId] = GeneratedSessionMemory.heuristic(for: session)
-            changed = true
-        }
-        if changed {
-            try? memoryStore.save(memory)
-        }
-        npcMemory = memory
-    }
-
     private func updateMemoryFromHook(_ event: ClaudeHookEvent) async {
         guard event.refreshesActivity,
               let sessionId = event.sessionId,
               let transcriptPath = event.transcriptPath,
-              let session = sessions[sessionId],
-              let content = try? String(contentsOfFile: transcriptPath, encoding: .utf8)
+              let session = sessions[sessionId]
         else { return }
 
-        let digest = SessionDigest.fromTranscript(content, project: session.project)
-        var memory = memoryStore.load()
-        let base = memory.sessions[sessionId] ?? GeneratedSessionMemory.heuristic(for: session)
-        memory.sessions[sessionId] = base
-        try? memoryStore.save(memory)
-        npcMemory = memory
+        let memoryURL = memoryStore.url
+        let project = session.project
+        let bond = BondScale.level(for: session.totalTokens)
+        let heuristic = GeneratedSessionMemory.heuristic(for: session)
+
+        // All transcript reading + memory I/O off main actor
+        let (digest, existingMemory) = await Self.loadHookData(
+            transcriptPath: transcriptPath, project: project, memoryURL: memoryURL
+        )
+
+        var updatedMemory = existingMemory
+        let base = updatedMemory.sessions[sessionId] ?? heuristic
+        updatedMemory.sessions[sessionId] = base
+        npcMemory = updatedMemory
+
+        Self.backgroundSave(memory: updatedMemory, to: memoryURL)
 
         guard OpenAIAPIKeyStore.load() != nil else { return }
-        if let enriched = try? await narrationClient.enrich(
-            sessionMemory: base,
-            digest: digest,
-            bond: BondScale.level(for: session.totalTokens)
-        ) {
-            var latest = memoryStore.load()
-            latest.sessions[sessionId] = enriched
-            try? memoryStore.save(latest)
-            npcMemory = latest
+        if let enriched = try? await narrationClient.enrich(sessionMemory: base, digest: digest, bond: bond) {
+            updatedMemory.sessions[sessionId] = enriched
+            npcMemory = updatedMemory
+            Self.backgroundSave(memory: updatedMemory, to: memoryURL)
+        }
+    }
+
+    // MARK: - Off-actor I/O helpers
+
+    private struct LoadAllSnapshot {
+        let ledger: LedgerState
+        let upgrades: UpgradeState
+        let memory: NPCMemoryState
+    }
+
+    nonisolated private static func loadAll(
+        ledgerURL: URL, upgradeStateURL: URL, memoryURL: URL
+    ) async -> LoadAllSnapshot? {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        guard let data = try? Data(contentsOf: ledgerURL),
+              let ledger = try? decoder.decode(LedgerState.self, from: data)
+        else { return nil }
+
+        let upgrades: UpgradeState
+        if let uData = try? Data(contentsOf: upgradeStateURL),
+           let u = try? decoder.decode(UpgradeState.self, from: uData) {
+            upgrades = u
+        } else {
+            upgrades = .empty
+        }
+
+        var memory: NPCMemoryState
+        if let mData = try? Data(contentsOf: memoryURL),
+           let m = try? decoder.decode(NPCMemoryState.self, from: mData) {
+            memory = m
+        } else {
+            memory = .empty
+        }
+
+        var memoryChanged = false
+        for session in ledger.sessions.values where memory.sessions[session.sessionId] == nil {
+            memory.sessions[session.sessionId] = GeneratedSessionMemory.heuristic(for: session)
+            memoryChanged = true
+        }
+
+        if memoryChanged {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            if let mData = try? encoder.encode(memory) {
+                try? FileManager.default.createDirectory(at: memoryURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? mData.write(to: memoryURL, options: .atomic)
+            }
+        }
+
+        return LoadAllSnapshot(ledger: ledger, upgrades: upgrades, memory: memory)
+    }
+
+    nonisolated private static func loadHookData(
+        transcriptPath: String, project: String, memoryURL: URL
+    ) async -> (SessionDigest, NPCMemoryState) {
+        let content = try? String(contentsOfFile: transcriptPath, encoding: .utf8)
+        let digest = content.map { SessionDigest.fromTranscript($0, project: project) }
+                     ?? SessionDigest(project: project, branch: nil, recentUserAsks: [], files: [], commands: [], tools: [])
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let memory: NPCMemoryState
+        if let mData = try? Data(contentsOf: memoryURL),
+           let m = try? decoder.decode(NPCMemoryState.self, from: mData) {
+            memory = m
+        } else {
+            memory = .empty
+        }
+
+        return (digest, memory)
+    }
+
+    nonisolated private static func backgroundSave(memory: NPCMemoryState, to url: URL) {
+        Task.detached(priority: .background) {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            guard let data = try? encoder.encode(memory) else { return }
+            try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? data.write(to: url, options: .atomic)
         }
     }
 }

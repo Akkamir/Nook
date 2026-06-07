@@ -201,7 +201,7 @@ extension GeneratedSessionMemory {
 }
 
 final class NPCMemoryStore {
-    private let url: URL
+    let url: URL
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
