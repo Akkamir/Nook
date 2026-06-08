@@ -186,17 +186,22 @@ final class VillageEngine {
 
     func nextBitMultiplierCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bitMultiplierLevel ?? 0
+        guard EconomyEngine.canBuy(.bitMultiplier, currentLevel: level, bond: agents[agentName]?.bond ?? 0) else { return .infinity }
         return EconomyEngine.cost(for: .bitMultiplier, currentLevel: level)
     }
 
     func nextBondDividendCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bondDividendLevel ?? 0
+        let bond = agents[agentName]?.bond ?? 0
+        guard EconomyEngine.canBuy(.bondDividend, currentLevel: level, bond: bond) else { return .infinity }
         return EconomyEngine.cost(for: .bondDividend, currentLevel: level)
     }
 
     func nextTrickleCost(for agentName: String) -> Double {
-        let level = upgrades.agents[agentName]?.trickleCount ?? 0
-        return EconomyEngine.cost(for: .trickle, currentLevel: level)
+        let count = upgrades.agents[agentName]?.trickleCount ?? 0
+        let bond = agents[agentName]?.bond ?? 0
+        guard EconomyEngine.canBuy(.trickle, currentLevel: count, bond: bond) else { return .infinity }
+        return EconomyEngine.cost(for: .trickle, currentLevel: count)
     }
 
     func requestBitMultiplierPurchase(for agentName: String) {
