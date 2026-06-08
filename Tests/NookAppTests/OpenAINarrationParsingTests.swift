@@ -39,4 +39,24 @@ final class OpenAINarrationParsingTests: XCTestCase {
         XCTAssertLessThanOrEqual(out.count, 21)
         XCTAssertFalse(out.contains("  "))
     }
+
+    func test_reactionStyle_all_cases_have_nonempty_tone() {
+        for style in ReactionStyle.allCases {
+            XCTAssertFalse(style.tone.isEmpty, "ReactionStyle.\(style) has empty tone")
+        }
+    }
+
+    func test_reactionStyle_all_tones_are_distinct() {
+        let tones = ReactionStyle.allCases.map { $0.tone }
+        XCTAssertEqual(tones.count, Set(tones).count, "Two ReactionStyle cases share the same tone fragment")
+    }
+
+    func test_reactionStyle_random_returns_valid_case() {
+        let style = ReactionStyle.random()
+        XCTAssertTrue(ReactionStyle.allCases.contains(style))
+    }
+
+    func test_reactionStyle_covers_ten_cases() {
+        XCTAssertEqual(ReactionStyle.allCases.count, 10)
+    }
 }

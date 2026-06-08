@@ -1,6 +1,30 @@
 import Foundation
 import Security
 
+enum ReactionStyle: CaseIterable {
+    case descriptive, sarcastic, overhyped, philosophical
+    case mentor, dramatic, gossip, tired, conspiracy, impressedWrong
+
+    static func random() -> ReactionStyle { allCases.randomElement()! }
+
+    // Tone fragment composed into NPC instructions — same fragment works for
+    // both promptReaction (user prompt) and liveComment (session activity).
+    var tone: String {
+        switch self {
+        case .descriptive:    return "Be calm and specific."
+        case .sarcastic:      return "Use dry humor and light mockery. Subtly snarky, affectionate."
+        case .overhyped:      return "Be ridiculously excited. Caps OK. Pure hype energy."
+        case .philosophical:  return "Make an absurd, slightly profound observation."
+        case .mentor:         return "Give a wise but dubious programming maxim. Unsolicited advice."
+        case .dramatic:       return "Treat this as a catastrophic, world-shaking event."
+        case .gossip:         return "Gossip. Treat files, bugs, and functions as drama characters."
+        case .tired:          return "Sound exhausted and resigned. Max 35 chars. Very flat."
+        case .conspiracy:     return "Spot a suspicious hidden pattern. Sound mildly paranoid."
+        case .impressedWrong: return "Be impressed by a completely irrelevant detail. Miss the point."
+        }
+    }
+}
+
 struct OpenAINarrationClient {
     enum ClientError: Error {
         case missingAPIKey
@@ -71,7 +95,7 @@ struct OpenAINarrationClient {
     // Reacts to the user's latest prompt almost in real-time (triggered on PreToolUse).
     // Called before Claude responds, so the NPC can comment on what the user is asking.
     @MainActor
-    func promptReaction(userMessage: String, bond: Int, totalTokens: Int) async throws -> String {
+    func promptReaction(userMessage: String, bond: Int, totalTokens: Int, style: ReactionStyle = .random()) async throws -> String {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -82,7 +106,7 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 40,
             "text": ["format": ["type": "text"]],
-            "instructions": "You are a coding NPC in a pixel village game. React in ONE sentence in English (max 60 chars) to what the user just sent to their AI assistant. Be specific to the message content. No quotes, no explanation, just the line.",
+            "instructions": "You are a coding NPC in a pixel village game. React to what the user just sent their AI. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(style.tone)",
             "input": "Bond \(bond)/10. User just asked their AI: \"\(String(userMessage.prefix(300)))\""
         ])
 
@@ -96,7 +120,7 @@ struct OpenAINarrationClient {
     // Generates one short spoken line reacting to what the user is doing right now.
     // Used for live display during active sessions, independent of stored cachedLines.
     @MainActor
-    func liveComment(digest: SessionDigest, bond: Int, totalTokens: Int) async throws -> String {
+    func liveComment(digest: SessionDigest, bond: Int, totalTokens: Int, style: ReactionStyle = .random()) async throws -> String {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -107,7 +131,7 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 60,
             "text": ["format": ["type": "text"]],
-            "instructions": "You are an NPC in a pixel village game. Write ONE short spoken line in English (max 75 chars). Be specific to the player's current work. No quotes, no explanation, just the line.",
+            "instructions": "You are a coding NPC in a pixel village game commenting on the player's work. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(style.tone)",
             "input": livePrompt(digest: digest, bond: bond, totalTokens: totalTokens)
         ])
 
