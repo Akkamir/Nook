@@ -32,7 +32,7 @@ struct ContentView: View {
             HStack(spacing: 10) {
                 HStack(spacing: 7) {
                     PixelIcon(kind: .villageBit, size: 14)
-                    Text("\(engine.villageAvailableBits, specifier: "%.1f") Bits")
+                    Text("\(engine.villageAvailableBits, specifier: "%.1f") Village Bits")
                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
                         .foregroundStyle(.white)
                 }
@@ -181,6 +181,8 @@ private struct APIKeyPanel: View {
     let onClose: () -> Void
     @State private var saved = false
 
+    private var isConnected: Bool { OpenAIAPIKeyStore.load() != nil }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -197,6 +199,19 @@ private struct APIKeyPanel: View {
                 .background(.white.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 .contentShape(Rectangle())
+            }
+
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(isConnected
+                          ? Color(red: 0.52, green: 0.92, blue: 0.62)
+                          : Color.white.opacity(0.25))
+                    .frame(width: 7, height: 7)
+                Text(isConnected ? "Clé configurée" : "Non configurée")
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(isConnected
+                                     ? Color(red: 0.52, green: 0.92, blue: 0.62)
+                                     : Color.white.opacity(0.45))
             }
 
             SecureField("API key", text: $key)
