@@ -13,17 +13,20 @@ final class TiledVillageLayer: SKNode {
 
     private let displayTileSize = TileMap.tileSize  // 32 pts per tile
 
-    private(set) var mapCenter: CGPoint = .zero
-    private(set) var mapSize: CGSize = .zero
+    private(set) var mapData: VillageMapData = VillageMapData(
+        mapSize: .zero, tileColumns: 0, tileRows: 0,
+        blockedTiles: [], backdropColor: .black
+    )
+
+    var mapCenter: CGPoint { CGPoint(x: mapData.mapSize.width / 2, y: mapData.mapSize.height / 2) }
+    var mapSize: CGSize { mapData.mapSize }
 
     init(mapURL: URL) {
         super.init()
         zPosition = 4
         guard let raw = try? Data(contentsOf: mapURL),
               let map = try? JSONDecoder().decode(TiledMap.self, from: raw) else { return }
-        mapSize = CGSize(width: CGFloat(map.width)  * displayTileSize,
-                         height: CGFloat(map.height) * displayTileSize)
-        mapCenter = CGPoint(x: mapSize.width / 2, y: mapSize.height / 2)
+        mapData = VillageMapData.build(from: map, displayTileSize: displayTileSize)
         let mapDir = mapURL.deletingLastPathComponent()
         let tilesets = buildTilesets(refs: map.tilesets, mapDir: mapDir)
         buildLayers(map: map, tilesets: tilesets)
