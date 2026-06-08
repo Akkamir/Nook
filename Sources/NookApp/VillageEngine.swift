@@ -393,7 +393,7 @@ final class VillageEngine {
         // Throttled to once per 2 minutes per NPC.
         guard let agentName else { return }
         let now = Date()
-        guard lastLiveCommentAt[agentName].map({ now.timeIntervalSince($0) > 120 }) ?? true else { return }
+        guard lastLiveCommentAt[agentName].map({ now.timeIntervalSince($0) > 60 }) ?? true else { return }
         do {
             let line = try await narrationClient.liveComment(digest: digest, bond: bond, totalTokens: totalTokens)
             guard !line.isEmpty else { return }

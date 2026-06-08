@@ -91,11 +91,18 @@ final class Ledger {
         if let agentName { session.agentName = agentName }
         if let branch = entry.gitBranch { session.gitBranch = branch }
 
-        // Task: first real user prompt.
-        if session.task == nil, let text = entry.userText {
+        // Task: emit on every 5th distinct prompt (not just the first).
+        if let text = entry.userText {
             let snippet = Self.truncate(text, to: 120)
-            session.task = snippet
-            emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "task", payload: snippet)
+            if session.task == nil {
+                session.task = snippet
+                emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "task", payload: snippet)
+            } else {
+                session.taskPromptCount += 1
+                if session.taskPromptCount % 5 == 0 {
+                    emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "task", payload: snippet)
+                }
+            }
         }
 
         // Tool uses: files + commands + counts.
@@ -122,9 +129,14 @@ final class Ledger {
             }
         }
 
-        // Deep work threshold.
-        if session.editCount >= 10 {
-            fireOnce(&state, &session, kind: "deepWork", payload: session.project, agentName, sessionId)
+        // Deep work: re-emit at every 10-edit milestone (deepWork_10, deepWork_20, …).
+        if session.editCount > 0, session.editCount % 10 == 0 {
+            let marker = "deepWork_\(session.editCount)"
+            if !session.firedKinds.contains(marker) {
+                session.firedKinds.append(marker)
+                emitActivity(&state, agentName: agentName, sessionId: sessionId,
+                             kind: "deepWork", payload: session.project)
+            }
         }
 
         state.sessions[sessionId] = session
@@ -135,8 +147,13 @@ final class Ledger {
         guard !session.filesTouched.contains(path) else { return }
         session.filesTouched.append(path)
         if session.filesTouched.count > 20 { session.filesTouched.removeFirst(session.filesTouched.count - 20) }
-        emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "file",
-                     payload: URL(fileURLWithPath: path).lastPathComponent)
+        // Emit every 5th new file to keep speech alive across long sessions.
+        let fileMarker = "file_\(session.filesTouched.count)"
+        if session.filesTouched.count == 1 || session.filesTouched.count % 5 == 0 {
+            _ = fileMarker
+            emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "file",
+                         payload: URL(fileURLWithPath: path).lastPathComponent)
+        }
     }
 
     private func fireOnce(_ state: inout LedgerState, _ session: inout SessionRecord, kind: String,

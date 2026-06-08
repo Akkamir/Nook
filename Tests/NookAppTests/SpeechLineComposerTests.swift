@@ -8,19 +8,36 @@ final class SpeechLineComposerTests: XCTestCase {
     }
 
     func test_task_line() {
-        XCTAssertEqual(c.line(for: event("task", "refactor auth"), session: nil), "On attaque : refactor auth")
+        let result = c.line(for: event("task", "refactor auth"), session: nil)
+        XCTAssertNotNil(result)
+        let valid = ["On it: refactor auth", "New mission — refactor auth",
+                     "Alright, let's go.", "Reading the brief: refactor auth"]
+        XCTAssertTrue(valid.contains(result!), "Unexpected task line: \(result!)")
     }
     func test_file_line() {
-        XCTAssertEqual(c.line(for: event("file", "Moment.swift"), session: nil), "Plongé dans Moment.swift")
+        let result = c.line(for: event("file", "Moment.swift"), session: nil)
+        XCTAssertNotNil(result)
+        let valid = ["Deep in Moment.swift", "I see Moment.swift",
+                     "Oh, Moment.swift…", "Opening Moment.swift"]
+        XCTAssertTrue(valid.contains(result!), "Unexpected file line: \(result!)")
     }
     func test_testing_line() {
-        XCTAssertEqual(c.line(for: event("testing", "swift"), session: nil), "TDD, j'aime ça")
+        let result = c.line(for: event("testing", "swift"), session: nil)
+        XCTAssertNotNil(result)
+        let valid = ["Love a good test run.", "Tests time?", "Red or green?", "Running the suite."]
+        XCTAssertTrue(valid.contains(result!), "Unexpected testing line: \(result!)")
     }
     func test_committing_line() {
-        XCTAssertEqual(c.line(for: event("committing", "git commit"), session: nil), "On commit ?")
+        let result = c.line(for: event("committing", "git commit"), session: nil)
+        XCTAssertNotNil(result)
+        let valid = ["Committing?", "Checkpoint.", "Good call.", "Git commit incoming."]
+        XCTAssertTrue(valid.contains(result!), "Unexpected committing line: \(result!)")
     }
     func test_deepwork_line() {
-        XCTAssertEqual(c.line(for: event("deepWork", "Nook"), session: nil), "Grosse session sur Nook")
+        let result = c.line(for: event("deepWork", "Nook"), session: nil)
+        XCTAssertNotNil(result)
+        let valid = ["Heavy session on Nook", "We're really in it.", "Long run on Nook.", "Nice progress."]
+        XCTAssertTrue(valid.contains(result!), "Unexpected deepWork line: \(result!)")
     }
     func test_unknown_kind_returns_nil() {
         XCTAssertNil(c.line(for: event("mystery", nil), session: nil))

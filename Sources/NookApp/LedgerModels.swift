@@ -22,6 +22,7 @@ struct SessionRecord: Codable, Equatable {
 
     // Subject signals (NPC voice) — decode-only mirror; the daemon owns dedup (firedKinds).
     var task: String?
+    var taskPromptCount: Int = 0
     var gitBranch: String?
     var filesTouched: [String] = []
     var editCount: Int = 0
@@ -30,10 +31,10 @@ struct SessionRecord: Codable, Equatable {
 
     var totalTokens: Int {
         // Mirror NookDaemon BitRate bond weights (Sonnet 4.6 relative pricing).
+        // cacheRead excluded: quadratic accumulation in subagent sessions inflates scores.
         let weighted = Double(inputTokens) * 1.0 +
             Double(outputTokens) * 5.0 +
-            Double(cacheCreationTokens) * 1.25 +
-            Double(cacheReadTokens) * 0.1
+            Double(cacheCreationTokens) * 1.25
         return Int(weighted.rounded())
     }
     var duration: TimeInterval { lastActivityAt.timeIntervalSince(startedAt) }
@@ -56,6 +57,7 @@ extension SessionRecord {
         cacheReadTokens = (try? c.decode(Int.self, forKey: .cacheReadTokens)) ?? 0
         totalBits = try c.decode(Double.self, forKey: .totalBits)
         task = try? c.decode(String.self, forKey: .task)
+        taskPromptCount = (try? c.decode(Int.self, forKey: .taskPromptCount)) ?? 0
         gitBranch = try? c.decode(String.self, forKey: .gitBranch)
         filesTouched = (try? c.decode([String].self, forKey: .filesTouched)) ?? []
         editCount = (try? c.decode(Int.self, forKey: .editCount)) ?? 0

@@ -37,7 +37,7 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 400,
             "text": ["format": ["type": "json_object"]],
-            "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'. Each cachedLines entry must be a single spoken sentence under 80 characters — short, specific, in-character. Reference the actual project or files when possible.",
+            "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'. Each cachedLines entry must be a single spoken sentence under 80 characters — short, specific, in-character, in English. Reference the actual project or files when possible.",
             "input": enrichPrompt(memory: sessionMemory, digest: digest, bond: bond, totalTokens: totalTokens, pastSessions: pastSessions)
         ])
 
@@ -82,7 +82,7 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 60,
             "text": ["format": ["type": "text"]],
-            "instructions": "You are an NPC in a pixel village game. Write ONE short spoken line (max 75 chars). Be specific to the player's current work. No quotes, no explanation, just the line.",
+            "instructions": "You are an NPC in a pixel village game. Write ONE short spoken line in English (max 75 chars). Be specific to the player's current work. No quotes, no explanation, just the line.",
             "input": livePrompt(digest: digest, bond: bond, totalTokens: totalTokens)
         ])
 

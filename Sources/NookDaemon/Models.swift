@@ -1,14 +1,16 @@
 import Foundation
 
 /// Bit rates derived from Sonnet 4.6 relative pricing, anchored at 5 bits / 1k input tokens.
-///   cache read $0.30 · input $3.00 · cache write $3.75 · output $15.00 (per 1M tokens)
-/// → weights, normalized on input: 0.1 / 1.0 / 1.25 / 5.0
+///   input $3.00 · cache write $3.75 · output $15.00 (per 1M tokens)
+/// → weights, normalized on input: 1.0 / 1.25 / 5.0
+/// cache read is excluded: in subagent sessions it re-reads the full context on every call,
+/// causing quadratic accumulation that inflates NPC scores beyond what feels meaningful.
 enum BitRate {
     static let bitsPerKInput = 5.0
     static let inputWeight = 1.0
     static let outputWeight = 5.0
     static let cacheWriteWeight = 1.25
-    static let cacheReadWeight = 0.1
+    static let cacheReadWeight = 0.0
 
     static func bits(input: Int, output: Int, cacheCreation: Int, cacheRead: Int) -> Double {
         weightedTokens(input: input, output: output, cacheCreation: cacheCreation, cacheRead: cacheRead)
@@ -135,6 +137,7 @@ struct SessionRecord: Codable, Equatable {
 
     // Subject signals (NPC voice)
     var task: String?
+    var taskPromptCount: Int = 0
     var gitBranch: String?
     var filesTouched: [String] = []
     var editCount: Int = 0
@@ -166,6 +169,7 @@ extension SessionRecord {
         cacheReadTokens = (try? c.decode(Int.self, forKey: .cacheReadTokens)) ?? 0
         totalBits = try c.decode(Double.self, forKey: .totalBits)
         task = try? c.decode(String.self, forKey: .task)
+        taskPromptCount = (try? c.decode(Int.self, forKey: .taskPromptCount)) ?? 0
         gitBranch = try? c.decode(String.self, forKey: .gitBranch)
         filesTouched = (try? c.decode([String].self, forKey: .filesTouched)) ?? []
         editCount = (try? c.decode(Int.self, forKey: .editCount)) ?? 0

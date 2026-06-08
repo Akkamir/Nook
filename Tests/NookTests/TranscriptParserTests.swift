@@ -61,9 +61,9 @@ final class TranscriptParserTests: XCTestCase {
                                cacheCreationTokens: parsed.cacheCreationTokens,
                                cacheReadTokens: parsed.cacheReadTokens,
                                timestamp: parsed.timestamp)
-        // weighted tokens = 1000*1.0 + 0*5.0 + 1000*1.25 + 10000*0.1 = 3250
-        // bits = 3250/1000 * 5 = 16.25
-        XCTAssertEqual(event.bits, 16.25, accuracy: 0.001)
+        // weighted tokens = 1000*1.0 + 0*5.0 + 1000*1.25 + 10000*0.0 = 2250
+        // bits = 2250/1000 * 5 = 11.25 (cacheRead excluded — quadratic accumulation in subagent sessions)
+        XCTAssertEqual(event.bits, 11.25, accuracy: 0.001)
     }
 
     func test_bond_tokens_match_sonnet_weights() throws {
@@ -76,8 +76,8 @@ final class TranscriptParserTests: XCTestCase {
                                cacheCreationTokens: parsed.cacheCreationTokens,
                                cacheReadTokens: parsed.cacheReadTokens,
                                timestamp: parsed.timestamp)
-        // weighted = 1000*1 + 1000*5 + 1000*1.25 + 10000*0.1 = 8250
-        XCTAssertEqual(event.bondTokens, 8_250)
+        // weighted = 1000*1 + 1000*5 + 1000*1.25 + 10000*0.0 = 7250 (cacheRead excluded)
+        XCTAssertEqual(event.bondTokens, 7_250)
     }
 
     func test_parse_line_without_cache_fields_defaults_to_zero() throws {

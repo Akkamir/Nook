@@ -18,7 +18,7 @@ final class NPCManager {
 
     private let speechComposer: SpeechLineComposing = HeuristicLineComposer()
     private var lastSpokeAt: [String: Date] = [:]
-    private let speechCooldown: TimeInterval = 50
+    private let speechCooldown: TimeInterval = 20
 
     struct TileBounds {
         let minX, minY, maxX, maxY: Int
@@ -237,15 +237,16 @@ final class NPCManager {
 
     func handleActivityEvents(_ events: [SessionActivityEvent]) {
         let now = Date()
-        // Keep only the most recent event per agent with a live sprite.
-        var latestByAgent: [String: SessionActivityEvent] = [:]
+        // Collect all valid events per agent; pick one at random so fast batches
+        // don't always show the last event kind (e.g. always "deepWork").
+        var byAgent: [String: [SessionActivityEvent]] = [:]
         for event in events {
             guard let agent = event.agentName, sprites[agent] != nil else { continue }
-            if let existing = latestByAgent[agent], existing.seq > event.seq { continue }
-            latestByAgent[agent] = event
+            byAgent[agent, default: []].append(event)
         }
-        for (agent, event) in latestByAgent {
+        for (agent, agentEvents) in byAgent {
             if let last = lastSpokeAt[agent], now.timeIntervalSince(last) < speechCooldown { continue }
+            guard let event = agentEvents.randomElement() else { continue }
             // Prefer an LLM-enriched cached line for this session when available;
             // fall back to the deterministic heuristic composer.
             let line = enrichedLine(for: event)
