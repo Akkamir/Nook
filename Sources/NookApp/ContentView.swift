@@ -31,8 +31,8 @@ struct ContentView: View {
             // HUD overlay — SwiftUI is more reliable than SKCameraNode children on macOS
             HStack(spacing: 10) {
                 HStack(spacing: 7) {
-                    PixelIcon(kind: .bit, size: 14)
-                    Text("\(engine.totalAvailableBits, specifier: "%.1f") Agent · \(engine.villageAvailableBits, specifier: "%.1f") Village")
+                    PixelIcon(kind: .villageBit, size: 14)
+                    Text("\(engine.villageAvailableBits, specifier: "%.1f") Bits")
                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
                         .foregroundStyle(.white)
                 }
