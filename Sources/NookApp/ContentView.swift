@@ -341,21 +341,15 @@ private struct UpgradeShopPanel: View {
                         let bdMult = UpgradeEconomy.bondDividendMultiplier(level: state.bondDividendLevel, bond: agent.bond)
                         let bdNextMult = UpgradeEconomy.bondDividendMultiplier(level: state.bondDividendLevel + 1, bond: agent.bond)
                         let bdAvailable = EconomyEngine.canBuy(.bondDividend, currentLevel: state.bondDividendLevel, bond: agent.bond)
-                        let bdSubtitle: String = {
-                            if !bdAvailable {
-                                return bondDividendGateText(level: state.bondDividendLevel) ?? "Max level"
-                            }
-                            return "Bond \(agent.bond) · scales with bond"
-                        }()
                         upgradeSection(
                             title: "Bond dividend",
-                            subtitle: bdSubtitle,
+                            subtitle: "Bond \(agent.bond) · scales with bond",
                             currentValue: state.bondDividendLevel == 0 ? "Locked" : formatMultiplier(bdMult),
                             nextValue: bdCost < .infinity ? formatMultiplier(bdNextMult) : nil,
                             cost: bdCost,
                             balance: balance,
                             kind: .bondDividend,
-                            isAvailable: bdAvailable,
+                            gateText: bdAvailable ? nil : bondDividendGateText(level: state.bondDividendLevel),
                             buyLabel: state.bondDividendLevel == 0 ? "Unlock" : "Upgrade"
                         ) { onPurchaseBondDividend(id) }
 
@@ -374,7 +368,7 @@ private struct UpgradeShopPanel: View {
                             cost: tCost,
                             balance: balance,
                             kind: .trickle,
-                            isAvailable: canBuyTrickle,
+                            gateText: canBuyTrickle ? nil : trickleGateText(bond: agent.bond),
                             buyLabel: "+1 trickle"
                         ) { onPurchaseTrickle(id) }
                     }
@@ -401,13 +395,13 @@ private struct UpgradeShopPanel: View {
         cost: Double,
         balance: Double,
         kind: UpgradeKind,
-        isAvailable: Bool = true,
+        gateText: String? = nil,
         buyLabel: String,
         onBuy: @escaping () -> Void
     ) -> some View {
         let isMaxed = cost == .infinity
         let isFlashing = purchaseFlash == kind
-        let canBuy = isAvailable && !isMaxed && balance >= cost && !isFlashing
+        let canBuy = gateText == nil && !isMaxed && balance >= cost && !isFlashing
 
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 0) {
@@ -434,8 +428,8 @@ private struct UpgradeShopPanel: View {
                 Spacer()
             }
 
-            if isMaxed && !isAvailable {
-                Text("Bond required")
+            if let gate = gateText {
+                Text(gate)
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.38))
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -551,5 +545,14 @@ private struct UpgradeShopPanel: View {
         let next = level + 1
         guard next < EconomyEngine.bondDividendGates.count else { return nil }
         return "Requires Bond \(EconomyEngine.bondDividendGates[next])"
+    }
+
+    private func trickleGateText(bond: Int) -> String? {
+        switch bond {
+        case ..<3: return "Requires Bond 3"
+        case ..<6: return "Requires Bond 6"
+        case ..<10: return "Requires Bond 10"
+        default: return nil
+        }
     }
 }
