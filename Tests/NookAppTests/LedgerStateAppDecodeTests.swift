@@ -40,4 +40,14 @@ final class LedgerStateAppDecodeTests: XCTestCase {
         let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
         XCTAssertEqual(state.agents["Radion"]?.bond, 20)
     }
+
+    func test_agent_zero_total_bits_decodes_as_zero() throws {
+        let json = """
+        {"totalBits":100,"pendingBits":0,"agents":{"Radion":{"name":"Radion","totalTokens":7000,"bond":1,"totalBits":0}},
+         "lastUpdated":"2026-06-01T00:00:00Z","recentEvents":[],"eventSeq":0}
+        """
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
+        XCTAssertEqual(state.agents["Radion"]?.totalBits, 0)
+    }
 }

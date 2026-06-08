@@ -46,6 +46,31 @@ final class LedgerTests: XCTestCase {
         XCTAssertEqual(agent.bond, 5)
     }
 
+    func test_encode_uses_legacy_wire_keys_for_raw_bit_fields() throws {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let state = LedgerState(
+            totalBitsRaw: 30,
+            pendingBits: 30,
+            globalBitsRaw: 0,
+            agents: ["Radion": AgentRecord(name: "Radion", totalTokens: 6_000, bond: 1, totalBitsRaw: 30)],
+            lastUpdated: date("2026-06-01T10:00:00Z"),
+            recentEvents: [BitEvent(agentName: "Radion", rawBits: 30, seq: 1)],
+            eventSeq: 1
+        )
+
+        let data = try encoder.encode(state)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        XCTAssertNotNil(object["totalBits"])
+        XCTAssertNil(object["totalBitsRaw"])
+
+        let events = try XCTUnwrap(object["recentEvents"] as? [[String: Any]])
+        let event = try XCTUnwrap(events.first)
+        XCTAssertNotNil(event["bits"])
+        XCTAssertNil(event["rawBits"])
+    }
+
     func test_apply_event_global_pool_increases_bits() throws {
         let event = TokenEvent(
             sessionId: "t", projectPath: "/some/project", cwd: nil,

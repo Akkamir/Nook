@@ -1,7 +1,7 @@
 import XCTest
 @testable import NookDaemon
 
-final class UpgradeTests: XCTestCase {
+final class RawLedgerTests: XCTestCase {
     private var tempDir: URL!
     private var ledger: Ledger!
 
