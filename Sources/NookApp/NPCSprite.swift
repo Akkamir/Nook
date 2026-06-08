@@ -287,7 +287,7 @@ final class NPCSprite: SKNode {
 
         // Lines are kept short at the source; this is only a last-resort cap so a
         // rogue long line can't grow an unbounded bubble.
-        let display = text.count > 140 ? String(text.prefix(139)) + "…" : text
+        let display = text.count > 120 ? String(text.prefix(119)) + "…" : text
 
         let label = SKLabelNode(fontNamed: "Monaco")
         label.text = display
@@ -300,9 +300,13 @@ final class NPCSprite: SKNode {
         label.lineBreakMode = .byTruncatingTail
 
         let padding: CGFloat = 8
-        let textSize = label.frame.size
-        let bubbleW = min(max(textSize.width + padding * 2, 40), 216)
-        let bubbleH = textSize.height + padding * 2
+        // SKLabelNode.frame is unreliable before the node enters the scene tree.
+        // Estimate bubble dimensions from text length to avoid zero-size bubbles
+        // for LLM-generated multi-line messages.
+        let charsPerLine = 28   // Monaco 11pt in ~200pt width ≈ 28 chars/line
+        let estimatedLines = min(3, max(1, (display.count + charsPerLine - 1) / charsPerLine))
+        let bubbleW: CGFloat = estimatedLines > 1 ? 216 : min(max(CGFloat(display.count) * 6.6 + padding * 2, 40), 216)
+        let bubbleH = CGFloat(estimatedLines) * 16 + padding * 2
 
         let bubble = SKShapeNode(rectOf: CGSize(width: bubbleW, height: bubbleH), cornerRadius: 6)
         bubble.name = "speech"
@@ -310,7 +314,7 @@ final class NPCSprite: SKNode {
         bubble.strokeColor = NSColor(white: 0.2, alpha: 0.9)
         bubble.lineWidth = 1
         bubble.position = CGPoint(x: 0, y: Self.charH + 30)
-        bubble.zPosition = 40
+        bubble.zPosition = 90
         bubble.addChild(label)
 
         // Little tail.
