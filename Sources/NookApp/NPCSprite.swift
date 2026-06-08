@@ -224,6 +224,18 @@ final class NPCSprite: SKNode {
         }
     }
 
+    func showVillageGain(_ delta: Double) {
+        guard delta > 0 else { return }
+        let chunks = Self.bitShowerChunks(delta)
+        let stagger = 0.11
+        for (index, chunk) in chunks.enumerated() {
+            run(.sequence([
+                .wait(forDuration: 0.20 + Double(index) * stagger),
+                .run { [weak self] in self?.spawnFloatingVillageBits(chunk) }
+            ]))
+        }
+    }
+
     private func ringPulse() {
         let pulse = SKShapeNode(circleOfRadius: 24)
         pulse.strokeColor = NSColor(red: 0.38, green: 1.0, blue: 0.72, alpha: 0.9)
@@ -238,8 +250,31 @@ final class NPCSprite: SKNode {
     }
 
     private func spawnFloatingBits(_ amount: Double) {
+        spawnFloatingLabel(
+            amount: amount,
+            color: NSColor(red: 0.38, green: 1.0, blue: 0.72, alpha: 1),
+            spawnXRange: -14...14,
+            drift: CGVector(dx: 0, dy: 46)
+        )
+    }
+
+    private func spawnFloatingVillageBits(_ amount: Double) {
+        spawnFloatingLabel(
+            amount: amount,
+            color: NSColor(red: 0.32, green: 0.82, blue: 0.28, alpha: 1),
+            spawnXRange: 6...28,
+            drift: CGVector(dx: 6, dy: 42)
+        )
+    }
+
+    private func spawnFloatingLabel(
+        amount: Double,
+        color: NSColor,
+        spawnXRange: ClosedRange<CGFloat>,
+        drift: CGVector
+    ) {
         let root = SKNode()
-        root.position = CGPoint(x: CGFloat.random(in: -14...14), y: Self.charH - 8)
+        root.position = CGPoint(x: CGFloat.random(in: spawnXRange), y: Self.charH - 8)
         root.zPosition = 30
         root.setScale(0)
         addChild(root)
@@ -267,7 +302,7 @@ final class NPCSprite: SKNode {
         let label = SKLabelNode(fontNamed: "Monaco")
         label.text = text
         label.fontSize = fontSize
-        label.fontColor = NSColor(red: 0.38, green: 1.0, blue: 0.72, alpha: 1)
+        label.fontColor = color
         label.verticalAlignmentMode = .bottom
         label.horizontalAlignmentMode = .center
         label.zPosition = 1
@@ -276,7 +311,7 @@ final class NPCSprite: SKNode {
         root.run(.sequence([
             .group([.scale(to: 1.45, duration: 0.10)]),
             .scale(to: 1.0, duration: 0.08),
-            .group([.moveBy(x: 0, y: 46, duration: 0.9), .fadeOut(withDuration: 0.9)]),
+            .group([.moveBy(x: drift.dx, y: drift.dy, duration: 0.9), .fadeOut(withDuration: 0.9)]),
             .removeFromParent()
         ]))
     }

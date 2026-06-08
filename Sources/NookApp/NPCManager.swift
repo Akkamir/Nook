@@ -221,6 +221,7 @@ final class NPCManager {
         for (agentName, bits) in grouped {
             guard let sprite = sprites[agentName] else { continue }
             sprite.showBitsGain(bits)
+            sprite.showVillageGain(bits * EconomyEngine.villageBonusRate)
         }
     }
 
