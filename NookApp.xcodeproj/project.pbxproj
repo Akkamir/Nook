@@ -51,12 +51,14 @@
 		7DF91E42682B6C0FFEEA9DBE /* PC_FRONT_ON_3.png in Resources */ = {isa = PBXBuildFile; fileRef = 7396BC014E95ED9836FB848D /* PC_FRONT_ON_3.png */; };
 		80BEAC4BB9FB8ADD39320529 /* desk.png in Resources */ = {isa = PBXBuildFile; fileRef = 57FE6EF0BD8E8703B04122C2 /* desk.png */; };
 		844029AFE16ACAC5D6036617 /* fence.png in Resources */ = {isa = PBXBuildFile; fileRef = 86F2FA90E298286AF78B584D /* fence.png */; };
+		84A72E5C874781BD46CF18E5 /* VillageMapDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 063557123BFDF6AD303B38D3 /* VillageMapDataTests.swift */; };
 		84F3F47E06DCBD320E8E2524 /* char_girl_idle.png in Resources */ = {isa = PBXBuildFile; fileRef = DD4C61F89EEF2BF49288E9AB /* char_girl_idle.png */; };
 		88393C57613EE65872E07918 /* FogSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1652FDC596CE63B0635DC9DB /* FogSystem.swift */; };
 		896C008D3193175083FA6089 /* bush_large.png in Resources */ = {isa = PBXBuildFile; fileRef = 115E8D1B7237D862851B7074 /* bush_large.png */; };
 		89C467E6957F46E8274F5E63 /* NPCInspectorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D926F7793A8037D2ED36C5 /* NPCInspectorPanel.swift */; };
 		8A6B15CAFECF11C35E89AB12 /* TiledVillageLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969FFB67E0F2A25B80305CF0 /* TiledVillageLayer.swift */; };
 		8A7405584E29E43EC55F497B /* PixelAssetCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2169A14FA27B5341E04078 /* PixelAssetCatalog.swift */; };
+		8B24B551A8556764CBB6EBBE /* VillageMapData.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED65F9597C66B60CB29D70EC /* VillageMapData.swift */; };
 		8B7D47E5AF39CD26B77146A4 /* DeskLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF4FC43DDEC8F52E7FB75B81 /* DeskLayoutTests.swift */; };
 		8BFE28320E1CFB3A5BA92ECB /* NookApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72085E2B91EB795E3BD3BA2D /* NookApp.swift */; };
 		8E80928ED42618A2EFA86460 /* house_purple.png in Resources */ = {isa = PBXBuildFile; fileRef = 851348E68B741BB3D500AD02 /* house_purple.png */; };
@@ -120,6 +122,7 @@
 		053E331FF8EA56C017C547D1 /* LedgerStateAppDecodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerStateAppDecodeTests.swift; sourceTree = "<group>"; };
 		05AA11784DE252A1864D7AD9 /* NPCModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCModel.swift; sourceTree = "<group>"; };
 		0632114E8E40B2CA04E37E28 /* NPCSprite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCSprite.swift; sourceTree = "<group>"; };
+		063557123BFDF6AD303B38D3 /* VillageMapDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageMapDataTests.swift; sourceTree = "<group>"; };
 		074408FE5EA9C38FF638D953 /* MomentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentTests.swift; sourceTree = "<group>"; };
 		0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillagePersistence.swift; sourceTree = "<group>"; };
 		115E8D1B7237D862851B7074 /* bush_large.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bush_large.png; sourceTree = "<group>"; };
@@ -207,6 +210,7 @@
 		EABEF51855B0E13A491C8164 /* ground.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ground.png; sourceTree = "<group>"; };
 		EB96EFD3B490563544318773 /* DeskPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPolicy.swift; sourceTree = "<group>"; };
 		ED2C24E5F764012190299A94 /* NPCSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCSelection.swift; sourceTree = "<group>"; };
+		ED65F9597C66B60CB29D70EC /* VillageMapData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageMapData.swift; sourceTree = "<group>"; };
 		ED98C3737B8E7A1B0FF79415 /* NPCBehavior.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NPCBehavior.swift; sourceTree = "<group>"; };
 		EE5A1353BA48B62824498D5D /* flowerbed.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = flowerbed.png; sourceTree = "<group>"; };
 		EF4FC43DDEC8F52E7FB75B81 /* DeskLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskLayoutTests.swift; sourceTree = "<group>"; };
@@ -260,6 +264,7 @@
 				D414EDB95F88A904CB81B0B2 /* SessionDetectorTests.swift */,
 				5954D78FBC27D98B3A12F53E /* SpeechLineComposerTests.swift */,
 				A78CE38429E67297DD0E4256 /* UpgradeStateAppTests.swift */,
+				063557123BFDF6AD303B38D3 /* VillageMapDataTests.swift */,
 			);
 			name = NookAppTests;
 			path = Tests/NookAppTests;
@@ -353,6 +358,7 @@
 				364C1134DFA052195E1949E7 /* VillageDecorLayer.swift */,
 				7EF6720CB18A402B6991A645 /* VillageEngine.swift */,
 				57CB39EEF877552A0952566A /* VillageLayout.swift */,
+				ED65F9597C66B60CB29D70EC /* VillageMapData.swift */,
 				0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */,
 				B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */,
 			);
@@ -628,6 +634,7 @@
 				45E34D10576812F014FE8A0A /* SessionDetectorTests.swift in Sources */,
 				B6FC0F8C677450FB68EDD319 /* SpeechLineComposerTests.swift in Sources */,
 				24A53E3F936EF0A992760C20 /* UpgradeStateAppTests.swift in Sources */,
+				84A72E5C874781BD46CF18E5 /* VillageMapDataTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -677,6 +684,7 @@
 				A62BBCD6EB3701FD7E3E9C06 /* VillageDecorLayer.swift in Sources */,
 				25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */,
 				CE370E8C74F15F7C7E3C733C /* VillageLayout.swift in Sources */,
+				8B24B551A8556764CBB6EBBE /* VillageMapData.swift in Sources */,
 				A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */,
 				7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */,
 			);
