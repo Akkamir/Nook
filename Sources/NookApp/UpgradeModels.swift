@@ -211,6 +211,7 @@ enum EconomyEngine {
                 state.lastProcessedRawBits = ledgerAgent.totalBitsRaw
                 economy.villageWallet += effective * villageBonusRate
             } else if rawDelta < 0 {
+                print("[EconomyEngine] Negative rawDelta for \(agentName): \(rawDelta), resynchronizing checkpoint")
                 state.lastProcessedRawBits = ledgerAgent.totalBitsRaw
             }
             economy.agents[agentName] = state
@@ -221,6 +222,7 @@ enum EconomyEngine {
             economy.villageWallet += globalDelta
             economy.lastProcessedGlobalRawBits = ledger.globalBitsRaw
         } else if globalDelta < 0 {
+            print("[EconomyEngine] Negative globalDelta: \(globalDelta), resynchronizing checkpoint")
             economy.lastProcessedGlobalRawBits = ledger.globalBitsRaw
         }
 
@@ -309,7 +311,7 @@ enum UpgradeEconomy {
         EconomyEngine.trickleRate(count: count)
     }
 
-    static func availableBits(for agentName: String, ledger: LedgerState, upgrades: EconomyState) -> Double {
+    static func availableBits(for agentName: String, upgrades: EconomyState) -> Double {
         upgrades.agents[agentName]?.availableBits ?? 0
     }
 

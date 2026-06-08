@@ -187,7 +187,7 @@ final class VillageEngine {
             eventSeq: 0,
             sessions: sessions
         )
-        return UpgradeEconomy.availableBits(for: agentName, ledger: ledger, upgrades: upgrades)
+        return UpgradeEconomy.availableBits(for: agentName, upgrades: upgrades)
     }
 
     func bitMultiplier(for agentName: String) -> Double {

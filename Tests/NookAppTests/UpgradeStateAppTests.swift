@@ -148,6 +148,11 @@ final class UpgradeStateAppTests: XCTestCase {
         XCTAssertEqual(loaded.spentVillageBits, 5, accuracy: 0.001)
     }
 
+    func test_economy_store_load_returns_empty_when_file_missing() {
+        let store = EconomyStore(url: tempDir.appendingPathComponent("missing.json"))
+        XCTAssertEqual(store.load(), .empty)
+    }
+
     private func ledgerState(agentBits: Double, bond: Int, globalBits: Double) -> LedgerState {
         let agent = agentBits > 0
             ? ["Radion": agentRecord(name: "Radion", totalTokens: BondScale.thresholds.first { $0.level == bond }?.tokens ?? 0, totalBitsRaw: agentBits)]
