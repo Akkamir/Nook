@@ -45,9 +45,6 @@ struct GeneratedSessionMemory: Codable, Equatable {
         let bond = BondScale.level(for: session.totalTokens)
         let project = session.project
         var lines: [String] = []
-        if let task = session.task {
-            lines.append("We worked on: \(truncate(task, to: 60)).")
-        }
         if !session.filesTouched.isEmpty {
             let name = URL(fileURLWithPath: session.filesTouched[0]).lastPathComponent
             lines.append("I remember \(name).")
