@@ -202,6 +202,8 @@ enum EconomyEngine {
             economy = migratedState(from: economy, ledger: ledger)
         }
 
+        var didChange = false
+
         for (agentName, ledgerAgent) in ledger.agents {
             var state = economy.agents[agentName] ?? AgentEconomyState()
             let rawDelta = ledgerAgent.totalBitsRaw - state.lastProcessedRawBits
@@ -210,9 +212,11 @@ enum EconomyEngine {
                 state.wallet += effective
                 state.lastProcessedRawBits = ledgerAgent.totalBitsRaw
                 economy.villageWallet += effective * villageBonusRate
+                didChange = true
             } else if rawDelta < 0 {
                 print("[EconomyEngine] Negative rawDelta for \(agentName): \(rawDelta), resynchronizing checkpoint")
                 state.lastProcessedRawBits = ledgerAgent.totalBitsRaw
+                didChange = true
             }
             economy.agents[agentName] = state
         }
@@ -221,12 +225,16 @@ enum EconomyEngine {
         if globalDelta > 0 {
             economy.villageWallet += globalDelta
             economy.lastProcessedGlobalRawBits = ledger.globalBitsRaw
+            didChange = true
         } else if globalDelta < 0 {
             print("[EconomyEngine] Negative globalDelta: \(globalDelta), resynchronizing checkpoint")
             economy.lastProcessedGlobalRawBits = ledger.globalBitsRaw
+            didChange = true
         }
 
-        economy.lastUpdated = Date()
+        if didChange {
+            economy.lastUpdated = Date()
+        }
     }
 
     static func migratedState(from old: EconomyState, ledger: LedgerState) -> EconomyState {

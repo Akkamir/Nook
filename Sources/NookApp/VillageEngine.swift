@@ -278,12 +278,7 @@ final class VillageEngine {
 
         guard changed else { return }
         upgrades = updatedUpgrades
-        let url = economyStore.url
-        let stateToSave = updatedUpgrades
-        Task.detached(priority: .utility) {
-            let store = EconomyStore(url: url)
-            try? store.save(stateToSave)
-        }
+        backgroundSaveUpgrades(updatedUpgrades)
     }
 
     private func reload() {

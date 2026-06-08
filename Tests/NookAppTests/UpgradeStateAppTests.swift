@@ -153,6 +153,7 @@ final class UpgradeStateAppTests: XCTestCase {
         XCTAssertEqual(store.load(), .empty)
     }
 
+    // Tests the engine layer directly; VillageEngine wiring is covered by the app build smoke.
     func test_cumulative_delta_credits_even_when_recent_events_are_empty() throws {
         var economy = EconomyState.empty
         var ledger = ledgerState(agentBits: 100, bond: 1, globalBits: 0)
