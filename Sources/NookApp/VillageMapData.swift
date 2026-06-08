@@ -56,7 +56,8 @@ struct VillageMapData {
 
 private extension NSColor {
     convenience init?(hexString: String) {
-        let hex = hexString.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        var hex = hexString.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        if hex.count == 8 { hex = String(hex.dropFirst(2)) }  // strip alpha bytes (#AARRGGBB → RRGGBB)
         guard hex.count == 6, let value = UInt64(hex, radix: 16) else { return nil }
         self.init(
             red:   CGFloat((value >> 16) & 0xFF) / 255,

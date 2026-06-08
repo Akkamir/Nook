@@ -70,13 +70,28 @@ final class VillageMapDataTests: XCTestCase {
     func test_backdropColor_fallback_when_no_backgroundcolor() {
         let map = makeMap()
         let data = VillageMapData.build(from: map, displayTileSize: 32)
-        var r: CGFloat = -1
-        data.backdropColor.getRed(&r, green: nil, blue: nil, alpha: nil)
-        XCTAssertGreaterThanOrEqual(r, 0)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+        data.backdropColor.usingColorSpace(.deviceRGB)!
+            .getRed(&r, green: &g, blue: &b, alpha: nil)
+        XCTAssertEqual(r, 0.22, accuracy: 0.005)
+        XCTAssertEqual(g, 0.24, accuracy: 0.005)
+        XCTAssertEqual(b, 0.22, accuracy: 0.005)
     }
 
     func test_backdropColor_parsed_from_hex_string() {
         let map = makeMap(backgroundcolor: "#ff8040")
+        let data = VillageMapData.build(from: map, displayTileSize: 32)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+        data.backdropColor.usingColorSpace(.deviceRGB)!
+            .getRed(&r, green: &g, blue: &b, alpha: nil)
+        XCTAssertEqual(r, CGFloat(0xFF) / 255, accuracy: 0.005)
+        XCTAssertEqual(g, CGFloat(0x80) / 255, accuracy: 0.005)
+        XCTAssertEqual(b, CGFloat(0x40) / 255, accuracy: 0.005)
+    }
+
+    func test_backdropColor_parsed_from_8digit_hex_string() {
+        // Tiled emits #AARRGGBB; the AA prefix should be stripped
+        let map = makeMap(backgroundcolor: "#ffff8040")
         let data = VillageMapData.build(from: map, displayTileSize: 32)
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
         data.backdropColor.usingColorSpace(.deviceRGB)!
