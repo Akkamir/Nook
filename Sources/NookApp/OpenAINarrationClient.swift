@@ -117,6 +117,30 @@ struct OpenAINarrationClient {
         return Self.sanitizeSpokenLine(text.trimmingCharacters(in: .whitespacesAndNewlines), maxLength: 70)
     }
 
+    // Reacts to the last assistant response after Claude finishes (triggered on Stop).
+    @MainActor
+    func responseReaction(assistantSnippet: String, bond: Int, totalTokens: Int, style: ReactionStyle = .random()) async throws -> String {
+        guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
+
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "max_output_tokens": 40,
+            "text": ["format": ["type": "text"]],
+            "instructions": "You are a coding NPC in a pixel village game. React to what your AI assistant just replied. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(style.tone)",
+            "input": "Bond \(bond)/10. AI assistant just replied: \"\(String(assistantSnippet.prefix(300)))\""
+        ])
+
+        let (data, response) = try await session.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw ClientError.invalidResponse }
+        guard let text = Self.outputText(from: data) else { throw ClientError.invalidResponse }
+
+        return Self.sanitizeSpokenLine(text.trimmingCharacters(in: .whitespacesAndNewlines), maxLength: 70)
+    }
+
     // Generates one short spoken line reacting to what the user is doing right now.
     // Used for live display during active sessions, independent of stored cachedLines.
     @MainActor

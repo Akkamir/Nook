@@ -32,6 +32,7 @@ final class VillageEngine {
     private var trickleInitialized = false
     private var lastLiveCommentAt: [String: Date] = [:]
     private var lastPromptReactionAt: [String: Date] = [:]
+    private var lastResponseReactionAt: [String: Date] = [:]
     private var lastReactedMessage: [String: String] = [:]   // agentName → message we last reacted to
     var onTrickleGain: ((String, Double) -> Void)?
     var onLiveComment: ((String, String) -> Void)?
@@ -94,6 +95,9 @@ final class VillageEngine {
                 }
                 if event.isPromptStart {
                     await self.handlePromptStart(event)
+                }
+                if event.isClaudeResponse {
+                    await self.handleClaudeResponse(event)
                 }
             }
         }
@@ -406,6 +410,75 @@ final class VillageEngine {
                   !text.hasPrefix("<function_calls>")
             else { continue }
             return String(text.prefix(300))
+        }
+        return nil
+    }
+
+    // Fires after Claude finishes its response (Stop hook).
+    // Extracts the last assistant text and reacts to what Claude just said.
+    private func handleClaudeResponse(_ event: ClaudeHookEvent) async {
+        guard let sessionId = event.sessionId,
+              let transcriptPath = event.transcriptPath,
+              let session = sessions[sessionId],
+              let agentName = session.agentName
+        else { return }
+
+        guard OpenAIAPIKeyStore.load() != nil else { return }
+
+        let now = Date()
+        // Per-NPC throttle: at most once per 45s.
+        guard lastResponseReactionAt[agentName].map({ now.timeIntervalSince($0) > 45 }) ?? true else { return }
+        // liveComment fires on the same Stop event (inside updateMemoryFromHook, which runs first).
+        // If it fired within the last 15s we skip to avoid two bubbles on the same response.
+        guard lastLiveCommentAt[agentName].map({ now.timeIntervalSince($0) > 15 }) ?? true else { return }
+
+        let snippet = await Task.detached(priority: .userInitiated) {
+            Self.extractLastAssistantMessage(from: transcriptPath)
+        }.value
+        guard let snippet else { return }
+
+        lastResponseReactionAt[agentName] = now
+        lastLiveCommentAt[agentName] = now  // claim the shared "NPC just spoke" slot
+
+        let bond = BondScale.level(for: session.totalTokens)
+        let totalTokens = session.totalTokens
+        do {
+            let line = try await narrationClient.responseReaction(
+                assistantSnippet: snippet, bond: bond, totalTokens: totalTokens
+            )
+            guard !line.isEmpty else { return }
+            onLiveComment?(agentName, line)
+        } catch {
+            print("[Nook] responseReaction error for \(agentName): \(error)")
+        }
+    }
+
+    // Scans the transcript from the end to find the last assistant text message.
+    // Skips tool_use content blocks, returns only text-bearing assistant turns.
+    nonisolated private static func extractLastAssistantMessage(from transcriptPath: String) -> String? {
+        guard let content = try? String(contentsOfFile: transcriptPath, encoding: .utf8) else { return nil }
+        for line in content.components(separatedBy: "\n").reversed() {
+            guard !line.isEmpty,
+                  let data = line.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let message = obj["message"] as? [String: Any],
+                  message["role"] as? String == "assistant"
+            else { continue }
+
+            let text: String
+            if let s = message["content"] as? String {
+                text = s
+            } else if let blocks = message["content"] as? [[String: Any]] {
+                text = blocks
+                    .filter { ($0["type"] as? String) == "text" }
+                    .compactMap { $0["text"] as? String }
+                    .joined(separator: " ")
+            } else {
+                continue
+            }
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            return String(trimmed.prefix(300))
         }
         return nil
     }
