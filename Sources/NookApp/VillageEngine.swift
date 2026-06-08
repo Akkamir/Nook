@@ -31,6 +31,8 @@ final class VillageEngine {
     private var trickleTimer: DispatchSourceTimer?
     private var trickleInitialized = false
     private var lastLiveCommentAt: [String: Date] = [:]
+    private var lastPromptReactionAt: [String: Date] = [:]
+    private var lastReactedMessage: [String: String] = [:]   // agentName → message we last reacted to
     var onTrickleGain: ((String, Double) -> Void)?
     var onLiveComment: ((String, String) -> Void)?
     private let sessionDetector = SessionDetector()
@@ -87,7 +89,12 @@ final class VillageEngine {
                 if changed {
                     await self.refreshActiveSessionCounts()
                 }
-                await self.updateMemoryFromHook(event)
+                if event.refreshesActivity {
+                    await self.updateMemoryFromHook(event)
+                }
+                if event.isPromptStart {
+                    await self.handlePromptStart(event)
+                }
             }
         }
 
@@ -340,6 +347,67 @@ final class VillageEngine {
             newActivityEvents += freshActivity
             lastSeenActivitySeq = freshActivity.map(\.seq).max() ?? lastSeenActivitySeq
         }
+    }
+
+    // Fires on the first tool use of a new user turn (PreToolUse hook).
+    // Reads the user's latest message from the transcript and generates a
+    // short NPC reaction while Claude is still processing — feels almost live.
+    private func handlePromptStart(_ event: ClaudeHookEvent) async {
+        guard let sessionId = event.sessionId,
+              let transcriptPath = event.transcriptPath,
+              let session = sessions[sessionId],
+              let agentName = session.agentName
+        else { return }
+
+        guard OpenAIAPIKeyStore.load() != nil else { return }
+
+        // Per-NPC throttle: at most once per 30s.
+        let now = Date()
+        guard lastPromptReactionAt[agentName].map({ now.timeIntervalSince($0) > 30 }) ?? true else { return }
+
+        // Read last user message off main actor (synchronous file I/O).
+        let userMessage = await Task.detached(priority: .userInitiated) {
+            Self.extractLastUserMessage(from: transcriptPath)
+        }.value
+        guard let userMessage else { return }
+
+        // Skip if we already reacted to this exact message (same turn, multiple tool uses).
+        guard lastReactedMessage[agentName] != userMessage else { return }
+
+        lastReactedMessage[agentName] = userMessage
+        lastPromptReactionAt[agentName] = now
+
+        let bond = BondScale.level(for: session.totalTokens)
+        let totalTokens = session.totalTokens
+        do {
+            let line = try await narrationClient.promptReaction(
+                userMessage: userMessage, bond: bond, totalTokens: totalTokens
+            )
+            guard !line.isEmpty else { return }
+            onLiveComment?(agentName, line)
+        } catch {
+            print("[Nook] promptReaction error for \(agentName): \(error)")
+        }
+    }
+
+    // Scans the transcript from the end to find the last plain-text user message.
+    // Skips tool results and session-continuation summaries.
+    nonisolated private static func extractLastUserMessage(from transcriptPath: String) -> String? {
+        guard let content = try? String(contentsOfFile: transcriptPath, encoding: .utf8) else { return nil }
+        for line in content.components(separatedBy: "\n").reversed() {
+            guard !line.isEmpty,
+                  let data = line.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let message = obj["message"] as? [String: Any],
+                  message["role"] as? String == "user",
+                  let text = message["content"] as? String,
+                  !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  !text.hasPrefix("This session is being continued"),
+                  !text.hasPrefix("<function_calls>")
+            else { continue }
+            return String(text.prefix(300))
+        }
+        return nil
     }
 
     private func updateMemoryFromHook(_ event: ClaudeHookEvent) async {
