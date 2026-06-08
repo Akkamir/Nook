@@ -92,7 +92,9 @@ final class Ledger {
         if let branch = entry.gitBranch { session.gitBranch = branch }
 
         // Task: emit on every 5th distinct prompt (not just the first).
-        if let text = entry.userText {
+        // Skip system-injected XML messages (e.g. <local-command-caveat>) — these are
+        // Claude-internal context blocks injected as user-role turns, not real prompts.
+        if let text = entry.userText, !text.hasPrefix("<") {
             let snippet = Self.truncate(text, to: 120)
             if session.task == nil {
                 session.task = snippet

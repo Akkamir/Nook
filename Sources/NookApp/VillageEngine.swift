@@ -407,7 +407,7 @@ final class VillageEngine {
                   let text = message["content"] as? String,
                   !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                   !text.hasPrefix("This session is being continued"),
-                  !text.hasPrefix("<function_calls>")
+                  !text.hasPrefix("<")
             else { continue }
             return String(text.prefix(300))
         }
