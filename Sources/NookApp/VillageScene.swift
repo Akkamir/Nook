@@ -196,11 +196,11 @@ final class VillageScene: SKScene {
             refreshSelection()
             lastAgentCount = engine.agents.count
         }
-        if let engine, engine.totalBits != lastTotalBits {
-            fogSystem?.update(totalBits: engine.totalBits)
+        if let engine, engine.totalBitsRaw != lastTotalBits {
+            fogSystem?.update(totalBits: engine.totalBitsRaw)
             npcManager?.sync()
             refreshSelection()
-            lastTotalBits = engine.totalBits
+            lastTotalBits = engine.totalBitsRaw
         }
         if let engine, engine.activeSessions != lastActiveSessions {
             npcManager?.syncActiveStates(engine.activeSessions)
@@ -213,7 +213,7 @@ final class VillageScene: SKScene {
             lastActiveSessionCounts = engine.activeSessionCounts
         }
         if let engine, engine.upgrades != lastUpgrades {
-            // A purchase changes available bits / multiplier without moving totalBits.
+            // A purchase changes available bits / multiplier without moving totalBitsRaw.
             npcManager?.syncVisualStates()
             refreshSelection()
             lastUpgrades = engine.upgrades

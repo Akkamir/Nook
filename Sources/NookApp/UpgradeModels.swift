@@ -128,7 +128,7 @@ enum UpgradeEconomy {
         let spent = state?.spentBits ?? 0
         let trickle = state?.trickleBitsAccumulated ?? 0
         let bonus = state?.bonusAccumulated ?? 0
-        return max(0, agent.totalBits + bonus + trickle - spent)
+        return max(0, agent.totalBitsRaw + bonus + trickle - spent)
     }
 
 

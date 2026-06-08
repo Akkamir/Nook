@@ -18,7 +18,7 @@ struct NPCVisualState: Equatable {
     let name: String
     let bond: Int
     let totalTokens: Int
-    let totalBits: Double
+    let totalBitsRaw: Double
     let availableBits: Double
     let bitMultiplier: Double
     let activity: NPCActivityKind
@@ -59,8 +59,8 @@ struct NPCVisualState: Equatable {
             name: model.name,
             bond: model.bond,
             totalTokens: model.totalTokens,
-            totalBits: model.totalBits,
-            availableBits: availableBits ?? model.totalBits,
+            totalBitsRaw: model.totalBitsRaw,
+            availableBits: availableBits ?? model.totalBitsRaw,
             bitMultiplier: bitMultiplier,
             activity: activity,
             trait: NPCVisualState.trait(for: model),

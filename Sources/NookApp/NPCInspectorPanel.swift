@@ -53,7 +53,7 @@ struct NPCInspectorPanel: View {
     }
 
     private var heroCard: some View {
-        let spent = selection.totalBits - selection.availableBits
+        let spent = selection.totalBitsRaw - selection.availableBits
         return VStack(alignment: .leading, spacing: 12) {
             // Status
             HStack(spacing: 6) {

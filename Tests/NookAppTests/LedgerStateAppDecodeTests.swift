@@ -48,7 +48,7 @@ final class LedgerStateAppDecodeTests: XCTestCase {
         """
         let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
         let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
-        XCTAssertEqual(state.agents["Radion"]?.totalBits, 0)
+        XCTAssertEqual(state.agents["Radion"]?.totalBitsRaw, 0)
     }
 
     func test_global_bits_raw_survives_decode_and_encode() throws {
@@ -58,6 +58,7 @@ final class LedgerStateAppDecodeTests: XCTestCase {
         """
         let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
         let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
+        XCTAssertEqual(state.totalBitsRaw, 100)
         XCTAssertEqual(state.globalBitsRaw, 30)
 
         let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
@@ -66,13 +67,25 @@ final class LedgerStateAppDecodeTests: XCTestCase {
         XCTAssertEqual(object["globalBitsRaw"] as? Double, 30)
     }
 
-    func test_legacy_ledger_without_global_bits_derives_global_bits_raw() throws {
+    func test_decodes_raw_bits_and_derives_global_bits_raw_when_absent() throws {
         let json = """
         {"totalBits":100,"pendingBits":0,"agents":{"Radion":{"name":"Radion","totalTokens":7000,"bond":1,"totalBits":70}},
          "lastUpdated":"2026-06-01T00:00:00Z","recentEvents":[],"eventSeq":0}
         """
         let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
         let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
+        XCTAssertEqual(state.totalBitsRaw, 100)
         XCTAssertEqual(state.globalBitsRaw, 30)
+        XCTAssertEqual(state.agents["Radion"]?.totalBitsRaw, 70)
+    }
+
+    func test_recent_bit_event_decodes_bits_into_raw_bits() throws {
+        let json = """
+        {"totalBits":100,"pendingBits":0,"agents":{},"lastUpdated":"2026-06-01T00:00:00Z",
+         "recentEvents":[{"agentName":"Radion","bits":12.5,"seq":7}],"eventSeq":7}
+        """
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
+        XCTAssertEqual(state.recentEvents.first?.rawBits, 12.5)
     }
 }

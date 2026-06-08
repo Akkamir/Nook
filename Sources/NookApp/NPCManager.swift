@@ -53,7 +53,7 @@ final class NPCManager {
                 name: record.name,
                 bond: record.bond,
                 totalTokens: record.totalTokens,
-                totalBits: record.totalBits,
+                totalBitsRaw: record.totalBitsRaw,
                 tileX: tileX,
                 tileY: tileY
             )
@@ -93,14 +93,14 @@ final class NPCManager {
         // 2. Updates
         for id in spriteIDs.intersection(agentIDs) {
             guard let record = engine.agents[id], let existing = models[id] else { continue }
-            if record.bond != existing.bond || record.name != existing.name || record.totalBits != existing.totalBits {
+            if record.bond != existing.bond || record.name != existing.name || record.totalBitsRaw != existing.totalBitsRaw {
                 let currentTile = behaviors[id]?.currentTile() ?? TilePosition(tileX: existing.tileX, tileY: existing.tileY)
                 let updated = NPCModel(
                     id: id,
                     name: record.name,
                     bond: record.bond,
                     totalTokens: record.totalTokens,
-                    totalBits: record.totalBits,
+                    totalBitsRaw: record.totalBitsRaw,
                     tileX: currentTile.tileX,
                     tileY: currentTile.tileY
                 )
@@ -216,7 +216,7 @@ final class NPCManager {
         for event in events {
             let key = event.agentName ?? "__global__"
             let mult = engine.effectiveMultiplier(for: key)
-            grouped[key, default: 0] += event.bits * mult
+            grouped[key, default: 0] += event.rawBits * mult
         }
         for (agentName, bits) in grouped {
             guard let sprite = sprites[agentName] else { continue }
@@ -294,7 +294,7 @@ final class NPCManager {
             name: model.name,
             bond: model.bond,
             totalTokens: model.totalTokens,
-            totalBits: model.totalBits,
+            totalBitsRaw: model.totalBitsRaw,
             availableBits: engine.availableBits(for: id),
             bitMultiplier: engine.bitMultiplier(for: id),
             activeSessionCount: visualState.sessionCount,

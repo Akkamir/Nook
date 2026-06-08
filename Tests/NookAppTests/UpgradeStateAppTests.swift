@@ -17,7 +17,7 @@ final class UpgradeStateAppTests: XCTestCase {
 
     func test_available_bits_subtracts_spent_from_cumulative_agent_bits() throws {
         let ledger = LedgerState(
-            totalBits: 120, pendingBits: 0,
+            totalBitsRaw: 120, pendingBits: 0,
             agents: ["Radion": agent(name: "Radion", totalBits: 120)],
             lastUpdated: Date(), recentEvents: [], eventSeq: 0
         )
@@ -32,7 +32,7 @@ final class UpgradeStateAppTests: XCTestCase {
 
     func test_economy_apply_accepted_and_deducts_bits() throws {
         let ledger = LedgerState(
-            totalBits: 120, pendingBits: 0,
+            totalBitsRaw: 120, pendingBits: 0,
             agents: ["Radion": agent(name: "Radion", totalBits: 120)],
             lastUpdated: Date(), recentEvents: [], eventSeq: 0
         )
@@ -48,7 +48,7 @@ final class UpgradeStateAppTests: XCTestCase {
 
     func test_economy_apply_rejected_when_insufficient_bits() throws {
         let ledger = LedgerState(
-            totalBits: 49, pendingBits: 0,
+            totalBitsRaw: 49, pendingBits: 0,
             agents: ["Radion": agent(name: "Radion", totalBits: 49)],
             lastUpdated: Date(), recentEvents: [], eventSeq: 0
         )

@@ -4,7 +4,7 @@ import Observation
 @MainActor
 @Observable
 final class VillageEngine {
-    private(set) var totalBits: Double = 0
+    private(set) var totalBitsRaw: Double = 0
     private(set) var pendingBits: Double = 0
     private(set) var agents: [String: AgentRecord] = [:]
     private(set) var sessions: [String: SessionRecord] = [:]
@@ -160,7 +160,7 @@ final class VillageEngine {
             let spent = state?.spentBits ?? 0
             let trickle = state?.trickleBitsAccumulated ?? 0
             let bonus = state?.bonusAccumulated ?? 0
-            return sum + max(0, pair.value.totalBits + bonus + trickle - spent)
+            return sum + max(0, pair.value.totalBitsRaw + bonus + trickle - spent)
         }
     }
 
@@ -172,9 +172,9 @@ final class VillageEngine {
         )
     }
 
-    // Runs every launch: ensures bonusAccumulated ≥ totalBits × (mult − 1).
+    // Runs every launch: ensures bonusAccumulated >= totalBitsRaw * (mult - 1).
     // Guards against migration gaps where bonusAccumulated was seeded with stale
-    // totalBits, which would leave agents with negative available bits.
+    // raw totals, which would leave agents with negative available bits.
     private func refreshBonusFloor() {
         var updated = upgrades
         var changed = false
@@ -186,7 +186,7 @@ final class VillageEngine {
                 bdLevel: state.bondDividendLevel,
                 bond: agent.bond
             )
-            let floor = agent.totalBits * (mult - 1.0)
+            let floor = agent.totalBitsRaw * (mult - 1.0)
             guard state.bonusAccumulated < floor else { continue }
             state.bonusAccumulated = floor
             updated.agents[agentName] = state
@@ -210,7 +210,7 @@ final class VillageEngine {
                 bdLevel: state.bondDividendLevel,
                 bond: agent.bond
             )
-            let bonus = event.bits * (mult - 1.0)
+            let bonus = event.rawBits * (mult - 1.0)
             guard bonus > 0 else { continue }
             state.bonusAccumulated += bonus
             updated.agents[agentName] = state
@@ -231,7 +231,7 @@ final class VillageEngine {
 
     func availableBits(for agentName: String) -> Double {
         let ledger = LedgerState(
-            totalBits: totalBits,
+            totalBitsRaw: totalBitsRaw,
             pendingBits: pendingBits,
             agents: agents,
             lastUpdated: Date(),
@@ -263,7 +263,7 @@ final class VillageEngine {
 
     func requestBitMultiplierPurchase(for agentName: String) {
         let ledger = LedgerState(
-            totalBits: totalBits,
+            totalBitsRaw: totalBitsRaw,
             pendingBits: pendingBits,
             agents: agents,
             lastUpdated: Date(),
@@ -285,7 +285,7 @@ final class VillageEngine {
 
     func requestBondDividendPurchase(for agentName: String) {
         let ledger = LedgerState(
-            totalBits: totalBits, pendingBits: pendingBits, agents: agents,
+            totalBitsRaw: totalBitsRaw, pendingBits: pendingBits, agents: agents,
             lastUpdated: Date(), recentEvents: [], eventSeq: 0, sessions: sessions
         )
         var updatedUpgrades = upgrades
@@ -302,7 +302,7 @@ final class VillageEngine {
 
     func requestTricklePurchase(for agentName: String) {
         let ledger = LedgerState(
-            totalBits: totalBits, pendingBits: pendingBits, agents: agents,
+            totalBitsRaw: totalBitsRaw, pendingBits: pendingBits, agents: agents,
             lastUpdated: Date(), recentEvents: [], eventSeq: 0, sessions: sessions
         )
         var updatedUpgrades = upgrades
@@ -393,7 +393,7 @@ final class VillageEngine {
     }
 
     private func applyReload(ledger: LedgerState, upgrades: UpgradeState, memory: NPCMemoryState, anchor: Bool) {
-        totalBits = ledger.totalBits
+        totalBitsRaw = ledger.totalBitsRaw
         pendingBits = ledger.pendingBits
         agents = ledger.agents
         sessions = ledger.sessions

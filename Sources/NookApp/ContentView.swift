@@ -148,7 +148,7 @@ struct ContentView: View {
         .animation(.easeOut(duration: 0.16), value: isAPIKeyOpen)
         .onAppear {
             guard scene == nil else { return }
-            engine.start()  // start before scene creation so totalBits is populated on first frame
+            engine.start()  // start before scene creation so totalBitsRaw is populated on first frame
             let s = VillageScene(size: CGSize(width: TileMap.mapWidth, height: TileMap.mapHeight))
             s.onNPCSelection = { selection in
                 selectedNPC = selection
