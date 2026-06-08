@@ -64,6 +64,7 @@ final class LedgerTests: XCTestCase {
 
         XCTAssertNotNil(object["totalBits"])
         XCTAssertNil(object["totalBitsRaw"])
+        XCTAssertEqual(object["globalBitsRaw"] as? Double, 0)
 
         let events = try XCTUnwrap(object["recentEvents"] as? [[String: Any]])
         let event = try XCTUnwrap(events.first)

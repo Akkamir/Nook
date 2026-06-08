@@ -99,6 +99,7 @@ struct BitEvent: Codable {
 struct LedgerState: Codable {
     let totalBits: Double
     var pendingBits: Double
+    let globalBitsRaw: Double
     let agents: [String: AgentRecord]
     let lastUpdated: Date
     let recentEvents: [BitEvent]
@@ -107,9 +108,10 @@ struct LedgerState: Codable {
     let recentActivity: [SessionActivityEvent]
     let activitySeq: Int
 
-    init(totalBits: Double, pendingBits: Double, agents: [String: AgentRecord], lastUpdated: Date, recentEvents: [BitEvent], eventSeq: Int, sessions: [String: SessionRecord] = [:], recentActivity: [SessionActivityEvent] = [], activitySeq: Int = 0) {
+    init(totalBits: Double, pendingBits: Double, globalBitsRaw: Double = 0, agents: [String: AgentRecord], lastUpdated: Date, recentEvents: [BitEvent], eventSeq: Int, sessions: [String: SessionRecord] = [:], recentActivity: [SessionActivityEvent] = [], activitySeq: Int = 0) {
         self.totalBits = totalBits
         self.pendingBits = pendingBits
+        self.globalBitsRaw = globalBitsRaw
         self.agents = agents
         self.lastUpdated = lastUpdated
         self.recentEvents = recentEvents
@@ -128,6 +130,8 @@ struct LedgerState: Codable {
         totalBits = try c.decode(Double.self, forKey: .totalBits)
         pendingBits = try c.decode(Double.self, forKey: .pendingBits)
         agents = try c.decode([String: AgentRecord].self, forKey: .agents)
+        let agentBits = agents.values.reduce(0) { $0 + $1.totalBits }
+        globalBitsRaw = (try? c.decode(Double.self, forKey: .globalBitsRaw)) ?? max(0, totalBits - agentBits)
         lastUpdated = try c.decode(Date.self, forKey: .lastUpdated)
         recentEvents = (try? c.decode([BitEvent].self, forKey: .recentEvents)) ?? []
         eventSeq = (try? c.decode(Int.self, forKey: .eventSeq)) ?? 0

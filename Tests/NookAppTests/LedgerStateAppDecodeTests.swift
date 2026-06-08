@@ -50,4 +50,29 @@ final class LedgerStateAppDecodeTests: XCTestCase {
         let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
         XCTAssertEqual(state.agents["Radion"]?.totalBits, 0)
     }
+
+    func test_global_bits_raw_survives_decode_and_encode() throws {
+        let json = """
+        {"totalBits":100,"pendingBits":0,"globalBitsRaw":30,"agents":{"Radion":{"name":"Radion","totalTokens":7000,"bond":1,"totalBits":70}},
+         "lastUpdated":"2026-06-01T00:00:00Z","recentEvents":[],"eventSeq":0}
+        """
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
+        XCTAssertEqual(state.globalBitsRaw, 30)
+
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(state)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(object["globalBitsRaw"] as? Double, 30)
+    }
+
+    func test_legacy_ledger_without_global_bits_derives_global_bits_raw() throws {
+        let json = """
+        {"totalBits":100,"pendingBits":0,"agents":{"Radion":{"name":"Radion","totalTokens":7000,"bond":1,"totalBits":70}},
+         "lastUpdated":"2026-06-01T00:00:00Z","recentEvents":[],"eventSeq":0}
+        """
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        let state = try decoder.decode(LedgerState.self, from: Data(json.utf8))
+        XCTAssertEqual(state.globalBitsRaw, 30)
+    }
 }
