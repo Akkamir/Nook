@@ -1,6 +1,6 @@
 import Foundation
 
-struct TilePosition: Codable, Equatable {
+struct TilePosition: Codable, Equatable, Hashable {
     var tileX: Int
     var tileY: Int
 }
