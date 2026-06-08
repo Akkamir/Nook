@@ -9,7 +9,6 @@ struct NookApp: App {
         WindowGroup("Nook") {
             ContentView()
                 .environment(engine)
-                .frame(minWidth: 1024, minHeight: 768)
                 .onAppear { engine.start() }
                 .onDisappear { engine.stop() }
         }
