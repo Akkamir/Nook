@@ -419,7 +419,15 @@ private struct UpgradeShopPanel: View {
                 Spacer()
             }
 
-            if isMaxed {
+            if isMaxed && !isAvailable {
+                Text("Bond required")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.38))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 6)
+                    .background(.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            } else if isMaxed {
                 Text("Max level")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.38))
