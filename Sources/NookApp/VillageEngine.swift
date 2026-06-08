@@ -157,10 +157,7 @@ final class VillageEngine {
     var totalAvailableBits: Double {
         agents.reduce(0) { sum, pair in
             let state = upgrades.agents[pair.key]
-            let spent = state?.spentBits ?? 0
-            let trickle = state?.trickleBitsAccumulated ?? 0
-            let bonus = state?.bonusAccumulated ?? 0
-            return sum + max(0, pair.value.totalBitsRaw + bonus + trickle - spent)
+            return sum + (state?.availableBits ?? 0)
         }
     }
 
@@ -170,55 +167,6 @@ final class VillageEngine {
             bdLevel: upgrades.agents[agentName]?.bondDividendLevel ?? 0,
             bond: agents[agentName]?.bond ?? 0
         )
-    }
-
-    // Runs every launch: ensures bonusAccumulated >= totalBitsRaw * (mult - 1).
-    // Guards against migration gaps where bonusAccumulated was seeded with stale
-    // raw totals, which would leave agents with negative available bits.
-    private func refreshBonusFloor() {
-        var updated = upgrades
-        var changed = false
-        for (agentName, agent) in agents {
-            var state = updated.agents[agentName] ?? AgentUpgradeState()
-            guard state.bitMultiplierLevel > 0 || state.bondDividendLevel > 0 else { continue }
-            let mult = UpgradeEconomy.effectiveMultiplier(
-                bitMultiplier: state.bitMultiplier,
-                bdLevel: state.bondDividendLevel,
-                bond: agent.bond
-            )
-            let floor = agent.totalBitsRaw * (mult - 1.0)
-            guard state.bonusAccumulated < floor else { continue }
-            state.bonusAccumulated = floor
-            updated.agents[agentName] = state
-            changed = true
-        }
-        guard changed else { return }
-        upgrades = updated
-        backgroundSaveUpgrades(updated)
-    }
-
-    // Credits multiplier bonus for each incoming daemon bit event.
-    private func creditMultiplierBonus(for events: [BitEvent]) {
-        var updated = upgrades
-        var changed = false
-        for event in events {
-            guard let agentName = event.agentName,
-                  let agent = agents[agentName] else { continue }
-            var state = updated.agents[agentName] ?? AgentUpgradeState()
-            let mult = UpgradeEconomy.effectiveMultiplier(
-                bitMultiplier: state.bitMultiplier,
-                bdLevel: state.bondDividendLevel,
-                bond: agent.bond
-            )
-            let bonus = event.rawBits * (mult - 1.0)
-            guard bonus > 0 else { continue }
-            state.bonusAccumulated += bonus
-            updated.agents[agentName] = state
-            changed = true
-        }
-        guard changed else { return }
-        upgrades = updated
-        backgroundSaveUpgrades(updated)
     }
 
     private func backgroundSaveUpgrades(_ state: UpgradeState) {
@@ -257,7 +205,7 @@ final class VillageEngine {
     }
 
     func nextTrickleCost(for agentName: String) -> Double {
-        let level = upgrades.agents[agentName]?.trickleLevel ?? 0
+        let level = upgrades.agents[agentName]?.trickleCount ?? 0
         return UpgradeEconomy.cost(for: .trickle, currentLevel: level)
     }
 
@@ -333,7 +281,7 @@ final class VillageEngine {
 
         for (agentName, _) in agents {
             var state = updatedUpgrades.agents[agentName] ?? AgentUpgradeState()
-            guard state.trickleLevel > 0 else {
+            guard state.trickleCount > 0 else {
                 if state.lastTrickleAt == nil {
                     state.lastTrickleAt = now
                     updatedUpgrades.agents[agentName] = state
@@ -351,7 +299,7 @@ final class VillageEngine {
             }
 
             // Rate is bits per 10s; compute proportionally over elapsed seconds.
-            let rate = UpgradeEconomy.trickleRate(count: state.trickleLevel)
+            let rate = UpgradeEconomy.trickleRate(count: state.trickleCount)
             let gained = rate * elapsed / 10.0
             state.trickleBitsAccumulated += gained
 
@@ -407,7 +355,6 @@ final class VillageEngine {
                 trickleInitialized = true
                 tickTrickle(animate: false)
             }
-            refreshBonusFloor()
             return
         }
 
@@ -415,7 +362,6 @@ final class VillageEngine {
         if !fresh.isEmpty {
             newBitEvents += fresh
             lastSeenEventSeq = fresh.map(\.seq).max() ?? lastSeenEventSeq
-            creditMultiplierBonus(for: fresh)
         }
 
         let freshActivity = ledger.recentActivity.filter { $0.seq > lastSeenActivitySeq }

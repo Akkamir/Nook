@@ -335,7 +335,7 @@ private struct UpgradeShopPanel: View {
                         ) { onPurchaseBondDividend(id) }
 
                         // ── Bit Trickle ──
-                        let tCount = state.trickleLevel
+                        let tCount = state.trickleCount
                         let tCost = nextTrickleCost(id)
                         let tRate = UpgradeEconomy.trickleRate(count: tCount)
                         let tNextRate = UpgradeEconomy.trickleRate(count: tCount + 1)
