@@ -153,6 +153,26 @@ final class UpgradeStateAppTests: XCTestCase {
         XCTAssertEqual(store.load(), .empty)
     }
 
+    func test_cumulative_delta_credits_even_when_recent_events_are_empty() throws {
+        var economy = EconomyState.empty
+        var ledger = ledgerState(agentBits: 100, bond: 1, globalBits: 0)
+        ledger = LedgerState(
+            totalBitsRaw: ledger.totalBitsRaw,
+            pendingBits: ledger.pendingBits,
+            globalBitsRaw: ledger.globalBitsRaw,
+            agents: ledger.agents,
+            lastUpdated: ledger.lastUpdated,
+            recentEvents: [],
+            eventSeq: 42
+        )
+
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &economy)
+
+        let agent = try XCTUnwrap(economy.agents["Radion"])
+        XCTAssertEqual(agent.wallet, 100, accuracy: 0.001)
+        XCTAssertEqual(economy.villageWallet, 10, accuracy: 0.001)
+    }
+
     private func ledgerState(agentBits: Double, bond: Int, globalBits: Double) -> LedgerState {
         let agent = agentBits > 0
             ? ["Radion": agentRecord(name: "Radion", totalTokens: BondScale.thresholds.first { $0.level == bond }?.tokens ?? 0, totalBitsRaw: agentBits)]

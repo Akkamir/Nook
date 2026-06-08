@@ -6,9 +6,10 @@ import Observation
 final class VillageEngine {
     private(set) var totalBitsRaw: Double = 0
     private(set) var pendingBits: Double = 0
+    private(set) var globalBitsRaw: Double = 0
     private(set) var agents: [String: AgentRecord] = [:]
     private(set) var sessions: [String: SessionRecord] = [:]
-    private(set) var upgrades: UpgradeState = .empty
+    private(set) var upgrades: EconomyState = .empty
     private(set) var npcMemory: NPCMemoryState = .empty
 
     private(set) var dayPhase: DayPhase = DayPhase.current()
@@ -155,18 +156,16 @@ final class VillageEngine {
     }
 
     var totalAvailableBits: Double {
-        agents.reduce(0) { sum, pair in
-            let state = upgrades.agents[pair.key]
-            return sum + (state?.availableBits ?? 0)
-        }
+        upgrades.agents.values.reduce(0) { $0 + $1.availableBits }
+    }
+
+    var villageAvailableBits: Double {
+        upgrades.villageAvailableBits
     }
 
     func effectiveMultiplier(for agentName: String) -> Double {
-        UpgradeEconomy.effectiveMultiplier(
-            bitMultiplier: upgrades.agents[agentName]?.bitMultiplier ?? 1.0,
-            bdLevel: upgrades.agents[agentName]?.bondDividendLevel ?? 0,
-            bond: agents[agentName]?.bond ?? 0
-        )
+        guard let agent = agents[agentName], let state = upgrades.agents[agentName] else { return 1.0 }
+        return EconomyEngine.effectiveMultiplier(for: state, bond: agent.bond)
     }
 
     private func backgroundSaveUpgrades(_ state: UpgradeState) {
@@ -178,16 +177,7 @@ final class VillageEngine {
     }
 
     func availableBits(for agentName: String) -> Double {
-        let ledger = LedgerState(
-            totalBitsRaw: totalBitsRaw,
-            pendingBits: pendingBits,
-            agents: agents,
-            lastUpdated: Date(),
-            recentEvents: [],
-            eventSeq: 0,
-            sessions: sessions
-        )
-        return UpgradeEconomy.availableBits(for: agentName, upgrades: upgrades)
+        upgrades.agents[agentName]?.availableBits ?? 0
     }
 
     func bitMultiplier(for agentName: String) -> Double {
@@ -196,73 +186,46 @@ final class VillageEngine {
 
     func nextBitMultiplierCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bitMultiplierLevel ?? 0
-        return UpgradeEconomy.cost(for: .bitMultiplier, currentLevel: level)
+        return EconomyEngine.cost(for: .bitMultiplier, currentLevel: level)
     }
 
     func nextBondDividendCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bondDividendLevel ?? 0
-        return UpgradeEconomy.cost(for: .bondDividend, currentLevel: level)
+        return EconomyEngine.cost(for: .bondDividend, currentLevel: level)
     }
 
     func nextTrickleCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.trickleCount ?? 0
-        return UpgradeEconomy.cost(for: .trickle, currentLevel: level)
+        return EconomyEngine.cost(for: .trickle, currentLevel: level)
     }
 
     func requestBitMultiplierPurchase(for agentName: String) {
+        requestPurchase(.bitMultiplier, for: agentName)
+    }
+
+    func requestBondDividendPurchase(for agentName: String) {
+        requestPurchase(.bondDividend, for: agentName)
+    }
+
+    func requestTricklePurchase(for agentName: String) {
+        requestPurchase(.trickle, for: agentName)
+    }
+
+    private func requestPurchase(_ kind: UpgradeKind, for agentName: String) {
         let ledger = LedgerState(
             totalBitsRaw: totalBitsRaw,
             pendingBits: pendingBits,
+            globalBitsRaw: globalBitsRaw,
             agents: agents,
             lastUpdated: Date(),
             recentEvents: [],
             eventSeq: 0,
             sessions: sessions
         )
-        var updatedUpgrades = upgrades
-        let applied = UpgradeEconomy.apply(.bitMultiplier, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
-        guard applied else { return }
-        upgrades = updatedUpgrades
-        let stateToSave = updatedUpgrades
-        let url = economyStore.url
-        Task.detached(priority: .utility) {
-            let store = EconomyStore(url: url)
-            try? store.save(stateToSave)
-        }
-    }
-
-    func requestBondDividendPurchase(for agentName: String) {
-        let ledger = LedgerState(
-            totalBitsRaw: totalBitsRaw, pendingBits: pendingBits, agents: agents,
-            lastUpdated: Date(), recentEvents: [], eventSeq: 0, sessions: sessions
-        )
-        var updatedUpgrades = upgrades
-        let applied = UpgradeEconomy.apply(.bondDividend, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
-        guard applied else { return }
-        upgrades = updatedUpgrades
-        let url = economyStore.url
-        let stateToSave = updatedUpgrades
-        Task.detached(priority: .utility) {
-            let store = EconomyStore(url: url)
-            try? store.save(stateToSave)
-        }
-    }
-
-    func requestTricklePurchase(for agentName: String) {
-        let ledger = LedgerState(
-            totalBitsRaw: totalBitsRaw, pendingBits: pendingBits, agents: agents,
-            lastUpdated: Date(), recentEvents: [], eventSeq: 0, sessions: sessions
-        )
-        var updatedUpgrades = upgrades
-        let applied = UpgradeEconomy.apply(.trickle, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
-        guard applied else { return }
-        upgrades = updatedUpgrades
-        let url = economyStore.url
-        let stateToSave = updatedUpgrades
-        Task.detached(priority: .utility) {
-            let store = EconomyStore(url: url)
-            try? store.save(stateToSave)
-        }
+        var updated = upgrades
+        guard EconomyEngine.apply(kind, for: agentName, ledger: ledger, economy: &updated) else { return }
+        upgrades = updated
+        backgroundSaveUpgrades(updated)
     }
 
     private func startTrickleTimer() {
@@ -299,7 +262,7 @@ final class VillageEngine {
             }
 
             // Rate is bits per 10s; compute proportionally over elapsed seconds.
-            let rate = UpgradeEconomy.trickleRate(count: state.trickleCount)
+            let rate = EconomyEngine.trickleRate(count: state.trickleCount)
             let gained = rate * elapsed / 10.0
             state.trickleBitsAccumulated += gained
 
@@ -340,12 +303,20 @@ final class VillageEngine {
         }
     }
 
-    private func applyReload(ledger: LedgerState, upgrades: UpgradeState, memory: NPCMemoryState, anchor: Bool) {
+    private func applyReload(ledger: LedgerState, upgrades: EconomyState, memory: NPCMemoryState, anchor: Bool) {
         totalBitsRaw = ledger.totalBitsRaw
         pendingBits = ledger.pendingBits
+        globalBitsRaw = ledger.globalBitsRaw
         agents = ledger.agents
         sessions = ledger.sessions
-        self.upgrades = upgrades
+
+        var processedEconomy = upgrades
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &processedEconomy)
+        self.upgrades = processedEconomy
+        if processedEconomy != upgrades {
+            backgroundSaveUpgrades(processedEconomy)
+        }
+
         npcMemory = memory
 
         if anchor {
