@@ -28,12 +28,9 @@ final class VillageScene: SKScene {
     func configure(engine: VillageEngine) {
         self.engine = engine
         npcManager = NPCManager(scene: self, engine: engine)
-        // configure() runs before didMove(), so check map URL directly
         if let mapURL = TiledVillageLayer.findMapURL(),
-           let raw = try? Data(contentsOf: mapURL),
-           let map = try? JSONDecoder().decode(TiledMap.self, from: raw) {
-            let maxTile = min(map.width, map.height) - 3
-            npcManager?.spawnBounds = NPCManager.TileBounds(minX: 2, minY: 2, maxX: maxTile, maxY: maxTile)
+           let mapData = VillageMapData.build(mapURL: mapURL, displayTileSize: TileMap.tileSize) {
+            npcManager?.setMapData(mapData)
         }
         engine.onTrickleGain = { [weak self] agentName, bits in
             self?.npcManager?.showTrickleGain(agentName: agentName, bits: bits)
@@ -47,7 +44,6 @@ final class VillageScene: SKScene {
         lastActiveSessions = engine.activeSessions
         lastActiveSessionCounts = engine.activeSessionCounts
         lastDayPhase = engine.dayPhase
-        // Animate pending bits once on configure (app launch)
         if engine.pendingBits > 0 {
             hud?.animatePending(engine.pendingBits)
             engine.consumePendingBits()
@@ -55,17 +51,14 @@ final class VillageScene: SKScene {
     }
 
     override func didMove(to view: SKView) {
-        backgroundColor = .black
         scaleMode = .resizeFill
-        anchorPoint = CGPoint(x: 0, y: 0)  // bottom-left origin
+        anchorPoint = CGPoint(x: 0, y: 0)
         view.preferredFramesPerSecond = 60
 
-        // Camera
         villageCamera = VillageCamera()
         addChild(villageCamera)
-        self.camera = villageCamera   // wire SKScene.camera property
+        self.camera = villageCamera
 
-        // Attach pan gesture recognizer to the view
         villageCamera.attach(to: view)
 
         if let mapURL = TiledVillageLayer.findMapURL() {
@@ -89,7 +82,8 @@ final class VillageScene: SKScene {
             decorLayer = decor
         }
 
-        // Start centered on the map
+        backgroundColor = tiledVillageLayer?.mapData.backdropColor ?? .black
+
         if let tiled = tiledVillageLayer {
             villageCamera.position = tiled.mapCenter
         } else {
@@ -99,7 +93,6 @@ final class VillageScene: SKScene {
             )
         }
 
-        // Zoom initial : map Tiled → show entire map (letterbox) ; sinon ancienne parcelle
         if let tiled = tiledVillageLayer {
             let sx = tiled.mapSize.width  / max(size.width,  1)
             let sy = tiled.mapSize.height / max(size.height, 1)
@@ -109,11 +102,8 @@ final class VillageScene: SKScene {
             villageCamera.setScale(targetVisible / size.width)
         }
 
-        // Fog
         fogSystem = FogSystem()
         addChild(fogSystem!)
-
-        // HUD is rendered via SwiftUI overlay in ContentView (more reliable with SpriteKit on macOS)
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
