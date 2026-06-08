@@ -178,7 +178,7 @@ struct OpenAINarrationClient {
         }
     }
 
-    static func sanitizeSpokenLine(_ raw: String, maxLength: Int = 90) -> String {
+    static func sanitizeSpokenLine(_ raw: String, maxLength: Int = 75) -> String {
         let collapsed = raw
             .replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)

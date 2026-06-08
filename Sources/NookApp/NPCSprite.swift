@@ -285,9 +285,8 @@ final class NPCSprite: SKNode {
         // One bubble at a time.
         childNode(withName: "speech")?.removeFromParent()
 
-        // Lines are kept short at the source; this is only a last-resort cap so a
-        // rogue long line can't grow an unbounded bubble.
-        let display = text.count > 120 ? String(text.prefix(119)) + "…" : text
+        // Hard cap: sanitizeSpokenLine targets 75 chars; this is a last-resort guard.
+        let display = text.count > 80 ? String(text.prefix(79)) + "…" : text
 
         let label = SKLabelNode(fontNamed: "Monaco")
         label.text = display
@@ -301,9 +300,9 @@ final class NPCSprite: SKNode {
 
         let padding: CGFloat = 8
         // SKLabelNode.frame is unreliable before the node enters the scene tree.
-        // Estimate bubble dimensions from text length to avoid zero-size bubbles
-        // for LLM-generated multi-line messages.
-        let charsPerLine = 28   // Monaco 11pt in ~200pt width ≈ 28 chars/line
+        // Monaco 11pt: glyph advance ~6.6pt → 200pt / 6.6 = 30 chars/line.
+        // Line height: ascent+descent+leading ≈ 15.8pt in SpriteKit → use 16pt.
+        let charsPerLine = 30
         let estimatedLines = min(3, max(1, (display.count + charsPerLine - 1) / charsPerLine))
         let bubbleW: CGFloat = estimatedLines > 1 ? 216 : min(max(CGFloat(display.count) * 6.6 + padding * 2, 40), 216)
         let bubbleH = CGFloat(estimatedLines) * 16 + padding * 2
@@ -330,7 +329,7 @@ final class NPCSprite: SKNode {
         bubble.setScale(0.9)
         addChild(bubble)
 
-        let hold = max(2.5, min(8.0, Double(display.count) * 0.07))
+        let hold = max(2.5, min(9.0, Double(display.count) * 0.09))
         bubble.run(.sequence([
             .group([.fadeIn(withDuration: 0.12), .scale(to: 1.0, duration: 0.12)]),
             .wait(forDuration: hold),
