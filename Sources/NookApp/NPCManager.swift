@@ -14,6 +14,7 @@ final class NPCManager {
     // Visible desks for NPCs that have earned one (bond ≥ DeskPolicy.bondThreshold).
     private var desks: [String: SKNode] = [:]
     private var deskTiles: [String: TilePosition] = [:]
+    private var walkableDeskCandidates: [TilePosition] = []
     private let assetCatalog = PixelAssetCatalog.loadMaygetsu()
 
     private let speechComposer: SpeechLineComposing = HeuristicLineComposer()
@@ -356,16 +357,49 @@ final class NPCManager {
         return (pos.tileX, pos.tileY)
     }
 
-    private func deskTile(for index: Int) -> TilePosition {
-        let b = spawnBounds
-        let startX = b.minX + 4
-        let startY = b.maxY - 4
-        let col = index % 4
-        let row = index / 4
-        return TilePosition(
-            tileX: min(startX + col * 4, b.maxX),
-            tileY: max(startY - row * 3, b.minY)
+    func setMapData(_ mapData: VillageMapData) {
+        let border = 2
+        spawnBounds = TileBounds(
+            minX: border,
+            minY: border,
+            maxX: mapData.tileColumns - 1 - border,
+            maxY: mapData.tileRows   - 1 - border
         )
+        computeWalkableDeskCandidates(blocked: mapData.blockedTiles)
+    }
+
+    private func computeWalkableDeskCandidates(blocked: Set<TilePosition>) {
+        let b = spawnBounds
+        var candidates: [TilePosition] = []
+        for y in stride(from: b.maxY, through: b.minY, by: -1) {
+            for x in b.minX...b.maxX {
+                let tile = TilePosition(tileX: x, tileY: y)
+                guard !blocked.contains(tile) else { continue }
+                candidates.append(tile)
+            }
+        }
+        // Greedy spacing: no two candidates within 2 tiles of each other
+        var spaced: [TilePosition] = []
+        for candidate in candidates {
+            let tooClose = spaced.contains {
+                abs($0.tileX - candidate.tileX) <= 2 && abs($0.tileY - candidate.tileY) <= 2
+            }
+            if !tooClose { spaced.append(candidate) }
+        }
+        walkableDeskCandidates = spaced
+    }
+
+    private func deskTile(for index: Int) -> TilePosition {
+        guard !walkableDeskCandidates.isEmpty else {
+            let b = spawnBounds
+            let col = index % 4
+            let row = index / 4
+            return TilePosition(
+                tileX: min(b.minX + 4 + col * 4, b.maxX),
+                tileY: max(b.maxY - 4 - row * 3, b.minY)
+            )
+        }
+        return walkableDeskCandidates[index % walkableDeskCandidates.count]
     }
 
     func currentPositions() -> [String: TilePosition] {
