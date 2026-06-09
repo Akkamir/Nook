@@ -109,18 +109,42 @@ struct NPCInspectorPanel: View {
     }
 
     private var detailsStrip: some View {
-        HStack(spacing: 0) {
-            detailCell(icon: .milestone, formatInt(selection.totalTokens), label: "tokens")
-            if selection.bitMultiplier > 1.0 {
-                detailCell(icon: .bond, formatMultiplier(selection.bitMultiplier) + "×", label: "mult")
+        ViewThatFits(in: .horizontal) {
+            // Single-row layout — used when all cells fit comfortably.
+            HStack(spacing: 20) {
+                detailCell(icon: .milestone, formatTokens(selection.totalTokens), label: "tokens")
+                if selection.bitMultiplier > 1.0 {
+                    detailCell(icon: .bond, formatMultiplier(selection.bitMultiplier) + "×", label: "mult")
+                }
+                if selection.currentStreakDays > 0 {
+                    detailCell(icon: .streak, "\(selection.currentStreakDays)d", label: "streak")
+                }
+                if selection.longestSessionSeconds > 0 {
+                    detailCell(icon: .trophy, formatDuration(selection.longestSessionSeconds), label: "longest")
+                }
             }
-            if selection.currentStreakDays > 0 {
-                detailCell(icon: .streak, "\(selection.currentStreakDays)d", label: "streak")
+            .frame(maxWidth: .infinity, alignment: .center)
+
+            // Two-row fallback — tokens+mult on first row, streak+longest on second.
+            VStack(alignment: .center, spacing: 12) {
+                HStack(spacing: 20) {
+                    detailCell(icon: .milestone, formatTokens(selection.totalTokens), label: "tokens")
+                    if selection.bitMultiplier > 1.0 {
+                        detailCell(icon: .bond, formatMultiplier(selection.bitMultiplier) + "×", label: "mult")
+                    }
+                }
+                if selection.currentStreakDays > 0 || selection.longestSessionSeconds > 0 {
+                    HStack(spacing: 20) {
+                        if selection.currentStreakDays > 0 {
+                            detailCell(icon: .streak, "\(selection.currentStreakDays)d", label: "streak")
+                        }
+                        if selection.longestSessionSeconds > 0 {
+                            detailCell(icon: .trophy, formatDuration(selection.longestSessionSeconds), label: "longest")
+                        }
+                    }
+                }
             }
-            if selection.longestSessionSeconds > 0 {
-                detailCell(icon: .trophy, formatDuration(selection.longestSessionSeconds), label: "longest")
-            }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 
@@ -136,7 +160,12 @@ struct NPCInspectorPanel: View {
                     .foregroundStyle(.white.opacity(0.42))
             }
         }
-        .frame(minWidth: 68, alignment: .leading)
+    }
+
+    private func formatTokens(_ value: Int) -> String {
+        if value >= 1_000_000 { return String(format: "%.1fM", Double(value) / 1_000_000) }
+        if value >= 100_000  { return String(format: "%.0fk", Double(value) / 1_000) }
+        return value.formatted(.number)
     }
 
     private var projectsSection: some View {
