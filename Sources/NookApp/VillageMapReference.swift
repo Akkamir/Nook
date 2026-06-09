@@ -56,11 +56,11 @@ enum VillageMapReference {
     //  left-3   left-2   left-1   [path 10-13]   right-1  right-2  right-3
     //    2        5         8     ~~11.5~~          15       18       21
     static let preferredDeskTiles: [TilePosition] = [
-        TilePosition(tileX:  8, tileY: 11),   // left-1:  3.5 tiles from axis
-        TilePosition(tileX: 15, tileY: 11),   // right-1: 3.5 tiles from axis
-        TilePosition(tileX:  5, tileY: 11),   // left-2:  6.5 tiles from axis
-        TilePosition(tileX: 18, tileY: 11),   // right-2: 6.5 tiles from axis
-        TilePosition(tileX:  2, tileY: 11),   // left-3:  9.5 tiles from axis
-        TilePosition(tileX: 21, tileY: 11),   // right-3: 9.5 tiles from axis
+        TilePosition(tileX:  8, tileY: 12),   // left-1:  3.5 tiles from axis
+        TilePosition(tileX: 15, tileY: 12),   // right-1: 3.5 tiles from axis
+        TilePosition(tileX:  5, tileY: 12),   // left-2:  6.5 tiles from axis
+        TilePosition(tileX: 18, tileY: 12),   // right-2: 6.5 tiles from axis
+        TilePosition(tileX:  2, tileY: 12),   // left-3:  9.5 tiles from axis
+        TilePosition(tileX: 21, tileY: 12),   // right-3: 9.5 tiles from axis
     ]
 }
