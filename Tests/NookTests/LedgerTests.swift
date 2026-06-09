@@ -43,7 +43,7 @@ final class LedgerTests: XCTestCase {
         let agent = try XCTUnwrap(loaded.agents["Radion"])
         XCTAssertEqual(agent.totalTokens, 1_856_640)
         XCTAssertEqual(agent.totalBitsRaw, 35.0, accuracy: 0.001)
-        XCTAssertEqual(agent.bond, 5)
+        XCTAssertEqual(agent.bond, 6)
     }
 
     func test_encode_uses_legacy_wire_keys_for_raw_bit_fields() throws {
@@ -100,7 +100,7 @@ final class LedgerTests: XCTestCase {
         ledger.apply(event: event, agentName: "Radion", to: &state)
 
         XCTAssertEqual(state.agents["Radion"]?.totalTokens, 400_000)
-        XCTAssertEqual(state.agents["Radion"]?.bond, 2)
+        XCTAssertEqual(state.agents["Radion"]?.bond, 3)
     }
 
     func test_apply_event_uses_twenty_level_bond_scale() throws {
@@ -113,7 +113,7 @@ final class LedgerTests: XCTestCase {
         var state = LedgerState.empty
         ledger.apply(event: event, agentName: "Radion", to: &state)
 
-        XCTAssertEqual(state.agents["Radion"]?.bond, 5)
+        XCTAssertEqual(state.agents["Radion"]?.bond, 6)
     }
 
     func test_apply_creates_session_record_on_first_event() {

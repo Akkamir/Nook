@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NPCInspectorPanel: View {
     let selection: NPCSelection
+    let onManageProjects: (String) -> Void
     let onClose: () -> Void
 
     private var progress: BondProgress {
@@ -14,7 +15,7 @@ struct NPCInspectorPanel: View {
                 header
                 heroCard
                 detailsStrip
-                if !selection.projects.isEmpty { projectsSection }
+                projectsSection
                 if !selection.recentSessions.isEmpty { recentSessionsSection }
                 if !selection.moments.isEmpty { momentsSection }
             }
@@ -171,14 +172,37 @@ struct NPCInspectorPanel: View {
     private var projectsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionTitle("Projects")
-            ForEach(selection.projects, id: \.projectPath) { p in
-                HStack {
-                    Text(p.project).lineLimit(1)
-                    Spacer()
-                    Text("\(formatInt(p.totalTokens)) · \(p.sessionCount) sess.")
-                        .foregroundStyle(.white.opacity(0.7))
+            if selection.projects.isEmpty {
+                Text("No assigned project")
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.45))
+            } else {
+                ForEach(selection.projects, id: \.projectPath) { p in
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Text(p.project).lineLimit(1)
+                            Spacer()
+                            Text(shortRelative(p.lastSeen))
+                                .foregroundStyle(.white.opacity(0.55))
+                        }
+                        Text(p.projectPath)
+                            .font(.system(size: 9, weight: .regular, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.38))
+                            .lineLimit(1)
+                    }
                 }
             }
+            Button {
+                onManageProjects(selection.id)
+            } label: {
+                HStack(spacing: 5) {
+                    Text("Manage projects")
+                    Image(systemName: "arrow.right")
+                }
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            .foregroundStyle(Color(red: 0.52, green: 0.92, blue: 0.62))
         }
     }
 
@@ -239,6 +263,12 @@ struct NPCInspectorPanel: View {
         let f = DateFormatter()
         f.dateFormat = "MMM d"
         return f.string(from: date)
+    }
+
+    private func shortRelative(_ date: Date) -> String {
+        let days = max(0, Int(Date().timeIntervalSince(date) / 86_400))
+        if days == 0 { return "today" }
+        return "\(days)d ago"
     }
 
     private func formatDuration(_ seconds: TimeInterval) -> String {

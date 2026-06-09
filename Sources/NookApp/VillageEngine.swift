@@ -11,6 +11,9 @@ final class VillageEngine {
     private(set) var sessions: [String: SessionRecord] = [:]
     private(set) var upgrades: EconomyState = .empty
     private(set) var npcMemory: NPCMemoryState = .empty
+    private(set) var roster: NPCRoster
+    private(set) var newlyUnlockedNPCIDs: [String] = []
+    private(set) var shouldOfferGlobalGitignore = false
 
     private(set) var dayPhase: DayPhase = DayPhase.current()
     private(set) var activeSessions: Set<String> = []
@@ -21,6 +24,9 @@ final class VillageEngine {
     private let ledgerURL: URL
     private let economyStore: EconomyStore
     private let memoryStore: NPCMemoryStore
+    let npcCatalog: NPCCatalog
+    private let rosterStore: RosterStore
+    private let gitignoreAdvisor = GitignoreAdvisor()
     private let narrationClient: OpenAINarrationClient
     private let watcher: LedgerWatcher
     private var isRunning = false
@@ -46,11 +52,17 @@ final class VillageEngine {
             .appendingPathComponent(".pixelvillage/ledger.json"),
         economyStore: EconomyStore = .production,
         memoryStore: NPCMemoryStore = NPCMemoryStore(),
+        npcCatalog: NPCCatalog = .standard,
+        rosterStore: RosterStore? = nil,
         narrationClient: OpenAINarrationClient = OpenAINarrationClient()
     ) {
         self.ledgerURL = ledgerURL
         self.economyStore = economyStore
         self.memoryStore = memoryStore
+        self.npcCatalog = npcCatalog
+        let resolvedRosterStore = rosterStore ?? RosterStore(catalog: npcCatalog)
+        self.rosterStore = resolvedRosterStore
+        self.roster = resolvedRosterStore.loadOrLockedRoster()
         self.narrationClient = narrationClient
         self.watcher = LedgerWatcher(ledgerURL: ledgerURL)
     }
@@ -174,8 +186,96 @@ final class VillageEngine {
         upgrades.villageAvailableBits
     }
 
+    var needsOnboarding: Bool {
+        roster.needsOnboarding
+    }
+
+    var hasRosterBadge: Bool {
+        !newlyUnlockedNPCIDs.isEmpty || roster.entries.contains { $0.isUnlocked && $0.assignedProjects.isEmpty }
+    }
+
+    var discoveredProjects: [DiscoveredProject] {
+        ProjectDiscovery().discover()
+    }
+
+    var shopNPCRecords: [String: AgentRecord] {
+        var records = agents
+        for entry in roster.entries where entry.isUnlocked {
+            if records[entry.name] == nil {
+                records[entry.name] = AgentRecord(name: entry.name, totalTokens: 0, bond: 1, totalBitsRaw: 0)
+            }
+        }
+        return records
+    }
+
+    var visibleNPCRecords: [String: AgentRecord] {
+        var records = agents
+        for entry in roster.entries where entry.isUnlocked && !entry.assignedProjects.isEmpty {
+            if records[entry.name] == nil {
+                records[entry.name] = AgentRecord(name: entry.name, totalTokens: 0, bond: 1, totalBitsRaw: 0)
+            }
+        }
+        return records
+    }
+
+    func consumeRosterBadge() {
+        newlyUnlockedNPCIDs.removeAll()
+    }
+
+    func addPixelVillageToGlobalGitignore() {
+        do {
+            try gitignoreAdvisor.addPixelVillageToGlobalGitignore()
+            shouldOfferGlobalGitignore = false
+        } catch {
+            print("[Nook] global gitignore update error: \(error)")
+        }
+    }
+
+    func createStarterNPC(name: String, projectPaths: [String]) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let starterName = trimmed.isEmpty ? "Resident" : trimmed
+        var next = NPCRoster.initial(catalog: npcCatalog, starterName: starterName, assignedProjects: [], now: Date())
+        do {
+            try rosterStore.save(next)
+            for path in projectPaths {
+                try rosterStore.assign(projectPath: path, toCatalogId: "starter", in: &next)
+            }
+            shouldOfferGlobalGitignore = gitignoreAdvisor.needsGlobalIgnoreOffer(forProjectPaths: projectPaths)
+            roster = next
+        } catch {
+            print("[Nook] starter roster save error: \(error)")
+        }
+    }
+
+    func saveRosterAssignment(catalogId: String, name: String, projectPaths: [String]) {
+        var next = roster
+        if canRenameRosterEntry(catalogId: catalogId) {
+            next.rename(catalogId: catalogId, to: name.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        let assignablePaths = projectPaths.filter { path in
+            !next.isProjectAssigned(path, excludingCatalogId: catalogId)
+        }
+        do {
+            try rosterStore.applyAssignments(forCatalogId: catalogId, newProjectPaths: assignablePaths, roster: &next)
+            if let entry = next.entry(catalogId: catalogId) {
+                for path in entry.assignedProjects {
+                    try rosterStore.assign(projectPath: path, toCatalogId: catalogId, in: &next)
+                }
+            }
+            shouldOfferGlobalGitignore = gitignoreAdvisor.needsGlobalIgnoreOffer(forProjectPaths: assignablePaths)
+            roster = next
+        } catch {
+            print("[Nook] roster assignment error: \(error)")
+        }
+    }
+
+    func canRenameRosterEntry(catalogId: String) -> Bool {
+        guard let entry = roster.entry(catalogId: catalogId) else { return false }
+        return !sessions.values.contains { $0.agentName == entry.name }
+    }
+
     func effectiveMultiplier(for agentName: String) -> Double {
-        guard let agent = agents[agentName], let state = upgrades.agents[agentName] else { return 1.0 }
+        guard let agent = shopNPCRecords[agentName], let state = upgrades.agents[agentName] else { return 1.0 }
         return EconomyEngine.effectiveMultiplier(for: state, bond: agent.bond)
     }
 
@@ -197,20 +297,20 @@ final class VillageEngine {
 
     func nextBitMultiplierCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bitMultiplierLevel ?? 0
-        guard EconomyEngine.canBuy(.bitMultiplier, currentLevel: level, bond: agents[agentName]?.bond ?? 0) else { return .infinity }
+        guard EconomyEngine.canBuy(.bitMultiplier, currentLevel: level, bond: shopNPCRecords[agentName]?.bond ?? 0) else { return .infinity }
         return EconomyEngine.cost(for: .bitMultiplier, currentLevel: level)
     }
 
     func nextBondDividendCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bondDividendLevel ?? 0
-        let bond = agents[agentName]?.bond ?? 0
+        let bond = shopNPCRecords[agentName]?.bond ?? 0
         guard EconomyEngine.canBuy(.bondDividend, currentLevel: level, bond: bond) else { return .infinity }
         return EconomyEngine.cost(for: .bondDividend, currentLevel: level)
     }
 
     func nextTrickleCost(for agentName: String) -> Double {
         let count = upgrades.agents[agentName]?.trickleCount ?? 0
-        let bond = agents[agentName]?.bond ?? 0
+        let bond = shopNPCRecords[agentName]?.bond ?? 0
         guard EconomyEngine.canBuy(.trickle, currentLevel: count, bond: bond) else { return .infinity }
         return EconomyEngine.cost(for: .trickle, currentLevel: count)
     }
@@ -232,7 +332,7 @@ final class VillageEngine {
             totalBitsRaw: totalBitsRaw,
             pendingBits: pendingBits,
             globalBitsRaw: globalBitsRaw,
-            agents: agents,
+            agents: shopNPCRecords,
             lastUpdated: Date(),
             recentEvents: [],
             eventSeq: 0,
@@ -329,6 +429,7 @@ final class VillageEngine {
         }
 
         npcMemory = memory
+        evaluateRosterUnlocks(ledger: ledger, economy: processedEconomy)
 
         if anchor {
             lastSeenEventSeq = ledger.eventSeq
@@ -350,6 +451,37 @@ final class VillageEngine {
         if !freshActivity.isEmpty {
             newActivityEvents += freshActivity
             lastSeenActivitySeq = freshActivity.map(\.seq).max() ?? lastSeenActivitySeq
+        }
+    }
+
+    private func evaluateRosterUnlocks(ledger: LedgerState, economy: EconomyState) {
+        var next = roster
+        next.mergeMissingCatalogEntries(from: npcCatalog)
+        let maxBond = ledger.agents.values.map(\.bond).max() ?? 0
+        let spent = economy.agents.values.reduce(0) { $0 + $1.spentBits }
+        let villageBits = economy.villageWallet
+        let relocked = next.relockIneligibleUnassignedEntries(
+            catalog: npcCatalog,
+            maxBond: maxBond,
+            totalSpentBits: spent,
+            totalVillageBits: villageBits
+        )
+        let unlocked = next.unlockEligibleEntries(
+            catalog: npcCatalog,
+            maxBond: maxBond,
+            totalSpentBits: spent,
+            totalVillageBits: villageBits,
+            now: Date()
+        )
+        roster = next
+        guard !unlocked.isEmpty || relocked else { return }
+        if !unlocked.isEmpty {
+            newlyUnlockedNPCIDs += unlocked
+        }
+        do {
+            try rosterStore.save(next)
+        } catch {
+            print("[Nook] roster unlock save error: \(error)")
         }
     }
 
@@ -384,8 +516,11 @@ final class VillageEngine {
         let bond = BondScale.level(for: session.totalTokens)
         let totalTokens = session.totalTokens
         do {
+            let style = npcCatalog.reactionStyle(for: agentName, roster: roster)
+            let personality = npcCatalog.personality(for: agentName, roster: roster)
             let line = try await narrationClient.promptReaction(
-                userMessage: userMessage, bond: bond, totalTokens: totalTokens
+                userMessage: userMessage, bond: bond, totalTokens: totalTokens,
+                style: style, personality: personality
             )
             guard !line.isEmpty else { return }
             onLiveComment?(agentName, line)
@@ -443,8 +578,11 @@ final class VillageEngine {
         let bond = BondScale.level(for: session.totalTokens)
         let totalTokens = session.totalTokens
         do {
+            let style = npcCatalog.reactionStyle(for: agentName, roster: roster)
+            let personality = npcCatalog.personality(for: agentName, roster: roster)
             let line = try await narrationClient.responseReaction(
-                assistantSnippet: snippet, bond: bond, totalTokens: totalTokens
+                assistantSnippet: snippet, bond: bond, totalTokens: totalTokens,
+                style: style, personality: personality
             )
             guard !line.isEmpty else { return }
             onLiveComment?(agentName, line)
@@ -521,7 +659,8 @@ final class VillageEngine {
             let enriched = try await narrationClient.enrich(
                 sessionMemory: base, digest: digest,
                 bond: bond, totalTokens: totalTokens,
-                pastSessions: Array(pastSessions.suffix(5))
+                pastSessions: Array(pastSessions.suffix(5)),
+                personality: agentName.flatMap { npcCatalog.personality(for: $0, roster: roster) }
             )
             updatedMemory.sessions[sessionId] = enriched
             npcMemory = updatedMemory
@@ -536,7 +675,11 @@ final class VillageEngine {
         let now = Date()
         guard lastLiveCommentAt[agentName].map({ now.timeIntervalSince($0) > 60 }) ?? true else { return }
         do {
-            let line = try await narrationClient.liveComment(digest: digest, bond: bond, totalTokens: totalTokens)
+            let line = try await narrationClient.liveComment(
+                digest: digest, bond: bond, totalTokens: totalTokens,
+                style: npcCatalog.reactionStyle(for: agentName, roster: roster),
+                personality: npcCatalog.personality(for: agentName, roster: roster)
+            )
             guard !line.isEmpty else { return }
             lastLiveCommentAt[agentName] = now
             onLiveComment?(agentName, line)

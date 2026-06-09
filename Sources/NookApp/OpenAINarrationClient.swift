@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-enum ReactionStyle: CaseIterable {
+enum ReactionStyle: String, Codable, CaseIterable {
     case descriptive, sarcastic, overhyped, philosophical
     case mentor, dramatic, gossip, tired, conspiracy, impressedWrong
 
@@ -49,7 +49,8 @@ struct OpenAINarrationClient {
         digest: SessionDigest,
         bond: Int,
         totalTokens: Int,
-        pastSessions: [GeneratedSessionMemory]
+        pastSessions: [GeneratedSessionMemory],
+        personality: String? = nil
     ) async throws -> GeneratedSessionMemory {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
@@ -62,7 +63,7 @@ struct OpenAINarrationClient {
             "max_output_tokens": 400,
             "text": ["format": ["type": "json_object"]],
             "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'. Each cachedLines entry must be a single spoken sentence under 80 characters — short, specific, in-character, in English. Reference the actual project or files when possible.",
-            "input": enrichPrompt(memory: sessionMemory, digest: digest, bond: bond, totalTokens: totalTokens, pastSessions: pastSessions)
+            "input": enrichPrompt(memory: sessionMemory, digest: digest, bond: bond, totalTokens: totalTokens, pastSessions: pastSessions, personality: personality)
         ])
 
         let (data, response) = try await session.data(for: request)
@@ -95,7 +96,13 @@ struct OpenAINarrationClient {
     // Reacts to the user's latest prompt almost in real-time (triggered on PreToolUse).
     // Called before Claude responds, so the NPC can comment on what the user is asking.
     @MainActor
-    func promptReaction(userMessage: String, bond: Int, totalTokens: Int, style: ReactionStyle = .random()) async throws -> String {
+    func promptReaction(
+        userMessage: String,
+        bond: Int,
+        totalTokens: Int,
+        style: ReactionStyle = .random(),
+        personality: String? = nil
+    ) async throws -> String {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -106,7 +113,7 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 40,
             "text": ["format": ["type": "text"]],
-            "instructions": "You are a coding NPC in a pixel village game. React to what the user just sent their AI. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(style.tone)",
+            "instructions": "You are a coding NPC in a pixel village game. React to what the user just sent their AI. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(personalityInstruction(personality)) \(style.tone)",
             "input": "Bond \(bond)/10. User just asked their AI: \"\(String(userMessage.prefix(300)))\""
         ])
 
@@ -119,7 +126,13 @@ struct OpenAINarrationClient {
 
     // Reacts to the last assistant response after Claude finishes (triggered on Stop).
     @MainActor
-    func responseReaction(assistantSnippet: String, bond: Int, totalTokens: Int, style: ReactionStyle = .random()) async throws -> String {
+    func responseReaction(
+        assistantSnippet: String,
+        bond: Int,
+        totalTokens: Int,
+        style: ReactionStyle = .random(),
+        personality: String? = nil
+    ) async throws -> String {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -130,7 +143,7 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 40,
             "text": ["format": ["type": "text"]],
-            "instructions": "You are a coding NPC in a pixel village game. React to what your AI assistant just replied. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(style.tone)",
+            "instructions": "You are a coding NPC in a pixel village game. React to what your AI assistant just replied. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(personalityInstruction(personality)) \(style.tone)",
             "input": "Bond \(bond)/10. AI assistant just replied: \"\(String(assistantSnippet.prefix(300)))\""
         ])
 
@@ -144,7 +157,13 @@ struct OpenAINarrationClient {
     // Generates one short spoken line reacting to what the user is doing right now.
     // Used for live display during active sessions, independent of stored cachedLines.
     @MainActor
-    func liveComment(digest: SessionDigest, bond: Int, totalTokens: Int, style: ReactionStyle = .random()) async throws -> String {
+    func liveComment(
+        digest: SessionDigest,
+        bond: Int,
+        totalTokens: Int,
+        style: ReactionStyle = .random(),
+        personality: String? = nil
+    ) async throws -> String {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -155,8 +174,8 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 60,
             "text": ["format": ["type": "text"]],
-            "instructions": "You are a coding NPC in a pixel village game commenting on the player's work. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(style.tone)",
-            "input": livePrompt(digest: digest, bond: bond, totalTokens: totalTokens)
+            "instructions": "You are a coding NPC in a pixel village game commenting on the player's work. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(personalityInstruction(personality)) \(style.tone)",
+            "input": livePrompt(digest: digest, bond: bond, totalTokens: totalTokens, personality: personality)
         ])
 
         let (data, response) = try await session.data(for: request)
@@ -171,9 +190,10 @@ struct OpenAINarrationClient {
         digest: SessionDigest,
         bond: Int,
         totalTokens: Int,
-        pastSessions: [GeneratedSessionMemory]
+        pastSessions: [GeneratedSessionMemory],
+        personality explicitPersonality: String?
     ) -> String {
-        let personality = Self.traitDescription(for: totalTokens)
+        let personality = explicitPersonality ?? Self.traitDescription(for: totalTokens)
         let bondText = Self.bondDescription(bond)
         let pastBeats = pastSessions.flatMap { $0.narrativeBeats }.suffix(4).joined(separator: " | ")
         let relationshipNote = pastSessions.compactMap { $0.relationshipNote }.last ?? ""
@@ -192,8 +212,8 @@ struct OpenAINarrationClient {
         return parts.joined(separator: "\n")
     }
 
-    private func livePrompt(digest: SessionDigest, bond: Int, totalTokens: Int) -> String {
-        let personality = Self.traitDescription(for: totalTokens)
+    private func livePrompt(digest: SessionDigest, bond: Int, totalTokens: Int, personality explicitPersonality: String?) -> String {
+        let personality = explicitPersonality ?? Self.traitDescription(for: totalTokens)
         let bondText = Self.bondDescription(bond)
         var parts: [String] = [
             "You are: \(personality), \(bondText) with the player.",
@@ -215,6 +235,11 @@ struct OpenAINarrationClient {
         case ..<200_000: return "a deep thinker, intensely focused and methodical"
         default:         return "a seasoned expert, powerful and efficient"
         }
+    }
+
+    private func personalityInstruction(_ personality: String?) -> String {
+        guard let personality, !personality.isEmpty else { return "" }
+        return "Fixed personality: \(personality)"
     }
 
     static func bondDescription(_ bond: Int) -> String {

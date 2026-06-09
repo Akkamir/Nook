@@ -87,6 +87,13 @@ struct AgentRecord: Codable {
         case totalBitsRaw = "totalBits"
     }
 
+    init(name: String, totalTokens: Int = 0, bond: Int = 1, totalBitsRaw: Double = 0) {
+        self.name = name
+        self.totalTokens = totalTokens
+        self.bond = bond
+        self.totalBitsRaw = totalBitsRaw
+    }
+
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         name = try c.decode(String.self, forKey: .name)

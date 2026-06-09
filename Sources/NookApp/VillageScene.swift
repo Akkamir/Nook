@@ -21,6 +21,7 @@ final class VillageScene: SKScene {
     private var lastActiveSessionCounts: [String: Int] = [:]
     private var lastUpgrades: UpgradeState = .empty
     private var lastDayPhase: DayPhase?
+    private var lastRoster: NPCRoster?
     private var initialZoomSet = false
     private var selectedNPCID: String?
 
@@ -44,6 +45,7 @@ final class VillageScene: SKScene {
         lastActiveSessions = engine.activeSessions
         lastActiveSessionCounts = engine.activeSessionCounts
         lastDayPhase = engine.dayPhase
+        lastRoster = engine.roster
         if engine.pendingBits > 0 {
             hud?.animatePending(engine.pendingBits)
             engine.consumePendingBits()
@@ -185,6 +187,11 @@ final class VillageScene: SKScene {
             npcManager?.sync()
             refreshSelection()
             lastAgentCount = engine.agents.count
+        }
+        if let engine, engine.roster != lastRoster {
+            npcManager?.sync()
+            refreshSelection()
+            lastRoster = engine.roster
         }
         if let engine, engine.totalBitsRaw != lastTotalBits {
             fogSystem?.update(totalBits: engine.totalBitsRaw)

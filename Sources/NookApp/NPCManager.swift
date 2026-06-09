@@ -41,12 +41,13 @@ final class NPCManager {
     }
 
     func sync() {
-        let agentIDs = Set(engine.agents.keys)
+        let records = engine.visibleNPCRecords
+        let agentIDs = Set(records.keys)
         let spriteIDs = Set(sprites.keys)
-        let sortedIDs = engine.agents.keys.sorted()
+        let sortedIDs = records.keys.sorted()
 
         // 1. Additions
-        for (id, record) in engine.agents where !sprites.keys.contains(id) {
+        for (id, record) in records where !sprites.keys.contains(id) {
             let (tileX, tileY) = savedTile(for: id) ?? randomSpawnTile()
 
             let model = NPCModel(
@@ -59,7 +60,7 @@ final class NPCManager {
                 tileY: tileY
             )
 
-            let sprite = NPCSprite(model: model)
+            let sprite = NPCSprite(model: model, roster: engine.roster, catalog: engine.npcCatalog)
             sprite.position = CGPoint(
                 x: CGFloat(model.tileX) * TileMap.tileSize + TileMap.tileSize / 2,
                 y: CGFloat(model.tileY) * TileMap.tileSize + TileMap.tileSize / 2
@@ -93,7 +94,7 @@ final class NPCManager {
 
         // 2. Updates
         for id in spriteIDs.intersection(agentIDs) {
-            guard let record = engine.agents[id], let existing = models[id] else { continue }
+            guard let record = records[id], let existing = models[id] else { continue }
             if record.bond != existing.bond || record.name != existing.name || record.totalBitsRaw != existing.totalBitsRaw {
                 let currentTile = behaviors[id]?.currentTile() ?? TilePosition(tileX: existing.tileX, tileY: existing.tileY)
                 let updated = NPCModel(

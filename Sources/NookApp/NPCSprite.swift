@@ -38,8 +38,16 @@ final class NPCSprite: SKNode {
         return Int(hash % UInt64(count))
     }
 
-    init(model: NPCModel) {
-        charIndex = Self.charIndex(for: model.id)
+    nonisolated static func charIndex(for id: String, roster: NPCRoster, catalog: NPCCatalog) -> Int {
+        catalog.entry(forAgentName: id, roster: roster)?.charIndex ?? charIndex(for: id)
+    }
+
+    init(model: NPCModel, roster: NPCRoster? = nil, catalog: NPCCatalog = .standard) {
+        if let roster {
+            charIndex = Self.charIndex(for: model.id, roster: roster, catalog: catalog)
+        } else {
+            charIndex = Self.charIndex(for: model.id)
+        }
 
         character = SKSpriteNode()
         character.size = CGSize(width: Self.charW, height: Self.charH)

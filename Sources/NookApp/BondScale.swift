@@ -1,29 +1,31 @@
 import Foundation
 
 enum BondScale {
-    // Scaled ×40 from the pre-cache baseline so progression stays similar once
-    // bond tokens include weighted cache read/write (dominant in real sessions).
+    // Scaled ×20 from the pre-cache baseline. Cache reads (previously ×0.1) were
+    // excluded from bond tokens — they represented ~50% of old totals in subagent
+    // sessions due to quadratic context re-reads. Halving the multiplier compensates
+    // so per-session progression stays similar (~1–3 sessions per mid-game level).
     static let thresholds: [(level: Int, tokens: Int)] = [
         (1, 0),
-        (2, 400_000),
-        (3, 667_240),
-        (4, 1_113_040),
-        (5, 1_856_640),
-        (6, 3_097_040),
-        (7, 5_166_200),
-        (8, 8_617_720),
-        (9, 14_375_240),
-        (10, 23_979_360),
-        (11, 40_000_000),
-        (12, 66_724_000),
-        (13, 111_302_360),
-        (14, 185_663_560),
-        (15, 309_705_480),
-        (16, 516_619_880),
-        (17, 861_773_880),
-        (18, 1_437_525_480),
-        (19, 2_397_937_000),
-        (20, 4_000_000_000)
+        (2, 200_000),
+        (3, 333_620),
+        (4, 556_520),
+        (5, 928_320),
+        (6, 1_548_520),
+        (7, 2_583_100),
+        (8, 4_308_860),
+        (9, 7_187_620),
+        (10, 11_989_680),
+        (11, 20_000_000),
+        (12, 33_362_000),
+        (13, 55_651_180),
+        (14, 92_831_780),
+        (15, 154_852_740),
+        (16, 258_309_940),
+        (17, 430_886_940),
+        (18, 718_762_740),
+        (19, 1_198_968_500),
+        (20, 2_000_000_000)
     ]
 
     static func level(for tokens: Int) -> Int {

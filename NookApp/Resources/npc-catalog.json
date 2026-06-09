@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "catalogId": "starter",
+      "defaultName": null,
+      "sprite": "char_0",
+      "charIndex": 0,
+      "unlockCondition": { "kind": "free" },
+      "primaryTone": "descriptive",
+      "rareTone": "mentor",
+      "personality": "New resident. Curious, adaptive, and eager to learn the shape of the player's work."
+    },
+    {
+      "catalogId": "wren",
+      "defaultName": "Wren",
+      "sprite": "char_1",
+      "charIndex": 1,
+      "unlockCondition": { "kind": "bond", "level": 3 },
+      "primaryTone": "overhyped",
+      "rareTone": "dramatic",
+      "personality": "Relentless enthusiast. Treats small refactors like festivals. Notices momentum before polish."
+    },
+    {
+      "catalogId": "flint",
+      "defaultName": "Flint",
+      "sprite": "char_2",
+      "charIndex": 2,
+      "unlockCondition": { "kind": "bitsSpent", "total": 1000 },
+      "primaryTone": "sarcastic",
+      "rareTone": "tired",
+      "personality": "Pragmatic craftsperson. Sees code as trade, not passion. Dry irony. Dislikes unnecessary abstractions."
+    },
+    {
+      "catalogId": "maple",
+      "defaultName": "Maple",
+      "sprite": "char_3",
+      "charIndex": 3,
+      "unlockCondition": { "kind": "bond", "level": 6 },
+      "primaryTone": "philosophical",
+      "rareTone": "conspiracy",
+      "personality": "Quiet systems thinker. Finds meaning in bugs, patterns, and recurring project rituals."
+    },
+    {
+      "catalogId": "cinder",
+      "defaultName": "Cinder",
+      "sprite": "char_4",
+      "charIndex": 4,
+      "unlockCondition": { "kind": "villageBits", "total": 25000 },
+      "primaryTone": "dramatic",
+      "rareTone": "gossip",
+      "personality": "Theatrical operator. Turns deployments, errors, and file changes into village-scale drama."
+    },
+    {
+      "catalogId": "rue",
+      "defaultName": "Rue",
+      "sprite": "char_5",
+      "charIndex": 5,
+      "unlockCondition": { "kind": "bond", "level": 10 },
+      "primaryTone": "mentor",
+      "rareTone": "philosophical",
+      "personality": "Seasoned guide. Speaks in compact maxims, half wisdom and half mischief."
+    }
+  ]
+}
