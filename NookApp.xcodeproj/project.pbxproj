@@ -21,6 +21,7 @@
 		189FB4DAA418D623B18587EF /* DeskLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 234622D73DF41D8FFBAD0B48 /* DeskLayout.swift */; };
 		1A5ED630CE36A4288B66DA2E /* maygetsu-manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 14C2FDEF2413183F6658D48D /* maygetsu-manifest.json */; };
 		1A786941CEBC8F07E9E04CC5 /* PixelIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = D97539C9195C785843703FF8 /* PixelIcon.swift */; };
+		1AD6249131FBF31249BB9910 /* VillageMapReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FF2BF08AB611A6C11A5F4B /* VillageMapReference.swift */; };
 		1E62ADBE78422BC42519DA68 /* TileMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5725AD04028894F2D2FB3B7 /* TileMap.swift */; };
 		240305E4D9361B4AF5E09613 /* plaza.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A622DAE1242B39AA1B078CD /* plaza.png */; };
 		24181FF6CFBD1A6E117600DC /* NPCModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05AA11784DE252A1864D7AD9 /* NPCModel.swift */; };
@@ -162,6 +163,7 @@
 		788FBB092E3C4F5AED11854B /* DayPhase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayPhase.swift; sourceTree = "<group>"; };
 		7A3A58C9388E202D6A8FC73A /* table.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = table.png; sourceTree = "<group>"; };
 		7EF6720CB18A402B6991A645 /* VillageEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageEngine.swift; sourceTree = "<group>"; };
+		84FF2BF08AB611A6C11A5F4B /* VillageMapReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VillageMapReference.swift; sourceTree = "<group>"; };
 		851348E68B741BB3D500AD02 /* house_purple.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = house_purple.png; sourceTree = "<group>"; };
 		86F2FA90E298286AF78B584D /* fence.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = fence.png; sourceTree = "<group>"; };
 		893F6C4B86BCE2EC5C24A49B /* AssetTileMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetTileMap.swift; sourceTree = "<group>"; };
@@ -359,6 +361,7 @@
 				7EF6720CB18A402B6991A645 /* VillageEngine.swift */,
 				57CB39EEF877552A0952566A /* VillageLayout.swift */,
 				ED65F9597C66B60CB29D70EC /* VillageMapData.swift */,
+				84FF2BF08AB611A6C11A5F4B /* VillageMapReference.swift */,
 				0E846BACDE6F0C29B13C075F /* VillagePersistence.swift */,
 				B60B5EC47F016AEA7D5EC172 /* VillageScene.swift */,
 			);
@@ -685,6 +688,7 @@
 				25E603205FF149AB42B0BBC6 /* VillageEngine.swift in Sources */,
 				CE370E8C74F15F7C7E3C733C /* VillageLayout.swift in Sources */,
 				8B24B551A8556764CBB6EBBE /* VillageMapData.swift in Sources */,
+				1AD6249131FBF31249BB9910 /* VillageMapReference.swift in Sources */,
 				A9C649BC6A75363AD834F379 /* VillagePersistence.swift in Sources */,
 				7D5B4ADDBE02355C64A04203 /* VillageScene.swift in Sources */,
 			);
