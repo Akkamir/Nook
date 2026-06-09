@@ -370,17 +370,50 @@ final class NPCManager {
 
     private func computeWalkableDeskCandidates(blocked: Set<TilePosition>) {
         let b = spawnBounds
-        var candidates: [TilePosition] = []
-        for y in stride(from: b.maxY, through: b.minY, by: -1) {
+        let centerX = (b.minX + b.maxX) / 2
+        let centerY = (b.minY + b.maxY) / 2
+        // Exclude the central path intersection (vertical road) so desks land on the
+        // horizontal path segments to the left and right of the fountain.
+        let intersectionRadius = 2
+
+        var all: [TilePosition] = []
+        for y in b.minY...b.maxY {
             for x in b.minX...b.maxX {
                 let tile = TilePosition(tileX: x, tileY: y)
                 guard !blocked.contains(tile) else { continue }
-                candidates.append(tile)
+                all.append(tile)
             }
         }
-        // Greedy spacing: no two candidates within 2 tiles of each other
+
+        // Primary: tiles on the central path row, outside the intersection zone.
+        let pathRow = all.filter {
+            abs($0.tileY - centerY) <= 1 && abs($0.tileX - centerX) > intersectionRadius
+        }
+        let sort: (TilePosition, TilePosition) -> Bool = { lhs, rhs in
+            let dxL = abs(lhs.tileX - centerX), dxR = abs(rhs.tileX - centerX)
+            if dxL != dxR { return dxL < dxR }
+            return abs(lhs.tileY - centerY) < abs(rhs.tileY - centerY)
+        }
+        let leftPath  = pathRow.filter { $0.tileX <  centerX }.sorted(by: sort)
+        let rightPath = pathRow.filter { $0.tileX >= centerX }.sorted(by: sort)
+
+        // Interleave left and right so the first two desks flank the fountain.
+        var sorted: [TilePosition] = []
+        for i in 0..<max(leftPath.count, rightPath.count) {
+            if i < leftPath.count  { sorted.append(leftPath[i]) }
+            if i < rightPath.count { sorted.append(rightPath[i]) }
+        }
+
+        // Fallback: remaining tiles sorted by Manhattan distance to center.
+        let inPath = Set(sorted)
+        let remaining = all.filter { !inPath.contains($0) }
+            .sorted { abs($0.tileX - centerX) + abs($0.tileY - centerY) <
+                      abs($1.tileX - centerX) + abs($1.tileY - centerY) }
+        sorted.append(contentsOf: remaining)
+
+        // Greedy spacing: no two candidates within 2 tiles of each other.
         var spaced: [TilePosition] = []
-        for candidate in candidates {
+        for candidate in sorted {
             let tooClose = spaced.contains {
                 abs($0.tileX - candidate.tileX) <= 2 && abs($0.tileY - candidate.tileY) <= 2
             }
