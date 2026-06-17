@@ -24,4 +24,25 @@ final class CharIndexTests: XCTestCase {
             XCTAssertTrue((0..<6).contains(index), "index \(index) out of range for \(id)")
         }
     }
+
+    func test_catalog_char_index_uses_roster_mapping_before_hash_fallback() {
+        let roster = NPCRoster(version: 1, entries: [
+            RosterEntry(catalogId: "starter", name: "Radion", unlockedAt: Date(), assignedProjects: [])
+        ])
+        let catalog = NPCCatalog(entries: [
+            NPCCatalogEntry(
+                catalogId: "starter",
+                defaultName: nil,
+                sprite: "char_0",
+                charIndex: 0,
+                unlockCondition: .free,
+                primaryTone: .descriptive,
+                rareTone: .mentor,
+                personality: "starter personality"
+            )
+        ])
+
+        XCTAssertEqual(NPCSprite.charIndex(for: "Radion", roster: roster, catalog: catalog), 0)
+        XCTAssertEqual(NPCSprite.charIndex(for: "Unknown", roster: roster, catalog: catalog), NPCSprite.charIndex(for: "Unknown", count: 6))
+    }
 }

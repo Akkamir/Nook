@@ -29,7 +29,6 @@ struct GeneratedSessionMemory: Codable, Equatable {
         let theme = themeText(for: session)
         let title = "\(theme) · \(session.project)"
         let summary = summaryText(for: session)
-        let line = lineText(for: session, theme: theme)
         return GeneratedSessionMemory(
             sessionId: session.sessionId,
             agentName: session.agentName,
@@ -37,9 +36,23 @@ struct GeneratedSessionMemory: Codable, Equatable {
             shortSummary: summary,
             narrativeBeats: [summary],
             relationshipNote: relationshipText(forBond: session.totalTokens),
-            cachedLines: [line],
+            cachedLines: cachedLinesText(for: session, theme: theme),
             updatedAt: session.lastActivityAt
         )
+    }
+
+    private static func cachedLinesText(for session: SessionRecord, theme: String) -> [String] {
+        let bond = BondScale.level(for: session.totalTokens)
+        let project = session.project
+        var lines: [String] = []
+        if !session.filesTouched.isEmpty {
+            let name = URL(fileURLWithPath: session.filesTouched[0]).lastPathComponent
+            lines.append("I remember \(name).")
+        }
+        if bond >= 4 { lines.append("Good progress on \(project).") }
+        if bond >= 8 { lines.append("I know your rhythm by now.") }
+        lines.append(lineText(for: session, theme: theme))
+        return lines
     }
 
     private static func themeText(for session: SessionRecord) -> String {

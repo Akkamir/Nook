@@ -6,92 +6,176 @@ enum UpgradeKind: String, Codable, Equatable, Hashable {
     case trickle
 }
 
-struct AgentUpgradeState: Codable, Equatable {
+struct EconomyMigrationState: Codable, Equatable {
+    var adjustedAt: Date?
+    var note: String?
+
+    init(adjustedAt: Date? = nil, note: String? = nil) {
+        self.adjustedAt = adjustedAt
+        self.note = note
+    }
+}
+
+struct AgentEconomyState: Codable, Equatable {
+    var wallet: Double
+    var spentBits: Double
+    var lastProcessedRawBits: Double
     var bitMultiplierLevel: Int
     var bondDividendLevel: Int
-    var trickleLevel: Int
-    var spentBits: Double
-    var lastPurchasedAt: Date?
+    var trickleCount: Int
     var trickleBitsAccumulated: Double
-    var bonusAccumulated: Double
+    var lastPurchasedAt: Date?
     var lastTrickleAt: Date?
+    var migrationAdjusted: Bool
 
-    init(
-        bitMultiplierLevel: Int = 0,
-        bondDividendLevel: Int = 0,
-        trickleLevel: Int = 0,
-        spentBits: Double = 0,
-        lastPurchasedAt: Date? = nil,
-        trickleBitsAccumulated: Double = 0,
-        bonusAccumulated: Double = 0,
-        lastTrickleAt: Date? = nil
-    ) {
+    init(wallet: Double = 0, spentBits: Double = 0, lastProcessedRawBits: Double = 0,
+         bitMultiplierLevel: Int = 0, bondDividendLevel: Int = 0, trickleCount: Int = 0,
+         trickleBitsAccumulated: Double = 0, lastPurchasedAt: Date? = nil,
+         lastTrickleAt: Date? = nil, migrationAdjusted: Bool = false) {
+        self.wallet = wallet
+        self.spentBits = spentBits
+        self.lastProcessedRawBits = lastProcessedRawBits
         self.bitMultiplierLevel = bitMultiplierLevel
         self.bondDividendLevel = bondDividendLevel
-        self.trickleLevel = trickleLevel
-        self.spentBits = spentBits
-        self.lastPurchasedAt = lastPurchasedAt
+        self.trickleCount = trickleCount
         self.trickleBitsAccumulated = trickleBitsAccumulated
-        self.bonusAccumulated = bonusAccumulated
+        self.lastPurchasedAt = lastPurchasedAt
         self.lastTrickleAt = lastTrickleAt
+        self.migrationAdjusted = migrationAdjusted
     }
 
-    // Backward-compatible: existing economy.json may lack new keys.
-    // bonusAccumulated = 0 on first decode → migration seeds it from retroactive bonus.
+    enum CodingKeys: String, CodingKey {
+        case wallet, spentBits, lastProcessedRawBits, bitMultiplierLevel, bondDividendLevel
+        case trickleCount, trickleLevel, trickleBitsAccumulated, lastPurchasedAt, lastTrickleAt
+        case migrationAdjusted
+    }
+
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        wallet = (try? c.decode(Double.self, forKey: .wallet)) ?? 0
+        spentBits = (try? c.decode(Double.self, forKey: .spentBits)) ?? 0
+        lastProcessedRawBits = (try? c.decode(Double.self, forKey: .lastProcessedRawBits)) ?? 0
         bitMultiplierLevel = (try? c.decode(Int.self, forKey: .bitMultiplierLevel)) ?? 0
         bondDividendLevel = (try? c.decode(Int.self, forKey: .bondDividendLevel)) ?? 0
-        trickleLevel = (try? c.decode(Int.self, forKey: .trickleLevel)) ?? 0
-        spentBits = (try? c.decode(Double.self, forKey: .spentBits)) ?? 0
-        lastPurchasedAt = try? c.decode(Date.self, forKey: .lastPurchasedAt)
+        trickleCount = (try? c.decode(Int.self, forKey: .trickleCount))
+            ?? ((try? c.decode(Int.self, forKey: .trickleLevel)) ?? 0)
         trickleBitsAccumulated = (try? c.decode(Double.self, forKey: .trickleBitsAccumulated)) ?? 0
-        bonusAccumulated = (try? c.decode(Double.self, forKey: .bonusAccumulated)) ?? 0
+        lastPurchasedAt = try? c.decode(Date.self, forKey: .lastPurchasedAt)
         lastTrickleAt = try? c.decode(Date.self, forKey: .lastTrickleAt)
+        migrationAdjusted = (try? c.decode(Bool.self, forKey: .migrationAdjusted)) ?? false
     }
 
-    var bitMultiplier: Double {
-        1.0 + Double(bitMultiplierLevel) * 0.25
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(wallet, forKey: .wallet)
+        try c.encode(spentBits, forKey: .spentBits)
+        try c.encode(lastProcessedRawBits, forKey: .lastProcessedRawBits)
+        try c.encode(bitMultiplierLevel, forKey: .bitMultiplierLevel)
+        try c.encode(bondDividendLevel, forKey: .bondDividendLevel)
+        try c.encode(trickleCount, forKey: .trickleCount)
+        try c.encode(trickleBitsAccumulated, forKey: .trickleBitsAccumulated)
+        try c.encodeIfPresent(lastPurchasedAt, forKey: .lastPurchasedAt)
+        try c.encodeIfPresent(lastTrickleAt, forKey: .lastTrickleAt)
+        try c.encode(migrationAdjusted, forKey: .migrationAdjusted)
     }
+
+    var availableBits: Double { max(0, wallet + trickleBitsAccumulated - spentBits) }
 }
 
-struct UpgradeState: Codable, Equatable {
-    var agents: [String: AgentUpgradeState]
-    var lastUpdated: Date
+typealias AgentUpgradeState = AgentEconomyState
 
-    init(agents: [String: AgentUpgradeState] = [:], lastUpdated: Date = Date(timeIntervalSince1970: 0)) {
+struct EconomyState: Codable, Equatable {
+    var schemaVersion: Int
+    var agents: [String: AgentEconomyState]
+    var villageWallet: Double
+    var spentVillageBits: Double
+    var lastProcessedGlobalRawBits: Double
+    var lastUpdated: Date
+    var migration: EconomyMigrationState
+
+    init(schemaVersion: Int = EconomyEngine.currentSchemaVersion,
+         agents: [String: AgentEconomyState] = [:],
+         villageWallet: Double = 0,
+         spentVillageBits: Double = 0,
+         lastProcessedGlobalRawBits: Double = 0,
+         lastUpdated: Date = Date(timeIntervalSince1970: 0),
+         migration: EconomyMigrationState = EconomyMigrationState()) {
+        self.schemaVersion = schemaVersion
         self.agents = agents
+        self.villageWallet = villageWallet
+        self.spentVillageBits = spentVillageBits
+        self.lastProcessedGlobalRawBits = lastProcessedGlobalRawBits
         self.lastUpdated = lastUpdated
+        self.migration = migration
     }
 
-    static var empty: UpgradeState { UpgradeState() }
+    static var empty: EconomyState { EconomyState() }
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion, agents, villageWallet, spentVillageBits, lastProcessedGlobalRawBits, lastUpdated, migration
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        agents = (try? c.decode([String: AgentUpgradeState].self, forKey: .agents)) ?? [:]
+        schemaVersion = (try? c.decode(Int.self, forKey: .schemaVersion)) ?? 0
+        agents = (try? c.decode([String: AgentEconomyState].self, forKey: .agents)) ?? [:]
+        villageWallet = (try? c.decode(Double.self, forKey: .villageWallet)) ?? 0
+        spentVillageBits = (try? c.decode(Double.self, forKey: .spentVillageBits)) ?? 0
+        lastProcessedGlobalRawBits = (try? c.decode(Double.self, forKey: .lastProcessedGlobalRawBits)) ?? 0
         lastUpdated = (try? c.decode(Date.self, forKey: .lastUpdated)) ?? Date(timeIntervalSince1970: 0)
+        migration = (try? c.decode(EconomyMigrationState.self, forKey: .migration)) ?? EconomyMigrationState()
     }
+
+    var villageAvailableBits: Double { max(0, villageWallet - spentVillageBits) }
 }
 
-enum UpgradeEconomy {
-    static let bitMultiplierBaseCost: Double = 50
-    static let bitMultiplierCostGrowth: Double = 1.8
+typealias UpgradeState = EconomyState
 
-    // Bond Dividend: 3 levels. Multiplier = 1 + (bond/10) * factor.
-    // At low bond, weaker than bitMultiplier. At bond 8+, significantly better.
-    static let bondDividendCosts: [Double] = [200, 600, 1800]
-    static let bondDividendFactors: [Double] = [0, 0.5, 1.2, 3.0]
+enum EconomyEngine {
+    static let currentSchemaVersion = 2
+    static let villageBonusRate = 0.10
+    static let bitMultiplierBonuses: [Double] = [0, 0.10, 0.20, 0.35, 0.50, 0.75, 1.00]
+    static let bitMultiplierCosts: [Double] = [500, 1_250, 3_000, 7_500, 18_000, 45_000]
+    static let bondDividendGates: [Int] = [0, 3, 6, 10]
+    static let bondDividendFactors: [Double] = [0, 0.03, 0.06, 0.10]
+    static let bondDividendCosts: [Double] = [1_500, 6_000, 20_000]
+    static let trickleBaseCost: Double = 100
+    static let trickleCostGrowth: Double = 1.25
+    static let trickleRatePerUnit: Double = 0.25
 
-    // Bit Trickle: Cookie Clicker cursor model. Each purchase adds 1 unit (+1 bit/10s).
-    // Cost scales exponentially per unit owned. No level cap.
-    static let trickleBaseCost: Double = 50
-    static let trickleCostGrowth: Double = 1.15
-    static let trickleRatePerUnit: Double = 1.0  // bits per 10s per unit
+    static func bitMultiplierBonus(level: Int) -> Double {
+        guard level >= 0 else { return 0 }
+        return bitMultiplierBonuses[min(level, bitMultiplierBonuses.count - 1)]
+    }
+
+    static func bondDividendBonus(level: Int, bond: Int) -> Double {
+        guard level > 0, level < bondDividendFactors.count else { return 0 }
+        return Double(bond) * bondDividendFactors[level]
+    }
+
+    static func effectiveMultiplier(for state: AgentEconomyState, bond: Int) -> Double {
+        1.0 + bitMultiplierBonus(level: state.bitMultiplierLevel)
+            + bondDividendBonus(level: state.bondDividendLevel, bond: bond)
+    }
+
+    static func trickleRate(count: Int) -> Double {
+        Double(max(0, count)) * trickleRatePerUnit
+    }
+
+    static func trickleCap(forBond bond: Int) -> Int {
+        switch bond {
+        case ..<3: return 2
+        case ..<6: return 5
+        case ..<10: return 10
+        default: return 20
+        }
+    }
 
     static func cost(for upgrade: UpgradeKind, currentLevel: Int) -> Double {
         switch upgrade {
         case .bitMultiplier:
-            return bitMultiplierBaseCost * pow(bitMultiplierCostGrowth, Double(currentLevel))
+            guard currentLevel < bitMultiplierCosts.count else { return .infinity }
+            return bitMultiplierCosts[currentLevel]
         case .bondDividend:
             guard currentLevel < bondDividendCosts.count else { return .infinity }
             return bondDividendCosts[currentLevel]
@@ -100,60 +184,168 @@ enum UpgradeEconomy {
         }
     }
 
-    // Bond dividend's bonus contribution (0.0 when locked, scales with bond).
-    // Combined with bitMultiplier additively: effective = 1 + bitBonus + bdBonus.
-    static func bondDividendMultiplier(level: Int, bond: Int) -> Double {
-        guard level > 0, level < bondDividendFactors.count else { return 1.0 }
-        return 1.0 + Double(bond) / 10.0 * bondDividendFactors[level]
+    static func canBuy(_ upgrade: UpgradeKind, currentLevel: Int, bond: Int) -> Bool {
+        switch upgrade {
+        case .bitMultiplier:
+            return currentLevel < bitMultiplierCosts.count
+        case .bondDividend:
+            let next = currentLevel + 1
+            guard next < bondDividendGates.count else { return false }
+            return bond >= bondDividendGates[next]
+        case .trickle:
+            return currentLevel < trickleCap(forBond: bond)
+        }
     }
 
-    // Additive combined multiplier: bonuses stack, not compound.
-    // Prevents multiplicative explosion when both upgrades are purchased.
+    static func processLedgerDelta(ledger: LedgerState, economy: inout EconomyState) {
+        if economy.schemaVersion < currentSchemaVersion {
+            economy = migratedState(from: economy, ledger: ledger)
+        }
+
+        var didChange = false
+
+        for (agentName, ledgerAgent) in ledger.agents {
+            var state = economy.agents[agentName] ?? AgentEconomyState()
+            let rawDelta = ledgerAgent.totalBitsRaw - state.lastProcessedRawBits
+            if rawDelta > 0 {
+                let effective = rawDelta * effectiveMultiplier(for: state, bond: ledgerAgent.bond)
+                state.wallet += effective
+                state.lastProcessedRawBits = ledgerAgent.totalBitsRaw
+                economy.villageWallet += effective * villageBonusRate
+                didChange = true
+            } else if rawDelta < 0 {
+                print("[EconomyEngine] Negative rawDelta for \(agentName): \(rawDelta), resynchronizing checkpoint")
+                state.lastProcessedRawBits = ledgerAgent.totalBitsRaw
+                didChange = true
+            }
+            economy.agents[agentName] = state
+        }
+
+        let globalDelta = ledger.globalBitsRaw - economy.lastProcessedGlobalRawBits
+        if globalDelta > 0 {
+            economy.villageWallet += globalDelta
+            economy.lastProcessedGlobalRawBits = ledger.globalBitsRaw
+            didChange = true
+        } else if globalDelta < 0 {
+            print("[EconomyEngine] Negative globalDelta: \(globalDelta), resynchronizing checkpoint")
+            economy.lastProcessedGlobalRawBits = ledger.globalBitsRaw
+            didChange = true
+        }
+
+        if didChange {
+            economy.lastUpdated = Date()
+        }
+    }
+
+    static func migratedState(from old: EconomyState, ledger: LedgerState) -> EconomyState {
+        var migrated = old
+        migrated.schemaVersion = currentSchemaVersion
+        migrated.lastProcessedGlobalRawBits = ledger.globalBitsRaw
+        migrated.migration = EconomyMigrationState(adjustedAt: Date(), note: "Conservative economy migration")
+
+        for (agentName, ledgerAgent) in ledger.agents {
+            var agent = migrated.agents[agentName] ?? AgentEconomyState()
+            agent.wallet = conservativeStartingWallet(rawBits: ledgerAgent.totalBitsRaw, bond: ledgerAgent.bond)
+            agent.spentBits = 0
+            agent.lastProcessedRawBits = ledgerAgent.totalBitsRaw
+            agent.bitMultiplierLevel = min(max(agent.bitMultiplierLevel, 0), bitMultiplierBonuses.count - 1)
+            agent.bondDividendLevel = validBondDividendLevel(agent.bondDividendLevel, bond: ledgerAgent.bond)
+            agent.trickleCount = min(max(agent.trickleCount, 0), trickleCap(forBond: ledgerAgent.bond))
+            agent.migrationAdjusted = true
+            migrated.agents[agentName] = agent
+        }
+
+        return migrated
+    }
+
+    static func conservativeStartingWallet(rawBits: Double, bond: Int) -> Double {
+        min(rawBits * 0.25, walletCap(forBond: bond))
+    }
+
+    static func walletCap(forBond bond: Int) -> Double {
+        switch bond {
+        case ..<3: return 500
+        case ..<6: return 1_500
+        case ..<10: return 5_000
+        default: return 12_000
+        }
+    }
+
+    static func validBondDividendLevel(_ level: Int, bond: Int) -> Int {
+        let clamped = min(max(level, 0), bondDividendGates.count - 1)
+        var valid = 0
+        for candidate in 0...clamped where bond >= bondDividendGates[candidate] {
+            valid = candidate
+        }
+        return valid
+    }
+
+    @discardableResult
+    static func apply(_ upgrade: UpgradeKind, for agentName: String, ledger: LedgerState, economy: inout EconomyState) -> Bool {
+        guard let ledgerAgent = ledger.agents[agentName] else { return false }
+        var state = economy.agents[agentName] ?? AgentEconomyState()
+
+        let currentLevel: Int
+        switch upgrade {
+        case .bitMultiplier: currentLevel = state.bitMultiplierLevel
+        case .bondDividend: currentLevel = state.bondDividendLevel
+        case .trickle: currentLevel = state.trickleCount
+        }
+
+        guard canBuy(upgrade, currentLevel: currentLevel, bond: ledgerAgent.bond) else { return false }
+        let upgradeCost = cost(for: upgrade, currentLevel: currentLevel)
+        guard upgradeCost < .infinity, state.availableBits >= upgradeCost else { return false }
+
+        switch upgrade {
+        case .bitMultiplier: state.bitMultiplierLevel += 1
+        case .bondDividend: state.bondDividendLevel += 1
+        case .trickle: state.trickleCount += 1
+        }
+
+        state.spentBits += upgradeCost
+        state.lastPurchasedAt = Date()
+        economy.agents[agentName] = state
+        economy.lastUpdated = Date()
+        return true
+    }
+}
+
+enum UpgradeEconomy {
+    static func cost(for upgrade: UpgradeKind, currentLevel: Int) -> Double {
+        EconomyEngine.cost(for: upgrade, currentLevel: currentLevel)
+    }
+
+    static func trickleRate(count: Int) -> Double {
+        EconomyEngine.trickleRate(count: count)
+    }
+
+    static func availableBits(for agentName: String, upgrades: EconomyState) -> Double {
+        upgrades.agents[agentName]?.availableBits ?? 0
+    }
+
+    static func bitMultiplierDisplay(level: Int) -> Double {
+        1.0 + EconomyEngine.bitMultiplierBonus(level: level)
+    }
+
+    static func bondDividendMultiplier(level: Int, bond: Int) -> Double {
+        1.0 + EconomyEngine.bondDividendBonus(level: level, bond: bond)
+    }
+
     static func effectiveMultiplier(bitMultiplier: Double, bdLevel: Int, bond: Int) -> Double {
         let bitBonus = bitMultiplier - 1.0
-        let bdBonus = bondDividendMultiplier(level: bdLevel, bond: bond) - 1.0
+        let bdBonus = EconomyEngine.bondDividendBonus(level: bdLevel, bond: bond)
         return 1.0 + bitBonus + bdBonus
     }
 
-    // Returns bits per 10s for a given number of trickle units owned.
-    static func trickleRate(count: Int) -> Double {
-        Double(count) * trickleRatePerUnit
-    }
-
-    // availableBits = totalBits(raw) + bonusAccumulated + trickleAccumulated − spent
-    // Multipliers only apply to new daemon events via bonusAccumulated, not retroactively.
-    static func availableBits(for agentName: String, ledger: LedgerState, upgrades: UpgradeState) -> Double {
-        guard let agent = ledger.agents[agentName] else { return 0 }
-        let state = upgrades.agents[agentName]
-        let spent = state?.spentBits ?? 0
-        let trickle = state?.trickleBitsAccumulated ?? 0
-        let bonus = state?.bonusAccumulated ?? 0
-        return max(0, agent.totalBits + bonus + trickle - spent)
-    }
-
-
     @discardableResult
-    static func apply(_ upgrade: UpgradeKind, for agentName: String, ledger: LedgerState, upgrades: inout UpgradeState) -> Bool {
-        var agentState = upgrades.agents[agentName] ?? AgentUpgradeState()
-        let currentLevel: Int
-        switch upgrade {
-        case .bitMultiplier: currentLevel = agentState.bitMultiplierLevel
-        case .bondDividend:  currentLevel = agentState.bondDividendLevel
-        case .trickle:       currentLevel = agentState.trickleLevel
-        }
-        let upgradeCost = cost(for: upgrade, currentLevel: currentLevel)
-        guard upgradeCost < .infinity,
-              availableBits(for: agentName, ledger: ledger, upgrades: upgrades) >= upgradeCost
-        else { return false }
-        switch upgrade {
-        case .bitMultiplier: agentState.bitMultiplierLevel += 1
-        case .bondDividend:  agentState.bondDividendLevel += 1
-        case .trickle:       agentState.trickleLevel += 1
-        }
-        agentState.spentBits += upgradeCost
-        agentState.lastPurchasedAt = Date()
-        upgrades.agents[agentName] = agentState
-        return true
+    static func apply(_ upgrade: UpgradeKind, for agentName: String, ledger: LedgerState, upgrades: inout EconomyState) -> Bool {
+        EconomyEngine.apply(upgrade, for: agentName, ledger: ledger, economy: &upgrades)
+    }
+}
+
+extension AgentEconomyState {
+    var bitMultiplier: Double {
+        UpgradeEconomy.bitMultiplierDisplay(level: bitMultiplierLevel)
     }
 }
 
@@ -168,14 +360,14 @@ final class EconomyStore {
         decoder.dateDecodingStrategy = .iso8601
     }
 
-    func load() -> UpgradeState {
+    func load() -> EconomyState {
         guard let data = try? Data(contentsOf: url),
-              let state = try? decoder.decode(UpgradeState.self, from: data)
+              let state = try? decoder.decode(EconomyState.self, from: data)
         else { return .empty }
         return state
     }
 
-    func save(_ state: UpgradeState) throws {
+    func save(_ state: EconomyState) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try encoder.encode(state)
         try data.write(to: url, options: .atomic)

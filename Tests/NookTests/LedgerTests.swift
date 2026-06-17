@@ -21,24 +21,55 @@ final class LedgerTests: XCTestCase {
 
     func test_load_returns_empty_state_when_no_file() {
         let state = ledger.load()
-        XCTAssertEqual(state.totalBits, 0)
+        XCTAssertEqual(state.totalBitsRaw, 0)
         XCTAssertEqual(state.pendingBits, 0)
+        XCTAssertEqual(state.globalBitsRaw, 0)
         XCTAssertTrue(state.agents.isEmpty)
     }
 
     func test_save_and_reload_preserves_state() throws {
         var state = LedgerState.empty
-        state.totalBits = 42.5
+        state.totalBitsRaw = 42.5
         state.pendingBits = 10.0
-        state.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 1_856_640, bond: 3)
+        state.globalBitsRaw = 7.5
+        state.agents["Radion"] = AgentRecord(name: "Radion", totalTokens: 1_856_640, bond: 3, totalBitsRaw: 35.0)
 
         try ledger.save(state)
         let loaded = ledger.load()
 
-        XCTAssertEqual(loaded.totalBits, 42.5, accuracy: 0.001)
+        XCTAssertEqual(loaded.totalBitsRaw, 42.5, accuracy: 0.001)
         XCTAssertEqual(loaded.pendingBits, 10.0, accuracy: 0.001)
-        XCTAssertEqual(loaded.agents["Radion"]?.totalTokens, 1_856_640)
-        XCTAssertEqual(loaded.agents["Radion"]?.bond, 5)
+        XCTAssertEqual(loaded.globalBitsRaw, 7.5, accuracy: 0.001)
+        let agent = try XCTUnwrap(loaded.agents["Radion"])
+        XCTAssertEqual(agent.totalTokens, 1_856_640)
+        XCTAssertEqual(agent.totalBitsRaw, 35.0, accuracy: 0.001)
+        XCTAssertEqual(agent.bond, 6)
+    }
+
+    func test_encode_uses_legacy_wire_keys_for_raw_bit_fields() throws {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let state = LedgerState(
+            totalBitsRaw: 30,
+            pendingBits: 30,
+            globalBitsRaw: 0,
+            agents: ["Radion": AgentRecord(name: "Radion", totalTokens: 6_000, bond: 1, totalBitsRaw: 30)],
+            lastUpdated: date("2026-06-01T10:00:00Z"),
+            recentEvents: [BitEvent(agentName: "Radion", rawBits: 30, seq: 1)],
+            eventSeq: 1
+        )
+
+        let data = try encoder.encode(state)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        XCTAssertNotNil(object["totalBits"])
+        XCTAssertNil(object["totalBitsRaw"])
+        XCTAssertEqual(object["globalBitsRaw"] as? Double, 0)
+
+        let events = try XCTUnwrap(object["recentEvents"] as? [[String: Any]])
+        let event = try XCTUnwrap(events.first)
+        XCTAssertNotNil(event["bits"])
+        XCTAssertNil(event["rawBits"])
     }
 
     func test_apply_event_global_pool_increases_bits() throws {
@@ -53,7 +84,8 @@ final class LedgerTests: XCTestCase {
 
         // 1000 input *5/1000 + 1000 output *5 *5/1000 = 5 + 25 = 30 Bits
         XCTAssertEqual(state.pendingBits, 30.0, accuracy: 0.001)
-        XCTAssertEqual(state.totalBits, 30.0, accuracy: 0.001)
+        XCTAssertEqual(state.totalBitsRaw, 30.0, accuracy: 0.001)
+        XCTAssertEqual(state.globalBitsRaw, 30.0, accuracy: 0.001)
         XCTAssertTrue(state.agents.isEmpty)
     }
 
@@ -68,7 +100,7 @@ final class LedgerTests: XCTestCase {
         ledger.apply(event: event, agentName: "Radion", to: &state)
 
         XCTAssertEqual(state.agents["Radion"]?.totalTokens, 400_000)
-        XCTAssertEqual(state.agents["Radion"]?.bond, 2)
+        XCTAssertEqual(state.agents["Radion"]?.bond, 3)
     }
 
     func test_apply_event_uses_twenty_level_bond_scale() throws {
@@ -81,7 +113,7 @@ final class LedgerTests: XCTestCase {
         var state = LedgerState.empty
         ledger.apply(event: event, agentName: "Radion", to: &state)
 
-        XCTAssertEqual(state.agents["Radion"]?.bond, 5)
+        XCTAssertEqual(state.agents["Radion"]?.bond, 6)
     }
 
     func test_apply_creates_session_record_on_first_event() {

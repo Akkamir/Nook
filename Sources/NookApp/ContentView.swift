@@ -8,6 +8,8 @@ struct ContentView: View {
     @State private var localVillageAssetsAvailable = true
     @State private var isShopOpen = false
     @State private var shopAgentID: String?
+    @State private var isRosterOpen = false
+    @State private var assignmentCatalogId: String?
     @State private var isAPIKeyOpen = false
     @State private var apiKeyDraft = ""
 
@@ -31,8 +33,8 @@ struct ContentView: View {
             // HUD overlay — SwiftUI is more reliable than SKCameraNode children on macOS
             HStack(spacing: 10) {
                 HStack(spacing: 7) {
-                    PixelIcon(kind: .bit, size: 14)
-                    Text("\(engine.totalAvailableBits, specifier: "%.1f") Bits")
+                    PixelIcon(kind: .villageBit, size: 14)
+                    Text("\(engine.villageAvailableBits, specifier: "%.1f") Village Bits")
                         .font(.system(size: 14, weight: .semibold, design: .monospaced))
                         .foregroundStyle(.white)
                 }
@@ -50,8 +52,31 @@ struct ContentView: View {
                 .background(isShopOpen ? .white.opacity(0.26) : .white.opacity(0.10))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 .contentShape(Rectangle())
-                .disabled(engine.agents.isEmpty)
+                .disabled(engine.shopNPCRecords.isEmpty)
                 .help("Bit Multiplier shop")
+
+                Button {
+                    engine.consumeRosterBadge()
+                    isRosterOpen.toggle()
+                } label: {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "person.3")
+                            .font(.system(size: 13, weight: .semibold))
+                            .frame(width: 24, height: 24)
+                        if engine.hasRosterBadge {
+                            Circle()
+                                .fill(Color(red: 1.0, green: 0.72, blue: 0.25))
+                                .frame(width: 7, height: 7)
+                                .offset(x: 1, y: -1)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .background(isRosterOpen ? .white.opacity(0.26) : .white.opacity(0.10))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .contentShape(Rectangle())
+                .help("NPC roster")
 
                 Button {
                     apiKeyDraft = OpenAIAPIKeyStore.load() ?? ""
@@ -88,8 +113,23 @@ struct ContentView: View {
                         nextBondDividendCost: { engine.nextBondDividendCost(for: $0) },
                         nextTrickleCost: { engine.nextTrickleCost(for: $0) },
                         upgradeState: engine.upgrades,
-                        agents: engine.agents,
+                        agents: engine.shopNPCRecords,
                         onClose: { isShopOpen = false }
+                    )
+                    Spacer()
+                }
+                .padding(.top, 58)
+                .padding(.leading, 16)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            if isRosterOpen {
+                HStack {
+                    RosterPanel(
+                        catalog: engine.npcCatalog,
+                        roster: engine.roster,
+                        onSelect: { id in assignmentCatalogId = id },
+                        onClose: { isRosterOpen = false }
                     )
                     Spacer()
                 }
@@ -130,10 +170,40 @@ struct ContentView: View {
                 .allowsHitTesting(false)
             }
 
+            if let unlockedName = latestUnlockedName {
+                HStack {
+                    Spacer()
+                    Text("\(unlockedName) is available to recruit")
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(.black.opacity(0.78))
+                        .overlay(Rectangle().stroke(Color(red: 1.0, green: 0.72, blue: 0.25).opacity(0.4), lineWidth: 1))
+                }
+                .padding(.top, 16)
+                .padding(.trailing, engine.shouldOfferGlobalGitignore ? 292 : 16)
+                .allowsHitTesting(false)
+            }
+
+            if engine.shouldOfferGlobalGitignore {
+                HStack {
+                    Spacer()
+                    GitignoreOfferPanel {
+                        engine.addPixelVillageToGlobalGitignore()
+                    }
+                }
+                .padding(.top, 16)
+                .padding(.trailing, 16)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
             if let selectedNPC {
                 HStack {
                     Spacer()
-                    NPCInspectorPanel(selection: selectedNPC) {
+                    NPCInspectorPanel(selection: selectedNPC, onManageProjects: { agentName in
+                        assignmentCatalogId = engine.roster.entry(forAgentName: agentName)?.catalogId
+                    }) {
                         self.selectedNPC = nil
                         scene?.clearSelection()
                     }
@@ -142,13 +212,48 @@ struct ContentView: View {
                 .padding(.trailing, 16)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
+
+            if let assignmentCatalogId,
+               let catalogEntry = engine.npcCatalog.entry(catalogId: assignmentCatalogId),
+               let rosterEntry = engine.roster.entry(catalogId: assignmentCatalogId) {
+                Color.black.opacity(0.34)
+                    .ignoresSafeArea()
+                    .onTapGesture { self.assignmentCatalogId = nil }
+                AssignmentPanel(
+                    catalogEntry: catalogEntry,
+                    rosterEntry: rosterEntry,
+                    roster: engine.roster,
+                    canRename: engine.canRenameRosterEntry(catalogId: assignmentCatalogId),
+                    projects: engine.discoveredProjects,
+                    onSave: { name, paths in
+                        engine.saveRosterAssignment(catalogId: assignmentCatalogId, name: name, projectPaths: paths)
+                    },
+                    onClose: { self.assignmentCatalogId = nil }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding(24)
+                .transition(.opacity)
+            }
+
+            if engine.needsOnboarding {
+                OnboardingPanel(
+                    projects: engine.discoveredProjects,
+                    onConfirm: { name, paths in engine.createStarterNPC(name: name, projectPaths: paths) }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .background(.black.opacity(0.46))
+                .ignoresSafeArea()
+            }
         }
         .animation(.easeOut(duration: 0.16), value: selectedNPC)
         .animation(.easeOut(duration: 0.16), value: isShopOpen)
+        .animation(.easeOut(duration: 0.16), value: isRosterOpen)
         .animation(.easeOut(duration: 0.16), value: isAPIKeyOpen)
+        .animation(.easeOut(duration: 0.16), value: assignmentCatalogId)
+        .animation(.easeOut(duration: 0.16), value: engine.shouldOfferGlobalGitignore)
         .onAppear {
             guard scene == nil else { return }
-            engine.start()  // start before scene creation so totalBits is populated on first frame
+            engine.start()  // start before scene creation so totalBitsRaw is populated on first frame
             let s = VillageScene(size: CGSize(width: TileMap.mapWidth, height: TileMap.mapHeight))
             s.onNPCSelection = { selection in
                 selectedNPC = selection
@@ -163,7 +268,7 @@ struct ContentView: View {
 
     private var activeShopAgentIDs: [String] {
         engine.activeSessionCounts
-            .filter { $0.value > 0 && engine.agents[$0.key] != nil }
+            .filter { $0.value > 0 && engine.shopNPCRecords[$0.key] != nil }
             .keys
             .sorted()
     }
@@ -171,7 +276,123 @@ struct ContentView: View {
     private var defaultShopAgentID: String? {
         if let selectedNPC { return selectedNPC.id }
         if activeShopAgentIDs.count == 1 { return activeShopAgentIDs[0] }
-        return activeShopAgentIDs.first ?? engine.agents.keys.sorted().first
+        return activeShopAgentIDs.first ?? engine.shopNPCRecords.keys.sorted().first
+    }
+
+    private var latestUnlockedName: String? {
+        guard let id = engine.newlyUnlockedNPCIDs.last else { return nil }
+        return engine.roster.entry(catalogId: id)?.name ?? engine.npcCatalog.entry(catalogId: id)?.defaultName
+    }
+}
+
+private struct GitignoreOfferPanel: View {
+    let onAdd: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(".pixelvillage is not in global gitignore")
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.72))
+            Button {
+                onAdd()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "plus.circle")
+                    Text("Add")
+                }
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            .foregroundStyle(.black)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Color(red: 0.52, green: 0.92, blue: 0.62))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(.black.opacity(0.78))
+        .overlay(Rectangle().stroke(.white.opacity(0.14), lineWidth: 1))
+    }
+}
+
+private struct OnboardingPanel: View {
+    let projects: [DiscoveredProject]
+    let onConfirm: (String, [String]) -> Void
+    @State private var name = "Radion"
+    @State private var selectedPaths: Set<String> = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Your village needs a first resident.")
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+
+            HStack(spacing: 12) {
+                Text("C0")
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .frame(width: 42, height: 42)
+                    .background(Color(red: 0.52, green: 0.92, blue: 0.62).opacity(0.25))
+                    .overlay(Rectangle().stroke(.white.opacity(0.16), lineWidth: 1))
+                TextField("Name", text: $name)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                    .padding(8)
+                    .background(.white.opacity(0.10))
+                    .overlay(Rectangle().stroke(.white.opacity(0.10), lineWidth: 1))
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(projects) { project in
+                        Button {
+                            if selectedPaths.contains(project.path) {
+                                selectedPaths.remove(project.path)
+                            } else {
+                                selectedPaths.insert(project.path)
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: selectedPaths.contains(project.path) ? "checkmark.square.fill" : "square")
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(project.displayName).lineLimit(1)
+                                    Text(project.path)
+                                        .font(.system(size: 9, weight: .regular, design: .monospaced))
+                                        .foregroundStyle(.white.opacity(0.42))
+                                        .lineLimit(1)
+                                }
+                                Spacer()
+                            }
+                            .padding(8)
+                            .background(.white.opacity(selectedPaths.contains(project.path) ? 0.10 : 0.045))
+                            .overlay(Rectangle().stroke(.white.opacity(0.08), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(maxHeight: 240)
+
+            Button {
+                onConfirm(name, Array(selectedPaths).sorted())
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle")
+                    Text("Confirm")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, 8)
+            .foregroundStyle(.black)
+            .background(Color(red: 0.52, green: 0.92, blue: 0.62))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+        }
+        .font(.system(size: 12, weight: .regular, design: .monospaced))
+        .foregroundStyle(.white)
+        .padding(16)
+        .frame(width: 460)
+        .background(.black.opacity(0.86))
+        .overlay(Rectangle().stroke(.white.opacity(0.14), lineWidth: 1))
     }
 }
 
@@ -180,6 +401,8 @@ private struct APIKeyPanel: View {
     let onSave: () -> Void
     let onClose: () -> Void
     @State private var saved = false
+
+    private var isConnected: Bool { OpenAIAPIKeyStore.load() != nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -197,6 +420,19 @@ private struct APIKeyPanel: View {
                 .background(.white.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 .contentShape(Rectangle())
+            }
+
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(isConnected
+                          ? Color(red: 0.52, green: 0.92, blue: 0.62)
+                          : Color.white.opacity(0.25))
+                    .frame(width: 7, height: 7)
+                Text(isConnected ? "Clé configurée" : "Non configurée")
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(isConnected
+                                     ? Color(red: 0.52, green: 0.92, blue: 0.62)
+                                     : Color.white.opacity(0.45))
             }
 
             SecureField("API key", text: $key)
@@ -308,21 +544,24 @@ private struct UpgradeShopPanel: View {
                         .clipShape(RoundedRectangle(cornerRadius: 4))
 
                         // ── Bit Multiplier ──
+                        let currentMult = state.bitMultiplier
+                        let nextMult = 1.0 + EconomyEngine.bitMultiplierBonus(level: state.bitMultiplierLevel + 1)
                         upgradeSection(
                             title: "Bit multiplier",
                             subtitle: nil,
-                            currentValue: String(format: "%.2fx", state.bitMultiplier),
-                            nextValue: String(format: "%.2fx", state.bitMultiplier + 0.25),
+                            currentValue: formatMultiplier(currentMult),
+                            nextValue: nextCost(id) < .infinity ? formatMultiplier(nextMult) : nil,
                             cost: nextCost(id),
                             balance: balance,
                             kind: .bitMultiplier,
-                            buyLabel: "Buy +0.25×"
+                            buyLabel: "Upgrade"
                         ) { onPurchase(id) }
 
                         // ── Bond Dividend ──
                         let bdCost = nextBondDividendCost(id)
                         let bdMult = UpgradeEconomy.bondDividendMultiplier(level: state.bondDividendLevel, bond: agent.bond)
                         let bdNextMult = UpgradeEconomy.bondDividendMultiplier(level: state.bondDividendLevel + 1, bond: agent.bond)
+                        let bdAvailable = EconomyEngine.canBuy(.bondDividend, currentLevel: state.bondDividendLevel, bond: agent.bond)
                         upgradeSection(
                             title: "Bond dividend",
                             subtitle: "Bond \(agent.bond) · scales with bond",
@@ -331,22 +570,26 @@ private struct UpgradeShopPanel: View {
                             cost: bdCost,
                             balance: balance,
                             kind: .bondDividend,
+                            gateText: bdAvailable ? nil : bondDividendGateText(level: state.bondDividendLevel),
                             buyLabel: state.bondDividendLevel == 0 ? "Unlock" : "Upgrade"
                         ) { onPurchaseBondDividend(id) }
 
                         // ── Bit Trickle ──
-                        let tCount = state.trickleLevel
+                        let tCount = state.trickleCount
                         let tCost = nextTrickleCost(id)
                         let tRate = UpgradeEconomy.trickleRate(count: tCount)
                         let tNextRate = UpgradeEconomy.trickleRate(count: tCount + 1)
+                        let cap = EconomyEngine.trickleCap(forBond: agent.bond)
+                        let canBuyTrickle = EconomyEngine.canBuy(.trickle, currentLevel: tCount, bond: agent.bond)
                         upgradeSection(
                             title: "Bit trickle",
-                            subtitle: tCount == 0 ? "×0 units" : "×\(tCount) unit\(tCount == 1 ? "" : "s") · \(formatTrickleRate(tRate))",
+                            subtitle: "×\(tCount)/\(cap) units" + (tCount > 0 ? " · \(formatTrickleRate(tRate))" : ""),
                             currentValue: tCount == 0 ? "Locked" : formatTrickleRate(tRate),
-                            nextValue: formatTrickleRate(tNextRate),
+                            nextValue: canBuyTrickle ? formatTrickleRate(tNextRate) : nil,
                             cost: tCost,
                             balance: balance,
                             kind: .trickle,
+                            gateText: canBuyTrickle ? nil : trickleGateText(bond: agent.bond),
                             buyLabel: "+1 trickle"
                         ) { onPurchaseTrickle(id) }
                     }
@@ -373,12 +616,13 @@ private struct UpgradeShopPanel: View {
         cost: Double,
         balance: Double,
         kind: UpgradeKind,
+        gateText: String? = nil,
         buyLabel: String,
         onBuy: @escaping () -> Void
     ) -> some View {
         let isMaxed = cost == .infinity
         let isFlashing = purchaseFlash == kind
-        let canBuy = !isMaxed && balance >= cost && !isFlashing
+        let canBuy = gateText == nil && !isMaxed && balance >= cost && !isFlashing
 
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 0) {
@@ -405,7 +649,15 @@ private struct UpgradeShopPanel: View {
                 Spacer()
             }
 
-            if isMaxed {
+            if let gate = gateText {
+                Text(gate)
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.38))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 6)
+                    .background(.white.opacity(0.04))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            } else if isMaxed {
                 Text("Max level")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.38))
@@ -508,5 +760,20 @@ private struct UpgradeShopPanel: View {
             return "\(Int(rate)) b/10s"
         }
         return String(format: "%.1f b/10s", rate)
+    }
+
+    private func bondDividendGateText(level: Int) -> String? {
+        let next = level + 1
+        guard next < EconomyEngine.bondDividendGates.count else { return nil }
+        return "Requires Bond \(EconomyEngine.bondDividendGates[next])"
+    }
+
+    private func trickleGateText(bond: Int) -> String? {
+        switch bond {
+        case ..<3: return "Requires Bond 3"
+        case ..<6: return "Requires Bond 6"
+        case ..<10: return "Requires Bond 10"
+        default: return nil
+        }
     }
 }

@@ -14,11 +14,12 @@ final class NPCManager {
     // Visible desks for NPCs that have earned one (bond ≥ DeskPolicy.bondThreshold).
     private var desks: [String: SKNode] = [:]
     private var deskTiles: [String: TilePosition] = [:]
+    private var walkableDeskCandidates: [TilePosition] = []
     private let assetCatalog = PixelAssetCatalog.loadMaygetsu()
 
     private let speechComposer: SpeechLineComposing = HeuristicLineComposer()
     private var lastSpokeAt: [String: Date] = [:]
-    private let speechCooldown: TimeInterval = 50
+    private let speechCooldown: TimeInterval = 20
 
     struct TileBounds {
         let minX, minY, maxX, maxY: Int
@@ -40,12 +41,13 @@ final class NPCManager {
     }
 
     func sync() {
-        let agentIDs = Set(engine.agents.keys)
+        let records = engine.visibleNPCRecords
+        let agentIDs = Set(records.keys)
         let spriteIDs = Set(sprites.keys)
-        let sortedIDs = engine.agents.keys.sorted()
+        let sortedIDs = records.keys.sorted()
 
         // 1. Additions
-        for (id, record) in engine.agents where !sprites.keys.contains(id) {
+        for (id, record) in records where !sprites.keys.contains(id) {
             let (tileX, tileY) = savedTile(for: id) ?? randomSpawnTile()
 
             let model = NPCModel(
@@ -53,12 +55,12 @@ final class NPCManager {
                 name: record.name,
                 bond: record.bond,
                 totalTokens: record.totalTokens,
-                totalBits: record.totalBits,
+                totalBitsRaw: record.totalBitsRaw,
                 tileX: tileX,
                 tileY: tileY
             )
 
-            let sprite = NPCSprite(model: model)
+            let sprite = NPCSprite(model: model, roster: engine.roster, catalog: engine.npcCatalog)
             sprite.position = CGPoint(
                 x: CGFloat(model.tileX) * TileMap.tileSize + TileMap.tileSize / 2,
                 y: CGFloat(model.tileY) * TileMap.tileSize + TileMap.tileSize / 2
@@ -92,15 +94,15 @@ final class NPCManager {
 
         // 2. Updates
         for id in spriteIDs.intersection(agentIDs) {
-            guard let record = engine.agents[id], let existing = models[id] else { continue }
-            if record.bond != existing.bond || record.name != existing.name || record.totalBits != existing.totalBits {
+            guard let record = records[id], let existing = models[id] else { continue }
+            if record.bond != existing.bond || record.name != existing.name || record.totalBitsRaw != existing.totalBitsRaw {
                 let currentTile = behaviors[id]?.currentTile() ?? TilePosition(tileX: existing.tileX, tileY: existing.tileY)
                 let updated = NPCModel(
                     id: id,
                     name: record.name,
                     bond: record.bond,
                     totalTokens: record.totalTokens,
-                    totalBits: record.totalBits,
+                    totalBitsRaw: record.totalBitsRaw,
                     tileX: currentTile.tileX,
                     tileY: currentTile.tileY
                 )
@@ -216,11 +218,12 @@ final class NPCManager {
         for event in events {
             let key = event.agentName ?? "__global__"
             let mult = engine.effectiveMultiplier(for: key)
-            grouped[key, default: 0] += event.bits * mult
+            grouped[key, default: 0] += event.rawBits * mult
         }
         for (agentName, bits) in grouped {
             guard let sprite = sprites[agentName] else { continue }
             sprite.showBitsGain(bits)
+            sprite.showVillageGain(bits * EconomyEngine.villageBonusRate)
         }
     }
 
@@ -237,15 +240,16 @@ final class NPCManager {
 
     func handleActivityEvents(_ events: [SessionActivityEvent]) {
         let now = Date()
-        // Keep only the most recent event per agent with a live sprite.
-        var latestByAgent: [String: SessionActivityEvent] = [:]
+        // Collect all valid events per agent; pick one at random so fast batches
+        // don't always show the last event kind (e.g. always "deepWork").
+        var byAgent: [String: [SessionActivityEvent]] = [:]
         for event in events {
             guard let agent = event.agentName, sprites[agent] != nil else { continue }
-            if let existing = latestByAgent[agent], existing.seq > event.seq { continue }
-            latestByAgent[agent] = event
+            byAgent[agent, default: []].append(event)
         }
-        for (agent, event) in latestByAgent {
+        for (agent, agentEvents) in byAgent {
             if let last = lastSpokeAt[agent], now.timeIntervalSince(last) < speechCooldown { continue }
+            guard let event = agentEvents.randomElement() else { continue }
             // Prefer an LLM-enriched cached line for this session when available;
             // fall back to the deterministic heuristic composer.
             let line = enrichedLine(for: event)
@@ -294,7 +298,7 @@ final class NPCManager {
             name: model.name,
             bond: model.bond,
             totalTokens: model.totalTokens,
-            totalBits: model.totalBits,
+            totalBitsRaw: model.totalBitsRaw,
             availableBits: engine.availableBits(for: id),
             bitMultiplier: engine.bitMultiplier(for: id),
             activeSessionCount: visualState.sessionCount,
@@ -354,16 +358,62 @@ final class NPCManager {
         return (pos.tileX, pos.tileY)
     }
 
-    private func deskTile(for index: Int) -> TilePosition {
-        let b = spawnBounds
-        let startX = b.minX + 4
-        let startY = b.maxY - 4
-        let col = index % 4
-        let row = index / 4
-        return TilePosition(
-            tileX: min(startX + col * 4, b.maxX),
-            tileY: max(startY - row * 3, b.minY)
+    func setMapData(_ mapData: VillageMapData) {
+        let border = 2
+        spawnBounds = TileBounds(
+            minX: border,
+            minY: border,
+            maxX: mapData.tileColumns - 1 - border,
+            maxY: mapData.tileRows   - 1 - border
         )
+        computeWalkableDeskCandidates(blocked: mapData.blockedTiles)
+    }
+
+    private func computeWalkableDeskCandidates(blocked: Set<TilePosition>) {
+        // Primary: preferred positions from the map reference (on the horizontal
+        // path, symmetric about the vertical-path center axis, fountain not blocked).
+        var sorted = VillageMapReference.preferredDeskTiles.filter { !blocked.contains($0) }
+
+        // Fallback: any remaining walkable tile, sorted by Manhattan distance to
+        // center so extra desks stay near the plaza rather than at map edges.
+        let used = Set(sorted)
+        let b = spawnBounds
+        let centerX = (b.minX + b.maxX) / 2
+        let centerY = (b.minY + b.maxY) / 2
+        var remaining: [TilePosition] = []
+        for y in b.minY...b.maxY {
+            for x in b.minX...b.maxX {
+                let tile = TilePosition(tileX: x, tileY: y)
+                guard !used.contains(tile) && !blocked.contains(tile) else { continue }
+                remaining.append(tile)
+            }
+        }
+        remaining.sort { abs($0.tileX - centerX) + abs($0.tileY - centerY) <
+                         abs($1.tileX - centerX) + abs($1.tileY - centerY) }
+        sorted.append(contentsOf: remaining)
+
+        // Greedy spacing: no two candidates within 2 tiles of each other.
+        var spaced: [TilePosition] = []
+        for candidate in sorted {
+            let tooClose = spaced.contains {
+                abs($0.tileX - candidate.tileX) <= 2 && abs($0.tileY - candidate.tileY) <= 2
+            }
+            if !tooClose { spaced.append(candidate) }
+        }
+        walkableDeskCandidates = spaced
+    }
+
+    private func deskTile(for index: Int) -> TilePosition {
+        guard !walkableDeskCandidates.isEmpty else {
+            let b = spawnBounds
+            let col = index % 4
+            let row = index / 4
+            return TilePosition(
+                tileX: min(b.minX + 4 + col * 4, b.maxX),
+                tileY: max(b.maxY - 4 - row * 3, b.minY)
+            )
+        }
+        return walkableDeskCandidates[index % walkableDeskCandidates.count]
     }
 
     func currentPositions() -> [String: TilePosition] {

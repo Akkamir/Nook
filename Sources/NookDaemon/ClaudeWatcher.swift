@@ -81,11 +81,21 @@ final class ClaudeWatcher {
         let sessionId = file.deletingPathExtension().lastPathComponent
         let content = String(data: data, encoding: .utf8) ?? ""
         var lastUsage: [Int]? = nil
+        // resolvedAgent starts as the project-level attribution; refined lazily if a
+        // cwd is found and the project-level lookup returned nil (worktree isolation).
+        var resolvedAgent = agentName
+        var cwdResolved = false
         for line in content.components(separatedBy: "\n") {
             guard let parsed = TranscriptParser.parseLine(line) else { continue }
 
+            // If project-level attribution failed, try cwdHint once per file.
+            if resolvedAgent == nil, !cwdResolved, let cwd = parsed.cwd {
+                cwdResolved = true
+                resolvedAgent = AgentAttributor.agentName(forProjectPath: projectPath, cwdHint: cwd)
+            }
+
             // Subject ingestion runs for every message line (user prompts included).
-            onSubject(parsed, sessionId, projectPath, agentName)
+            onSubject(parsed, sessionId, projectPath, resolvedAgent)
 
             // Token/bits emission only for usage-bearing lines (with consecutive-dup guard).
             let usage = [parsed.inputTokens, parsed.outputTokens,
@@ -103,7 +113,7 @@ final class ClaudeWatcher {
                 cacheReadTokens: parsed.cacheReadTokens,
                 timestamp: parsed.timestamp
             )
-            onEvent(event, agentName)
+            onEvent(event, resolvedAgent)
         }
     }
 

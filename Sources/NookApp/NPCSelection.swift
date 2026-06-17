@@ -5,7 +5,7 @@ struct NPCSelection: Equatable {
     let name: String
     let bond: Int
     let totalTokens: Int
-    let totalBits: Double
+    let totalBitsRaw: Double
     let availableBits: Double
     let bitMultiplier: Double
     let activeSessionCount: Int

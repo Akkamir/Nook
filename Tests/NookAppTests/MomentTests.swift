@@ -85,12 +85,12 @@ final class MomentTests: XCTestCase {
         XCTAssertFalse(k.contains { if case .anniversary = $0 { return true } else { return false } })
     }
 
-    func test_token_milestone_does_not_duplicate_bond_at_40M() {
-        // 50M tokens crosses both bond level 11 and the 40M token milestone — expect bond only.
-        let s = [session("a", input: 50_000_000, start: "2026-06-01T10:00:00Z")]
-        let k = kinds(Moment.forAgent(s, currentBond: 11, totalTokens: 50_000_000, now: iso("2026-06-02T10:00:00Z")))
+    func test_token_milestone_does_not_duplicate_bond_at_20M() {
+        // 25M tokens crosses both bond level 11 and the 20M token milestone — expect bond only.
+        let s = [session("a", input: 25_000_000, start: "2026-06-01T10:00:00Z")]
+        let k = kinds(Moment.forAgent(s, currentBond: 11, totalTokens: 25_000_000, now: iso("2026-06-02T10:00:00Z")))
         XCTAssertTrue(k.contains(.bondPromotion(level: 11)))
-        XCTAssertFalse(k.contains(.tokenMilestone(40_000_000)))
+        XCTAssertFalse(k.contains(.tokenMilestone(20_000_000)))
         // 4M milestone (no bond there) still emitted
         XCTAssertTrue(k.contains(.tokenMilestone(4_000_000)))
     }

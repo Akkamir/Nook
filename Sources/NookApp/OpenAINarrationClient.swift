@@ -1,6 +1,30 @@
 import Foundation
 import Security
 
+enum ReactionStyle: String, Codable, CaseIterable {
+    case descriptive, sarcastic, overhyped, philosophical
+    case mentor, dramatic, gossip, tired, conspiracy, impressedWrong
+
+    static func random() -> ReactionStyle { allCases.randomElement()! }
+
+    // Tone fragment composed into NPC instructions — same fragment works for
+    // both promptReaction (user prompt) and liveComment (session activity).
+    var tone: String {
+        switch self {
+        case .descriptive:    return "Be calm and specific."
+        case .sarcastic:      return "Use dry humor and light mockery. Subtly snarky, affectionate."
+        case .overhyped:      return "Be ridiculously excited. Caps OK. Pure hype energy."
+        case .philosophical:  return "Make an absurd, slightly profound observation."
+        case .mentor:         return "Give a wise but dubious programming maxim. Unsolicited advice."
+        case .dramatic:       return "Treat this as a catastrophic, world-shaking event."
+        case .gossip:         return "Gossip. Treat files, bugs, and functions as drama characters."
+        case .tired:          return "Sound exhausted and resigned. Max 35 chars. Very flat."
+        case .conspiracy:     return "Spot a suspicious hidden pattern. Sound mildly paranoid."
+        case .impressedWrong: return "Be impressed by a completely irrelevant detail. Miss the point."
+        }
+    }
+}
+
 struct OpenAINarrationClient {
     enum ClientError: Error {
         case missingAPIKey
@@ -25,7 +49,8 @@ struct OpenAINarrationClient {
         digest: SessionDigest,
         bond: Int,
         totalTokens: Int,
-        pastSessions: [GeneratedSessionMemory]
+        pastSessions: [GeneratedSessionMemory],
+        personality: String? = nil
     ) async throws -> GeneratedSessionMemory {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
@@ -37,8 +62,8 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 400,
             "text": ["format": ["type": "json_object"]],
-            "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'. Each cachedLines entry must be a single spoken sentence under 80 characters — short, specific, in-character. Reference the actual project or files when possible.",
-            "input": enrichPrompt(memory: sessionMemory, digest: digest, bond: bond, totalTokens: totalTokens, pastSessions: pastSessions)
+            "instructions": "Return compact JSON for an emotionally warm NPC memory. Keys: title, shortSummary, narrativeBeats, relationshipNote, cachedLines. Title must be 'Theme · Project'. Each cachedLines entry must be a single spoken sentence under 80 characters — short, specific, in-character, in English. Reference the actual project or files when possible.",
+            "input": enrichPrompt(memory: sessionMemory, digest: digest, bond: bond, totalTokens: totalTokens, pastSessions: pastSessions, personality: personality)
         ])
 
         let (data, response) = try await session.data(for: request)
@@ -68,10 +93,77 @@ struct OpenAINarrationClient {
         return enriched
     }
 
+    // Reacts to the user's latest prompt almost in real-time (triggered on PreToolUse).
+    // Called before Claude responds, so the NPC can comment on what the user is asking.
+    @MainActor
+    func promptReaction(
+        userMessage: String,
+        bond: Int,
+        totalTokens: Int,
+        style: ReactionStyle = .random(),
+        personality: String? = nil
+    ) async throws -> String {
+        guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
+
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "max_output_tokens": 40,
+            "text": ["format": ["type": "text"]],
+            "instructions": "You are a coding NPC in a pixel village game. React to what the user just sent their AI. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(personalityInstruction(personality)) \(style.tone)",
+            "input": "Bond \(bond)/10. User just asked their AI: \"\(String(userMessage.prefix(300)))\""
+        ])
+
+        let (data, response) = try await session.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw ClientError.invalidResponse }
+        guard let text = Self.outputText(from: data) else { throw ClientError.invalidResponse }
+
+        return Self.sanitizeSpokenLine(text.trimmingCharacters(in: .whitespacesAndNewlines), maxLength: 70)
+    }
+
+    // Reacts to the last assistant response after Claude finishes (triggered on Stop).
+    @MainActor
+    func responseReaction(
+        assistantSnippet: String,
+        bond: Int,
+        totalTokens: Int,
+        style: ReactionStyle = .random(),
+        personality: String? = nil
+    ) async throws -> String {
+        guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
+
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "max_output_tokens": 40,
+            "text": ["format": ["type": "text"]],
+            "instructions": "You are a coding NPC in a pixel village game. React to what your AI assistant just replied. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(personalityInstruction(personality)) \(style.tone)",
+            "input": "Bond \(bond)/10. AI assistant just replied: \"\(String(assistantSnippet.prefix(300)))\""
+        ])
+
+        let (data, response) = try await session.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw ClientError.invalidResponse }
+        guard let text = Self.outputText(from: data) else { throw ClientError.invalidResponse }
+
+        return Self.sanitizeSpokenLine(text.trimmingCharacters(in: .whitespacesAndNewlines), maxLength: 70)
+    }
+
     // Generates one short spoken line reacting to what the user is doing right now.
     // Used for live display during active sessions, independent of stored cachedLines.
     @MainActor
-    func liveComment(digest: SessionDigest, bond: Int, totalTokens: Int) async throws -> String {
+    func liveComment(
+        digest: SessionDigest,
+        bond: Int,
+        totalTokens: Int,
+        style: ReactionStyle = .random(),
+        personality: String? = nil
+    ) async throws -> String {
         guard let apiKey = apiKeyProvider(), !apiKey.isEmpty else { throw ClientError.missingAPIKey }
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -82,8 +174,8 @@ struct OpenAINarrationClient {
             "model": model,
             "max_output_tokens": 60,
             "text": ["format": ["type": "text"]],
-            "instructions": "You are an NPC in a pixel village game. Write ONE short spoken line (max 75 chars). Be specific to the player's current work. No quotes, no explanation, just the line.",
-            "input": livePrompt(digest: digest, bond: bond, totalTokens: totalTokens)
+            "instructions": "You are a coding NPC in a pixel village game commenting on the player's work. ONE sentence in English, max 60 chars. No quotes, no explanation, just the line. \(personalityInstruction(personality)) \(style.tone)",
+            "input": livePrompt(digest: digest, bond: bond, totalTokens: totalTokens, personality: personality)
         ])
 
         let (data, response) = try await session.data(for: request)
@@ -98,9 +190,10 @@ struct OpenAINarrationClient {
         digest: SessionDigest,
         bond: Int,
         totalTokens: Int,
-        pastSessions: [GeneratedSessionMemory]
+        pastSessions: [GeneratedSessionMemory],
+        personality explicitPersonality: String?
     ) -> String {
-        let personality = Self.traitDescription(for: totalTokens)
+        let personality = explicitPersonality ?? Self.traitDescription(for: totalTokens)
         let bondText = Self.bondDescription(bond)
         let pastBeats = pastSessions.flatMap { $0.narrativeBeats }.suffix(4).joined(separator: " | ")
         let relationshipNote = pastSessions.compactMap { $0.relationshipNote }.last ?? ""
@@ -119,8 +212,8 @@ struct OpenAINarrationClient {
         return parts.joined(separator: "\n")
     }
 
-    private func livePrompt(digest: SessionDigest, bond: Int, totalTokens: Int) -> String {
-        let personality = Self.traitDescription(for: totalTokens)
+    private func livePrompt(digest: SessionDigest, bond: Int, totalTokens: Int, personality explicitPersonality: String?) -> String {
+        let personality = explicitPersonality ?? Self.traitDescription(for: totalTokens)
         let bondText = Self.bondDescription(bond)
         var parts: [String] = [
             "You are: \(personality), \(bondText) with the player.",
@@ -144,6 +237,11 @@ struct OpenAINarrationClient {
         }
     }
 
+    private func personalityInstruction(_ personality: String?) -> String {
+        guard let personality, !personality.isEmpty else { return "" }
+        return "Fixed personality: \(personality)"
+    }
+
     static func bondDescription(_ bond: Int) -> String {
         switch bond {
         case 0...2: return "barely knows you"
@@ -153,7 +251,7 @@ struct OpenAINarrationClient {
         }
     }
 
-    static func sanitizeSpokenLine(_ raw: String, maxLength: Int = 90) -> String {
+    static func sanitizeSpokenLine(_ raw: String, maxLength: Int = 75) -> String {
         let collapsed = raw
             .replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)

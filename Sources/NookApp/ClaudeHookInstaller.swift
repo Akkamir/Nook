@@ -4,6 +4,7 @@ struct ClaudeHookInstaller {
     static let hookEvents = [
         "SessionStart",
         "SessionEnd",
+        "PreToolUse",
         "Stop",
         "Notification"
     ]

@@ -5,17 +5,15 @@ print("[NookDaemon] Starting Nook background daemon...")
 
 let ledger = Ledger.production
 var state = ledger.load()
-let economy = EconomyReader.production
 
 let watcher = ClaudeWatcher(
     onEvent: { event, agentName in
-        let multiplier = economy.multiplier(for: agentName)
-        ledger.apply(event: event, agentName: agentName, multiplier: multiplier, to: &state)
+        ledger.apply(event: event, agentName: agentName, to: &state)
         do {
             try ledger.save(state)
-            let bits = String(format: "%.1f", event.bits * multiplier)
+            let bits = String(format: "%.1f", event.bits)
             let agent = agentName ?? "global"
-            print("[NookDaemon] +\(bits) Bits → \(agent) | Total: \(String(format: "%.1f", state.totalBits))")
+            print("[NookDaemon] +\(bits) raw Bits → \(agent) | Total raw: \(String(format: "%.1f", state.totalBitsRaw))")
         } catch {
             print("[NookDaemon] Failed to save ledger: \(error)")
         }

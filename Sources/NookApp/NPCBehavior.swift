@@ -22,7 +22,7 @@ final class NPCBehavior {
         self.model.name = model.name
         self.model.bond = model.bond
         self.model.totalTokens = model.totalTokens
-        self.model.totalBits = model.totalBits
+        self.model.totalBitsRaw = model.totalBitsRaw
     }
 
     func apply(_ visualState: NPCVisualState) {

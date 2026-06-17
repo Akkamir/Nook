@@ -2,6 +2,7 @@ import SwiftUI
 
 enum PixelIconKind {
     case bit
+    case villageBit
     case spark
     case cake
     case bond
@@ -40,6 +41,13 @@ struct PixelIcon: View {
         case .bit:
             return pixels(
                 color: Color(red: 0.45, green: 0.96, blue: 1.0),
+                points: [(3,0), (2,1), (3,1), (4,1), (1,2), (2,2), (4,2), (5,2),
+                         (0,3), (1,3), (5,3), (6,3), (1,4), (2,4), (4,4), (5,4),
+                         (2,5), (3,5), (4,5), (3,6)]
+            )
+        case .villageBit:
+            return pixels(
+                color: Color(red: 0.32, green: 0.82, blue: 0.28),
                 points: [(3,0), (2,1), (3,1), (4,1), (1,2), (2,2), (4,2), (5,2),
                          (0,3), (1,3), (5,3), (6,3), (1,4), (2,4), (4,4), (5,4),
                          (2,5), (3,5), (4,5), (3,6)]

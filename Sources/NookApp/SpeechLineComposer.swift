@@ -12,17 +12,42 @@ struct HeuristicLineComposer: SpeechLineComposing {
         switch event.kind {
         case "task":
             guard let p = event.payload else { return nil }
-            return "On attaque : \(p)"
+            return [
+                "On it: \(p)",
+                "New mission — \(p)",
+                "Alright, let's go.",
+                "Reading the brief: \(p)",
+            ].randomElement()!
         case "file":
             guard let p = event.payload else { return nil }
-            return "Plongé dans \(p)"
+            return [
+                "Deep in \(p)",
+                "I see \(p)",
+                "Oh, \(p)…",
+                "Opening \(p)",
+            ].randomElement()!
         case "testing":
-            return "TDD, j'aime ça"
+            return [
+                "Love a good test run.",
+                "Tests time?",
+                "Red or green?",
+                "Running the suite.",
+            ].randomElement()!
         case "committing":
-            return "On commit ?"
+            return [
+                "Committing?",
+                "Checkpoint.",
+                "Good call.",
+                "Git commit incoming.",
+            ].randomElement()!
         case "deepWork":
             guard let p = event.payload else { return nil }
-            return "Grosse session sur \(p)"
+            return [
+                "Heavy session on \(p)",
+                "We're really in it.",
+                "Long run on \(p).",
+                "Nice progress.",
+            ].randomElement()!
         default:
             return nil
         }

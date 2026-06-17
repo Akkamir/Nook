@@ -15,67 +15,137 @@ final class UpgradeStateAppTests: XCTestCase {
         super.tearDown()
     }
 
-    func test_available_bits_subtracts_spent_from_cumulative_agent_bits() throws {
-        let ledger = LedgerState(
-            totalBits: 120, pendingBits: 0,
-            agents: ["Radion": agent(name: "Radion", totalBits: 120)],
-            lastUpdated: Date(), recentEvents: [], eventSeq: 0
-        )
-        let upgrades = UpgradeState(
-            agents: ["Radion": AgentUpgradeState(bitMultiplierLevel: 1, spentBits: 50)]
-        )
+    func test_process_delta_credits_agent_wallet_and_village_bonus() throws {
+        let ledger = ledgerState(agentBits: 100, bond: 1, globalBits: 0)
+        var economy = EconomyState.empty
 
-        XCTAssertEqual(UpgradeEconomy.availableBits(for: "Radion", ledger: ledger, upgrades: upgrades), 70, accuracy: 0.001)
-        let multiplier = try XCTUnwrap(upgrades.agents["Radion"]?.bitMultiplier)
-        XCTAssertEqual(multiplier, 1.25, accuracy: 0.001)
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &economy)
+
+        let agent = try XCTUnwrap(economy.agents["Radion"])
+        XCTAssertEqual(agent.wallet, 100, accuracy: 0.001)
+        XCTAssertEqual(agent.lastProcessedRawBits, 100, accuracy: 0.001)
+        XCTAssertEqual(economy.villageWallet, 10, accuracy: 0.001)
     }
 
-    func test_economy_apply_accepted_and_deducts_bits() throws {
-        let ledger = LedgerState(
-            totalBits: 120, pendingBits: 0,
-            agents: ["Radion": agent(name: "Radion", totalBits: 120)],
-            lastUpdated: Date(), recentEvents: [], eventSeq: 0
-        )
-        var upgrades = UpgradeState.empty
+    func test_process_delta_uses_additive_multiplier_and_village_gets_ten_percent_of_effective_gain() throws {
+        let ledger = ledgerState(agentBits: 100, bond: 6, globalBits: 0)
+        var economy = EconomyState.empty
+        economy.agents["Radion"] = AgentEconomyState(bitMultiplierLevel: 2, bondDividendLevel: 2)
 
-        let accepted = UpgradeEconomy.apply(.bitMultiplier, for: "Radion", ledger: ledger, upgrades: &upgrades)
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &economy)
 
-        XCTAssertTrue(accepted)
-        let agentState = try XCTUnwrap(upgrades.agents["Radion"])
-        XCTAssertEqual(agentState.bitMultiplierLevel, 1)
-        XCTAssertEqual(agentState.spentBits, 50, accuracy: 0.001)
+        // Bit multiplier L2 = +20%; Bond dividend L2 at bond 6 = +36%; total = 1.56x.
+        let radion2 = try XCTUnwrap(economy.agents["Radion"])
+        XCTAssertEqual(radion2.wallet, 156, accuracy: 0.001)
+        XCTAssertEqual(economy.villageWallet, 15.6, accuracy: 0.001)
     }
 
-    func test_economy_apply_rejected_when_insufficient_bits() throws {
-        let ledger = LedgerState(
-            totalBits: 49, pendingBits: 0,
-            agents: ["Radion": agent(name: "Radion", totalBits: 49)],
-            lastUpdated: Date(), recentEvents: [], eventSeq: 0
-        )
-        var upgrades = UpgradeState.empty
+    func test_global_delta_credits_village_only() throws {
+        let ledger = ledgerState(agentBits: 0, bond: 1, globalBits: 80)
+        var economy = EconomyState.empty
 
-        let accepted = UpgradeEconomy.apply(.bitMultiplier, for: "Radion", ledger: ledger, upgrades: &upgrades)
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &economy)
 
-        XCTAssertFalse(accepted)
-        XCTAssertNil(upgrades.agents["Radion"])
+        XCTAssertNil(economy.agents["Radion"])
+        XCTAssertEqual(economy.villageWallet, 80, accuracy: 0.001)
+        XCTAssertEqual(economy.lastProcessedGlobalRawBits, 80, accuracy: 0.001)
     }
 
-    func test_economy_store_round_trips() throws {
+    func test_second_processing_without_delta_does_not_double_credit() throws {
+        let ledger = ledgerState(agentBits: 100, bond: 1, globalBits: 20)
+        var economy = EconomyState.empty
+
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &economy)
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &economy)
+
+        let radion3 = try XCTUnwrap(economy.agents["Radion"])
+        XCTAssertEqual(radion3.wallet, 100, accuracy: 0.001)
+        XCTAssertEqual(economy.villageWallet, 30, accuracy: 0.001)
+    }
+
+    func test_negative_delta_resynchronizes_without_debiting_wallet() throws {
+        let ledger = ledgerState(agentBits: 50, bond: 1, globalBits: 0)
+        var economy = EconomyState.empty
+        economy.agents["Radion"] = AgentEconomyState(wallet: 200, lastProcessedRawBits: 100)
+
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &economy)
+
+        let radion4 = try XCTUnwrap(economy.agents["Radion"])
+        XCTAssertEqual(radion4.wallet, 200, accuracy: 0.001)
+        XCTAssertEqual(radion4.lastProcessedRawBits, 50, accuracy: 0.001)
+    }
+
+    func test_purchase_rules_respect_costs_and_bond_gates() throws {
+        let ledger = ledgerState(agentBits: 10_000, bond: 6, globalBits: 0)
+        var economy = EconomyState.empty
+        economy.agents["Radion"] = AgentEconomyState(wallet: 10_000)
+
+        XCTAssertTrue(EconomyEngine.apply(.bitMultiplier, for: "Radion", ledger: ledger, economy: &economy))
+        let radion5 = try XCTUnwrap(economy.agents["Radion"])
+        XCTAssertEqual(radion5.bitMultiplierLevel, 1)
+        XCTAssertEqual(radion5.spentBits, 500, accuracy: 0.001)
+
+        XCTAssertTrue(EconomyEngine.apply(.bondDividend, for: "Radion", ledger: ledger, economy: &economy))
+        XCTAssertEqual(economy.agents["Radion"]?.bondDividendLevel, 1)
+
+        XCTAssertTrue(EconomyEngine.apply(.trickle, for: "Radion", ledger: ledger, economy: &economy))
+        XCTAssertEqual(economy.agents["Radion"]?.trickleCount, 1)
+    }
+
+    func test_bond_gates_reject_unavailable_upgrades() throws {
+        let ledger = ledgerState(agentBits: 10_000, bond: 1, globalBits: 0)
+        var economy = EconomyState.empty
+        economy.agents["Radion"] = AgentEconomyState(wallet: 10_000, trickleCount: 2)
+
+        XCTAssertFalse(EconomyEngine.apply(.bondDividend, for: "Radion", ledger: ledger, economy: &economy))
+        XCTAssertFalse(EconomyEngine.apply(.trickle, for: "Radion", ledger: ledger, economy: &economy))
+    }
+
+    func test_migration_conservatively_seeds_wallets_and_checkpoints() throws {
+        let ledger = ledgerState(agentBits: 20_000, bond: 6, globalBits: 300)
+        var old = EconomyState.empty
+        old.schemaVersion = 0
+        old.agents["Radion"] = AgentEconomyState(
+            spentBits: 9_999,
+            bitMultiplierLevel: 99,
+            bondDividendLevel: 99,
+            trickleCount: 99
+        )
+
+        let migrated = EconomyEngine.migratedState(from: old, ledger: ledger)
+
+        let agent = try XCTUnwrap(migrated.agents["Radion"])
+        XCTAssertEqual(agent.wallet, 5_000, accuracy: 0.001) // Bond 6 cap.
+        XCTAssertEqual(agent.spentBits, 0, accuracy: 0.001)
+        XCTAssertEqual(agent.lastProcessedRawBits, 20_000, accuracy: 0.001)
+        XCTAssertEqual(agent.bitMultiplierLevel, 6)
+        XCTAssertEqual(agent.bondDividendLevel, 2)
+        XCTAssertEqual(agent.trickleCount, 10)
+        XCTAssertEqual(migrated.lastProcessedGlobalRawBits, 300, accuracy: 0.001)
+        XCTAssertEqual(migrated.schemaVersion, EconomyEngine.currentSchemaVersion)
+    }
+
+    func test_economy_store_round_trips_new_state() throws {
         let url = tempDir.appendingPathComponent("economy.json")
         let store = EconomyStore(url: url)
-        let state = UpgradeState(
-            agents: ["Radion": AgentUpgradeState(bitMultiplierLevel: 3, spentBits: 290)],
-            lastUpdated: iso("2026-06-07T10:00:00Z")
+        let state = EconomyState(
+            schemaVersion: EconomyEngine.currentSchemaVersion,
+            agents: ["Radion": AgentEconomyState(wallet: 123, trickleCount: 2)],
+            villageWallet: 45,
+            spentVillageBits: 5,
+            lastProcessedGlobalRawBits: 10,
+            lastUpdated: iso("2026-06-08T10:00:00Z"),
+            migration: EconomyMigrationState()
         )
 
         try store.save(state)
         let loaded = store.load()
 
-        XCTAssertEqual(loaded.agents["Radion"]?.bitMultiplierLevel, 3)
-        let spentBits = try XCTUnwrap(loaded.agents["Radion"]?.spentBits)
-        XCTAssertEqual(spentBits, 290, accuracy: 0.001)
-        let loadedMultiplier = try XCTUnwrap(loaded.agents["Radion"]?.bitMultiplier)
-        XCTAssertEqual(loadedMultiplier, 1.75, accuracy: 0.001)
+        let loadedRadion = try XCTUnwrap(loaded.agents["Radion"])
+        XCTAssertEqual(loadedRadion.wallet, 123, accuracy: 0.001)
+        XCTAssertEqual(loadedRadion.trickleCount, 2)
+        XCTAssertEqual(loaded.villageWallet, 45, accuracy: 0.001)
+        XCTAssertEqual(loaded.spentVillageBits, 5, accuracy: 0.001)
     }
 
     func test_economy_store_load_returns_empty_when_file_missing() {
@@ -83,9 +153,45 @@ final class UpgradeStateAppTests: XCTestCase {
         XCTAssertEqual(store.load(), .empty)
     }
 
-    private func agent(name: String, totalBits: Double) -> AgentRecord {
+    // Tests the engine layer directly; VillageEngine wiring is covered by the app build smoke.
+    func test_cumulative_delta_credits_even_when_recent_events_are_empty() throws {
+        var economy = EconomyState.empty
+        var ledger = ledgerState(agentBits: 100, bond: 1, globalBits: 0)
+        ledger = LedgerState(
+            totalBitsRaw: ledger.totalBitsRaw,
+            pendingBits: ledger.pendingBits,
+            globalBitsRaw: ledger.globalBitsRaw,
+            agents: ledger.agents,
+            lastUpdated: ledger.lastUpdated,
+            recentEvents: [],
+            eventSeq: 42
+        )
+
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &economy)
+
+        let agent = try XCTUnwrap(economy.agents["Radion"])
+        XCTAssertEqual(agent.wallet, 100, accuracy: 0.001)
+        XCTAssertEqual(economy.villageWallet, 10, accuracy: 0.001)
+    }
+
+    private func ledgerState(agentBits: Double, bond: Int, globalBits: Double) -> LedgerState {
+        let agent = agentBits > 0
+            ? ["Radion": agentRecord(name: "Radion", totalTokens: BondScale.thresholds.first { $0.level == bond }?.tokens ?? 0, totalBitsRaw: agentBits)]
+            : [:]
+        return LedgerState(
+            totalBitsRaw: agentBits + globalBits,
+            pendingBits: 0,
+            globalBitsRaw: globalBits,
+            agents: agent,
+            lastUpdated: Date(),
+            recentEvents: [],
+            eventSeq: 0
+        )
+    }
+
+    private func agentRecord(name: String, totalTokens: Int, totalBitsRaw: Double) -> AgentRecord {
         let json = """
-        {"name":"\(name)","totalTokens":0,"bond":1,"totalBits":\(totalBits)}
+        {"name":"\(name)","totalTokens":\(totalTokens),"bond":1,"totalBits":\(totalBitsRaw)}
         """
         return try! JSONDecoder().decode(AgentRecord.self, from: Data(json.utf8))
     }

@@ -25,17 +25,19 @@ final class Ledger {
         try data.write(to: url, options: .atomic)
     }
 
-    func apply(event: TokenEvent, agentName: String?, multiplier: Double = 1.0, to state: inout LedgerState) {
-        let bits = event.bits * multiplier
-        guard bits > 0 else { return }
-        state.pendingBits += bits
-        state.totalBits += bits
+    func apply(event: TokenEvent, agentName: String?, to state: inout LedgerState) {
+        let rawBits = event.bits
+        guard rawBits > 0 else { return }
+        state.pendingBits += rawBits
+        state.totalBitsRaw += rawBits
         state.lastUpdated = Date()
 
         if let name = agentName {
             var record = state.agents[name] ?? AgentRecord(name: name, totalTokens: 0, bond: 1)
-            record.addTokens(event, bits: bits)
+            record.addTokens(event, rawBits: rawBits)
             state.agents[name] = record
+        } else {
+            state.globalBitsRaw += rawBits
         }
 
         let project = event.cwd.map { URL(fileURLWithPath: $0).lastPathComponent }
@@ -46,7 +48,7 @@ final class Ledger {
             session.outputTokens += event.outputTokens
             session.cacheCreationTokens += event.cacheCreationTokens
             session.cacheReadTokens += event.cacheReadTokens
-            session.totalBits += bits
+            session.totalBits += rawBits
             // Don't clobber a previously resolved agent if this event has none
             // (e.g. .pixelvillage briefly unreadable) — attribution is load-bearing.
             if let agentName { session.agentName = agentName }
@@ -63,12 +65,12 @@ final class Ledger {
                 outputTokens: event.outputTokens,
                 cacheCreationTokens: event.cacheCreationTokens,
                 cacheReadTokens: event.cacheReadTokens,
-                totalBits: bits
+                totalBits: rawBits
             )
         }
 
         state.eventSeq += 1
-        state.recentEvents.append(BitEvent(agentName: agentName, bits: bits, seq: state.eventSeq))
+        state.recentEvents.append(BitEvent(agentName: agentName, rawBits: rawBits, seq: state.eventSeq))
         if state.recentEvents.count > 100 {
             state.recentEvents.removeFirst(state.recentEvents.count - 100)
         }
@@ -89,11 +91,20 @@ final class Ledger {
         if let agentName { session.agentName = agentName }
         if let branch = entry.gitBranch { session.gitBranch = branch }
 
-        // Task: first real user prompt.
-        if session.task == nil, let text = entry.userText {
+        // Task: emit on every 5th distinct prompt (not just the first).
+        // Skip system-injected XML messages (e.g. <local-command-caveat>) — these are
+        // Claude-internal context blocks injected as user-role turns, not real prompts.
+        if let text = entry.userText, !text.hasPrefix("<") {
             let snippet = Self.truncate(text, to: 120)
-            session.task = snippet
-            emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "task", payload: snippet)
+            if session.task == nil {
+                session.task = snippet
+                emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "task", payload: snippet)
+            } else {
+                session.taskPromptCount += 1
+                if session.taskPromptCount % 5 == 0 {
+                    emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "task", payload: snippet)
+                }
+            }
         }
 
         // Tool uses: files + commands + counts.
@@ -120,9 +131,14 @@ final class Ledger {
             }
         }
 
-        // Deep work threshold.
-        if session.editCount >= 10 {
-            fireOnce(&state, &session, kind: "deepWork", payload: session.project, agentName, sessionId)
+        // Deep work: re-emit at every 10-edit milestone (deepWork_10, deepWork_20, …).
+        if session.editCount > 0, session.editCount % 10 == 0 {
+            let marker = "deepWork_\(session.editCount)"
+            if !session.firedKinds.contains(marker) {
+                session.firedKinds.append(marker)
+                emitActivity(&state, agentName: agentName, sessionId: sessionId,
+                             kind: "deepWork", payload: session.project)
+            }
         }
 
         state.sessions[sessionId] = session
@@ -133,8 +149,13 @@ final class Ledger {
         guard !session.filesTouched.contains(path) else { return }
         session.filesTouched.append(path)
         if session.filesTouched.count > 20 { session.filesTouched.removeFirst(session.filesTouched.count - 20) }
-        emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "file",
-                     payload: URL(fileURLWithPath: path).lastPathComponent)
+        // Emit every 5th new file to keep speech alive across long sessions.
+        let fileMarker = "file_\(session.filesTouched.count)"
+        if session.filesTouched.count == 1 || session.filesTouched.count % 5 == 0 {
+            _ = fileMarker
+            emitActivity(&state, agentName: agentName, sessionId: sessionId, kind: "file",
+                         payload: URL(fileURLWithPath: path).lastPathComponent)
+        }
     }
 
     private func fireOnce(_ state: inout LedgerState, _ session: inout SessionRecord, kind: String,

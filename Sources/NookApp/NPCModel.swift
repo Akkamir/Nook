@@ -5,7 +5,7 @@ struct NPCModel {
     var name: String
     var bond: Int
     var totalTokens: Int
-    var totalBits: Double
+    var totalBitsRaw: Double
     var tileX: Int
     var tileY: Int
 }

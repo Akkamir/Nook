@@ -17,16 +17,16 @@ Le **daemon** (`NookDaemon`) surveille en continu les sessions Claude Code. À c
 Les tokens sont pondérés selon leur coût relatif (tarification Sonnet 4.6) :
 
 ```
-tokens_pondérés = input × 1.0 + output × 5.0 + cache_write × 1.25 + cache_read × 0.1
+tokens_pondérés = input × 1.0 + output × 5.0 + cache_write × 1.25
 bits = tokens_pondérés / 1000 × 5
 ```
 
-| Type de token | Poids | Ratio vs input |
-|--------------|-------|----------------|
-| Input        | 1.0   | ×1             |
-| Output       | 5.0   | ×5             |
-| Cache write  | 1.25  | ×1.25          |
-| Cache read   | 0.1   | ×0.1           |
+| Type de token | Poids | Ratio vs input | Note                                        |
+|--------------|-------|----------------|---------------------------------------------|
+| Input        | 1.0   | ×1             |                                             |
+| Output       | 5.0   | ×5             |                                             |
+| Cache write  | 1.25  | ×1.25          | coût actif, non récurrent                   |
+| Cache read   | 0.0   | —              | exclu : accumulation quadratique subagents  |
 
 **Exemples de gains par session :**
 

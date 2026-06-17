@@ -4,12 +4,16 @@ import Observation
 @MainActor
 @Observable
 final class VillageEngine {
-    private(set) var totalBits: Double = 0
+    private(set) var totalBitsRaw: Double = 0
     private(set) var pendingBits: Double = 0
+    private(set) var globalBitsRaw: Double = 0
     private(set) var agents: [String: AgentRecord] = [:]
     private(set) var sessions: [String: SessionRecord] = [:]
-    private(set) var upgrades: UpgradeState = .empty
+    private(set) var upgrades: EconomyState = .empty
     private(set) var npcMemory: NPCMemoryState = .empty
+    private(set) var roster: NPCRoster
+    private(set) var newlyUnlockedNPCIDs: [String] = []
+    private(set) var shouldOfferGlobalGitignore = false
 
     private(set) var dayPhase: DayPhase = DayPhase.current()
     private(set) var activeSessions: Set<String> = []
@@ -20,6 +24,9 @@ final class VillageEngine {
     private let ledgerURL: URL
     private let economyStore: EconomyStore
     private let memoryStore: NPCMemoryStore
+    let npcCatalog: NPCCatalog
+    private let rosterStore: RosterStore
+    private let gitignoreAdvisor = GitignoreAdvisor()
     private let narrationClient: OpenAINarrationClient
     private let watcher: LedgerWatcher
     private var isRunning = false
@@ -30,6 +37,9 @@ final class VillageEngine {
     private var trickleTimer: DispatchSourceTimer?
     private var trickleInitialized = false
     private var lastLiveCommentAt: [String: Date] = [:]
+    private var lastPromptReactionAt: [String: Date] = [:]
+    private var lastResponseReactionAt: [String: Date] = [:]
+    private var lastReactedMessage: [String: String] = [:]   // agentName → message we last reacted to
     var onTrickleGain: ((String, Double) -> Void)?
     var onLiveComment: ((String, String) -> Void)?
     private let sessionDetector = SessionDetector()
@@ -42,11 +52,17 @@ final class VillageEngine {
             .appendingPathComponent(".pixelvillage/ledger.json"),
         economyStore: EconomyStore = .production,
         memoryStore: NPCMemoryStore = NPCMemoryStore(),
+        npcCatalog: NPCCatalog = .standard,
+        rosterStore: RosterStore? = nil,
         narrationClient: OpenAINarrationClient = OpenAINarrationClient()
     ) {
         self.ledgerURL = ledgerURL
         self.economyStore = economyStore
         self.memoryStore = memoryStore
+        self.npcCatalog = npcCatalog
+        let resolvedRosterStore = rosterStore ?? RosterStore(catalog: npcCatalog)
+        self.rosterStore = resolvedRosterStore
+        self.roster = resolvedRosterStore.loadOrLockedRoster()
         self.narrationClient = narrationClient
         self.watcher = LedgerWatcher(ledgerURL: ledgerURL)
     }
@@ -86,7 +102,15 @@ final class VillageEngine {
                 if changed {
                     await self.refreshActiveSessionCounts()
                 }
-                await self.updateMemoryFromHook(event)
+                if event.refreshesActivity {
+                    await self.updateMemoryFromHook(event)
+                }
+                if event.isPromptStart {
+                    await self.handlePromptStart(event)
+                }
+                if event.isClaudeResponse {
+                    await self.handleClaudeResponse(event)
+                }
             }
         }
 
@@ -155,70 +179,104 @@ final class VillageEngine {
     }
 
     var totalAvailableBits: Double {
-        agents.reduce(0) { sum, pair in
-            let state = upgrades.agents[pair.key]
-            let spent = state?.spentBits ?? 0
-            let trickle = state?.trickleBitsAccumulated ?? 0
-            let bonus = state?.bonusAccumulated ?? 0
-            return sum + max(0, pair.value.totalBits + bonus + trickle - spent)
+        upgrades.agents.values.reduce(0) { $0 + $1.availableBits }
+    }
+
+    var villageAvailableBits: Double {
+        upgrades.villageAvailableBits
+    }
+
+    var needsOnboarding: Bool {
+        roster.needsOnboarding
+    }
+
+    var hasRosterBadge: Bool {
+        !newlyUnlockedNPCIDs.isEmpty || roster.entries.contains { $0.isUnlocked && $0.assignedProjects.isEmpty }
+    }
+
+    var discoveredProjects: [DiscoveredProject] {
+        ProjectDiscovery().discover()
+    }
+
+    var shopNPCRecords: [String: AgentRecord] {
+        var records = agents
+        for entry in roster.entries where entry.isUnlocked {
+            if records[entry.name] == nil {
+                records[entry.name] = AgentRecord(name: entry.name, totalTokens: 0, bond: 1, totalBitsRaw: 0)
+            }
         }
+        return records
+    }
+
+    var visibleNPCRecords: [String: AgentRecord] {
+        var records = agents
+        for entry in roster.entries where entry.isUnlocked && !entry.assignedProjects.isEmpty {
+            if records[entry.name] == nil {
+                records[entry.name] = AgentRecord(name: entry.name, totalTokens: 0, bond: 1, totalBitsRaw: 0)
+            }
+        }
+        return records
+    }
+
+    func consumeRosterBadge() {
+        newlyUnlockedNPCIDs.removeAll()
+    }
+
+    func addPixelVillageToGlobalGitignore() {
+        do {
+            try gitignoreAdvisor.addPixelVillageToGlobalGitignore()
+            shouldOfferGlobalGitignore = false
+        } catch {
+            print("[Nook] global gitignore update error: \(error)")
+        }
+    }
+
+    func createStarterNPC(name: String, projectPaths: [String]) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let starterName = trimmed.isEmpty ? "Resident" : trimmed
+        var next = NPCRoster.initial(catalog: npcCatalog, starterName: starterName, assignedProjects: [], now: Date())
+        do {
+            try rosterStore.save(next)
+            for path in projectPaths {
+                try rosterStore.assign(projectPath: path, toCatalogId: "starter", in: &next)
+            }
+            shouldOfferGlobalGitignore = gitignoreAdvisor.needsGlobalIgnoreOffer(forProjectPaths: projectPaths)
+            roster = next
+        } catch {
+            print("[Nook] starter roster save error: \(error)")
+        }
+    }
+
+    func saveRosterAssignment(catalogId: String, name: String, projectPaths: [String]) {
+        var next = roster
+        if canRenameRosterEntry(catalogId: catalogId) {
+            next.rename(catalogId: catalogId, to: name.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        let assignablePaths = projectPaths.filter { path in
+            !next.isProjectAssigned(path, excludingCatalogId: catalogId)
+        }
+        do {
+            try rosterStore.applyAssignments(forCatalogId: catalogId, newProjectPaths: assignablePaths, roster: &next)
+            if let entry = next.entry(catalogId: catalogId) {
+                for path in entry.assignedProjects {
+                    try rosterStore.assign(projectPath: path, toCatalogId: catalogId, in: &next)
+                }
+            }
+            shouldOfferGlobalGitignore = gitignoreAdvisor.needsGlobalIgnoreOffer(forProjectPaths: assignablePaths)
+            roster = next
+        } catch {
+            print("[Nook] roster assignment error: \(error)")
+        }
+    }
+
+    func canRenameRosterEntry(catalogId: String) -> Bool {
+        guard let entry = roster.entry(catalogId: catalogId) else { return false }
+        return !sessions.values.contains { $0.agentName == entry.name }
     }
 
     func effectiveMultiplier(for agentName: String) -> Double {
-        UpgradeEconomy.effectiveMultiplier(
-            bitMultiplier: upgrades.agents[agentName]?.bitMultiplier ?? 1.0,
-            bdLevel: upgrades.agents[agentName]?.bondDividendLevel ?? 0,
-            bond: agents[agentName]?.bond ?? 0
-        )
-    }
-
-    // Runs every launch: ensures bonusAccumulated ≥ totalBits × (mult − 1).
-    // Guards against migration gaps where bonusAccumulated was seeded with stale
-    // totalBits, which would leave agents with negative available bits.
-    private func refreshBonusFloor() {
-        var updated = upgrades
-        var changed = false
-        for (agentName, agent) in agents {
-            var state = updated.agents[agentName] ?? AgentUpgradeState()
-            guard state.bitMultiplierLevel > 0 || state.bondDividendLevel > 0 else { continue }
-            let mult = UpgradeEconomy.effectiveMultiplier(
-                bitMultiplier: state.bitMultiplier,
-                bdLevel: state.bondDividendLevel,
-                bond: agent.bond
-            )
-            let floor = agent.totalBits * (mult - 1.0)
-            guard state.bonusAccumulated < floor else { continue }
-            state.bonusAccumulated = floor
-            updated.agents[agentName] = state
-            changed = true
-        }
-        guard changed else { return }
-        upgrades = updated
-        backgroundSaveUpgrades(updated)
-    }
-
-    // Credits multiplier bonus for each incoming daemon bit event.
-    private func creditMultiplierBonus(for events: [BitEvent]) {
-        var updated = upgrades
-        var changed = false
-        for event in events {
-            guard let agentName = event.agentName,
-                  let agent = agents[agentName] else { continue }
-            var state = updated.agents[agentName] ?? AgentUpgradeState()
-            let mult = UpgradeEconomy.effectiveMultiplier(
-                bitMultiplier: state.bitMultiplier,
-                bdLevel: state.bondDividendLevel,
-                bond: agent.bond
-            )
-            let bonus = event.bits * (mult - 1.0)
-            guard bonus > 0 else { continue }
-            state.bonusAccumulated += bonus
-            updated.agents[agentName] = state
-            changed = true
-        }
-        guard changed else { return }
-        upgrades = updated
-        backgroundSaveUpgrades(updated)
+        guard let agent = shopNPCRecords[agentName], let state = upgrades.agents[agentName] else { return 1.0 }
+        return EconomyEngine.effectiveMultiplier(for: state, bond: agent.bond)
     }
 
     private func backgroundSaveUpgrades(_ state: UpgradeState) {
@@ -230,16 +288,7 @@ final class VillageEngine {
     }
 
     func availableBits(for agentName: String) -> Double {
-        let ledger = LedgerState(
-            totalBits: totalBits,
-            pendingBits: pendingBits,
-            agents: agents,
-            lastUpdated: Date(),
-            recentEvents: [],
-            eventSeq: 0,
-            sessions: sessions
-        )
-        return UpgradeEconomy.availableBits(for: agentName, ledger: ledger, upgrades: upgrades)
+        upgrades.agents[agentName]?.availableBits ?? 0
     }
 
     func bitMultiplier(for agentName: String) -> Double {
@@ -248,73 +297,51 @@ final class VillageEngine {
 
     func nextBitMultiplierCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bitMultiplierLevel ?? 0
-        return UpgradeEconomy.cost(for: .bitMultiplier, currentLevel: level)
+        guard EconomyEngine.canBuy(.bitMultiplier, currentLevel: level, bond: shopNPCRecords[agentName]?.bond ?? 0) else { return .infinity }
+        return EconomyEngine.cost(for: .bitMultiplier, currentLevel: level)
     }
 
     func nextBondDividendCost(for agentName: String) -> Double {
         let level = upgrades.agents[agentName]?.bondDividendLevel ?? 0
-        return UpgradeEconomy.cost(for: .bondDividend, currentLevel: level)
+        let bond = shopNPCRecords[agentName]?.bond ?? 0
+        guard EconomyEngine.canBuy(.bondDividend, currentLevel: level, bond: bond) else { return .infinity }
+        return EconomyEngine.cost(for: .bondDividend, currentLevel: level)
     }
 
     func nextTrickleCost(for agentName: String) -> Double {
-        let level = upgrades.agents[agentName]?.trickleLevel ?? 0
-        return UpgradeEconomy.cost(for: .trickle, currentLevel: level)
+        let count = upgrades.agents[agentName]?.trickleCount ?? 0
+        let bond = shopNPCRecords[agentName]?.bond ?? 0
+        guard EconomyEngine.canBuy(.trickle, currentLevel: count, bond: bond) else { return .infinity }
+        return EconomyEngine.cost(for: .trickle, currentLevel: count)
     }
 
     func requestBitMultiplierPurchase(for agentName: String) {
+        requestPurchase(.bitMultiplier, for: agentName)
+    }
+
+    func requestBondDividendPurchase(for agentName: String) {
+        requestPurchase(.bondDividend, for: agentName)
+    }
+
+    func requestTricklePurchase(for agentName: String) {
+        requestPurchase(.trickle, for: agentName)
+    }
+
+    private func requestPurchase(_ kind: UpgradeKind, for agentName: String) {
         let ledger = LedgerState(
-            totalBits: totalBits,
+            totalBitsRaw: totalBitsRaw,
             pendingBits: pendingBits,
-            agents: agents,
+            globalBitsRaw: globalBitsRaw,
+            agents: shopNPCRecords,
             lastUpdated: Date(),
             recentEvents: [],
             eventSeq: 0,
             sessions: sessions
         )
-        var updatedUpgrades = upgrades
-        let applied = UpgradeEconomy.apply(.bitMultiplier, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
-        guard applied else { return }
-        upgrades = updatedUpgrades
-        let stateToSave = updatedUpgrades
-        let url = economyStore.url
-        Task.detached(priority: .utility) {
-            let store = EconomyStore(url: url)
-            try? store.save(stateToSave)
-        }
-    }
-
-    func requestBondDividendPurchase(for agentName: String) {
-        let ledger = LedgerState(
-            totalBits: totalBits, pendingBits: pendingBits, agents: agents,
-            lastUpdated: Date(), recentEvents: [], eventSeq: 0, sessions: sessions
-        )
-        var updatedUpgrades = upgrades
-        let applied = UpgradeEconomy.apply(.bondDividend, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
-        guard applied else { return }
-        upgrades = updatedUpgrades
-        let url = economyStore.url
-        let stateToSave = updatedUpgrades
-        Task.detached(priority: .utility) {
-            let store = EconomyStore(url: url)
-            try? store.save(stateToSave)
-        }
-    }
-
-    func requestTricklePurchase(for agentName: String) {
-        let ledger = LedgerState(
-            totalBits: totalBits, pendingBits: pendingBits, agents: agents,
-            lastUpdated: Date(), recentEvents: [], eventSeq: 0, sessions: sessions
-        )
-        var updatedUpgrades = upgrades
-        let applied = UpgradeEconomy.apply(.trickle, for: agentName, ledger: ledger, upgrades: &updatedUpgrades)
-        guard applied else { return }
-        upgrades = updatedUpgrades
-        let url = economyStore.url
-        let stateToSave = updatedUpgrades
-        Task.detached(priority: .utility) {
-            let store = EconomyStore(url: url)
-            try? store.save(stateToSave)
-        }
+        var updated = upgrades
+        guard EconomyEngine.apply(kind, for: agentName, ledger: ledger, economy: &updated) else { return }
+        upgrades = updated
+        backgroundSaveUpgrades(updated)
     }
 
     private func startTrickleTimer() {
@@ -333,7 +360,7 @@ final class VillageEngine {
 
         for (agentName, _) in agents {
             var state = updatedUpgrades.agents[agentName] ?? AgentUpgradeState()
-            guard state.trickleLevel > 0 else {
+            guard state.trickleCount > 0 else {
                 if state.lastTrickleAt == nil {
                     state.lastTrickleAt = now
                     updatedUpgrades.agents[agentName] = state
@@ -351,7 +378,7 @@ final class VillageEngine {
             }
 
             // Rate is bits per 10s; compute proportionally over elapsed seconds.
-            let rate = UpgradeEconomy.trickleRate(count: state.trickleLevel)
+            let rate = EconomyEngine.trickleRate(count: state.trickleCount)
             let gained = rate * elapsed / 10.0
             state.trickleBitsAccumulated += gained
 
@@ -367,12 +394,7 @@ final class VillageEngine {
 
         guard changed else { return }
         upgrades = updatedUpgrades
-        let url = economyStore.url
-        let stateToSave = updatedUpgrades
-        Task.detached(priority: .utility) {
-            let store = EconomyStore(url: url)
-            try? store.save(stateToSave)
-        }
+        backgroundSaveUpgrades(updatedUpgrades)
     }
 
     private func reload() {
@@ -392,13 +414,22 @@ final class VillageEngine {
         }
     }
 
-    private func applyReload(ledger: LedgerState, upgrades: UpgradeState, memory: NPCMemoryState, anchor: Bool) {
-        totalBits = ledger.totalBits
+    private func applyReload(ledger: LedgerState, upgrades: EconomyState, memory: NPCMemoryState, anchor: Bool) {
+        totalBitsRaw = ledger.totalBitsRaw
         pendingBits = ledger.pendingBits
+        globalBitsRaw = ledger.globalBitsRaw
         agents = ledger.agents
         sessions = ledger.sessions
-        self.upgrades = upgrades
+
+        var processedEconomy = upgrades
+        EconomyEngine.processLedgerDelta(ledger: ledger, economy: &processedEconomy)
+        self.upgrades = processedEconomy
+        if processedEconomy != upgrades {
+            backgroundSaveUpgrades(processedEconomy)
+        }
+
         npcMemory = memory
+        evaluateRosterUnlocks(ledger: ledger, economy: processedEconomy)
 
         if anchor {
             lastSeenEventSeq = ledger.eventSeq
@@ -407,7 +438,6 @@ final class VillageEngine {
                 trickleInitialized = true
                 tickTrickle(animate: false)
             }
-            refreshBonusFloor()
             return
         }
 
@@ -415,7 +445,6 @@ final class VillageEngine {
         if !fresh.isEmpty {
             newBitEvents += fresh
             lastSeenEventSeq = fresh.map(\.seq).max() ?? lastSeenEventSeq
-            creditMultiplierBonus(for: fresh)
         }
 
         let freshActivity = ledger.recentActivity.filter { $0.seq > lastSeenActivitySeq }
@@ -423,6 +452,173 @@ final class VillageEngine {
             newActivityEvents += freshActivity
             lastSeenActivitySeq = freshActivity.map(\.seq).max() ?? lastSeenActivitySeq
         }
+    }
+
+    private func evaluateRosterUnlocks(ledger: LedgerState, economy: EconomyState) {
+        var next = roster
+        next.mergeMissingCatalogEntries(from: npcCatalog)
+        let maxBond = ledger.agents.values.map(\.bond).max() ?? 0
+        let spent = economy.agents.values.reduce(0) { $0 + $1.spentBits }
+        let villageBits = economy.villageWallet
+        let relocked = next.relockIneligibleUnassignedEntries(
+            catalog: npcCatalog,
+            maxBond: maxBond,
+            totalSpentBits: spent,
+            totalVillageBits: villageBits
+        )
+        let unlocked = next.unlockEligibleEntries(
+            catalog: npcCatalog,
+            maxBond: maxBond,
+            totalSpentBits: spent,
+            totalVillageBits: villageBits,
+            now: Date()
+        )
+        roster = next
+        guard !unlocked.isEmpty || relocked else { return }
+        if !unlocked.isEmpty {
+            newlyUnlockedNPCIDs += unlocked
+        }
+        do {
+            try rosterStore.save(next)
+        } catch {
+            print("[Nook] roster unlock save error: \(error)")
+        }
+    }
+
+    // Fires on the first tool use of a new user turn (PreToolUse hook).
+    // Reads the user's latest message from the transcript and generates a
+    // short NPC reaction while Claude is still processing — feels almost live.
+    private func handlePromptStart(_ event: ClaudeHookEvent) async {
+        guard let sessionId = event.sessionId,
+              let transcriptPath = event.transcriptPath,
+              let session = sessions[sessionId],
+              let agentName = session.agentName
+        else { return }
+
+        guard OpenAIAPIKeyStore.load() != nil else { return }
+
+        // Per-NPC throttle: at most once per 30s.
+        let now = Date()
+        guard lastPromptReactionAt[agentName].map({ now.timeIntervalSince($0) > 30 }) ?? true else { return }
+
+        // Read last user message off main actor (synchronous file I/O).
+        let userMessage = await Task.detached(priority: .userInitiated) {
+            Self.extractLastUserMessage(from: transcriptPath)
+        }.value
+        guard let userMessage else { return }
+
+        // Skip if we already reacted to this exact message (same turn, multiple tool uses).
+        guard lastReactedMessage[agentName] != userMessage else { return }
+
+        lastReactedMessage[agentName] = userMessage
+        lastPromptReactionAt[agentName] = now
+
+        let bond = BondScale.level(for: session.totalTokens)
+        let totalTokens = session.totalTokens
+        do {
+            let style = npcCatalog.reactionStyle(for: agentName, roster: roster)
+            let personality = npcCatalog.personality(for: agentName, roster: roster)
+            let line = try await narrationClient.promptReaction(
+                userMessage: userMessage, bond: bond, totalTokens: totalTokens,
+                style: style, personality: personality
+            )
+            guard !line.isEmpty else { return }
+            onLiveComment?(agentName, line)
+        } catch {
+            print("[Nook] promptReaction error for \(agentName): \(error)")
+        }
+    }
+
+    // Scans the transcript from the end to find the last plain-text user message.
+    // Skips tool results and session-continuation summaries.
+    nonisolated private static func extractLastUserMessage(from transcriptPath: String) -> String? {
+        guard let content = try? String(contentsOfFile: transcriptPath, encoding: .utf8) else { return nil }
+        for line in content.components(separatedBy: "\n").reversed() {
+            guard !line.isEmpty,
+                  let data = line.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let message = obj["message"] as? [String: Any],
+                  message["role"] as? String == "user",
+                  let text = message["content"] as? String,
+                  !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  !text.hasPrefix("This session is being continued"),
+                  !text.hasPrefix("<")
+            else { continue }
+            return String(text.prefix(300))
+        }
+        return nil
+    }
+
+    // Fires after Claude finishes its response (Stop hook).
+    // Extracts the last assistant text and reacts to what Claude just said.
+    private func handleClaudeResponse(_ event: ClaudeHookEvent) async {
+        guard let sessionId = event.sessionId,
+              let transcriptPath = event.transcriptPath,
+              let session = sessions[sessionId],
+              let agentName = session.agentName
+        else { return }
+
+        guard OpenAIAPIKeyStore.load() != nil else { return }
+
+        let now = Date()
+        // Per-NPC throttle: at most once per 45s.
+        guard lastResponseReactionAt[agentName].map({ now.timeIntervalSince($0) > 45 }) ?? true else { return }
+        // liveComment fires on the same Stop event (inside updateMemoryFromHook, which runs first).
+        // If it fired within the last 15s we skip to avoid two bubbles on the same response.
+        guard lastLiveCommentAt[agentName].map({ now.timeIntervalSince($0) > 15 }) ?? true else { return }
+
+        let snippet = await Task.detached(priority: .userInitiated) {
+            Self.extractLastAssistantMessage(from: transcriptPath)
+        }.value
+        guard let snippet else { return }
+
+        lastResponseReactionAt[agentName] = now
+        lastLiveCommentAt[agentName] = now  // claim the shared "NPC just spoke" slot
+
+        let bond = BondScale.level(for: session.totalTokens)
+        let totalTokens = session.totalTokens
+        do {
+            let style = npcCatalog.reactionStyle(for: agentName, roster: roster)
+            let personality = npcCatalog.personality(for: agentName, roster: roster)
+            let line = try await narrationClient.responseReaction(
+                assistantSnippet: snippet, bond: bond, totalTokens: totalTokens,
+                style: style, personality: personality
+            )
+            guard !line.isEmpty else { return }
+            onLiveComment?(agentName, line)
+        } catch {
+            print("[Nook] responseReaction error for \(agentName): \(error)")
+        }
+    }
+
+    // Scans the transcript from the end to find the last assistant text message.
+    // Skips tool_use content blocks, returns only text-bearing assistant turns.
+    nonisolated private static func extractLastAssistantMessage(from transcriptPath: String) -> String? {
+        guard let content = try? String(contentsOfFile: transcriptPath, encoding: .utf8) else { return nil }
+        for line in content.components(separatedBy: "\n").reversed() {
+            guard !line.isEmpty,
+                  let data = line.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let message = obj["message"] as? [String: Any],
+                  message["role"] as? String == "assistant"
+            else { continue }
+
+            let text: String
+            if let s = message["content"] as? String {
+                text = s
+            } else if let blocks = message["content"] as? [[String: Any]] {
+                text = blocks
+                    .filter { ($0["type"] as? String) == "text" }
+                    .compactMap { $0["text"] as? String }
+                    .joined(separator: " ")
+            } else {
+                continue
+            }
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+            return String(trimmed.prefix(300))
+        }
+        return nil
     }
 
     private func updateMemoryFromHook(_ event: ClaudeHookEvent) async {
@@ -463,7 +659,8 @@ final class VillageEngine {
             let enriched = try await narrationClient.enrich(
                 sessionMemory: base, digest: digest,
                 bond: bond, totalTokens: totalTokens,
-                pastSessions: Array(pastSessions.suffix(5))
+                pastSessions: Array(pastSessions.suffix(5)),
+                personality: agentName.flatMap { npcCatalog.personality(for: $0, roster: roster) }
             )
             updatedMemory.sessions[sessionId] = enriched
             npcMemory = updatedMemory
@@ -476,9 +673,13 @@ final class VillageEngine {
         // Throttled to once per 2 minutes per NPC.
         guard let agentName else { return }
         let now = Date()
-        guard lastLiveCommentAt[agentName].map({ now.timeIntervalSince($0) > 120 }) ?? true else { return }
+        guard lastLiveCommentAt[agentName].map({ now.timeIntervalSince($0) > 60 }) ?? true else { return }
         do {
-            let line = try await narrationClient.liveComment(digest: digest, bond: bond, totalTokens: totalTokens)
+            let line = try await narrationClient.liveComment(
+                digest: digest, bond: bond, totalTokens: totalTokens,
+                style: npcCatalog.reactionStyle(for: agentName, roster: roster),
+                personality: npcCatalog.personality(for: agentName, roster: roster)
+            )
             guard !line.isEmpty else { return }
             lastLiveCommentAt[agentName] = now
             onLiveComment?(agentName, line)

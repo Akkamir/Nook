@@ -7,6 +7,7 @@ struct TiledMap: Decodable {
     let tileheight: Int
     let layers: [TiledLayer]
     let tilesets: [TiledTilesetRef]
+    let backgroundcolor: String?
 }
 
 struct TiledTilesetRef: Decodable {
